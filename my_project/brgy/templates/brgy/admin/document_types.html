@@ -1,0 +1,141 @@
+{% extends 'brgy/base.html' %}
+{% block nav_admin_doctypes %}active{% endblock %}
+{% block page_title %}Document Types{% endblock %}
+
+{% block content %}
+<!-- Create Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Add New Document Type</h3>
+        <button class="btn btn-ghost btn-sm" onclick="this.closest('.card').querySelector('.card-body').style.display = this.closest('.card').querySelector('.card-body').style.display === 'none' ? 'block' : 'none'">
+            <i class="fa-solid fa-chevron-down"></i> Toggle
+        </button>
+    </div>
+    <div class="card-body">
+        {% if form.errors %}
+        <div class="form-error-list" style="margin-bottom:16px;">
+            {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Document Name</label>
+                    {{ form.name }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Barangay</label>
+                    {{ form.barangay }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                {{ form.description }}
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Requirements (one per line)</label>
+                    {{ form.requirements }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fee (&#8369;)</label>
+                    {{ form.fee }}
+                </div>
+            </div>
+            <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                {{ form.is_active }}
+                <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Document Type</button>
+        </form>
+    </div>
+</div>
+
+<!-- List -->
+<div class="card">
+    <div class="card-header">
+        <h3>Document Types</h3>
+        <div class="filter-bar" style="margin:0;">
+            <form method="get" class="search-input-wrapper">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" name="search" class="form-input" placeholder="Search..." value="{{ search }}" style="min-width:140px;">
+            </form>
+            <form method="get" style="display:flex;gap:0;">
+                <input type="hidden" name="search" value="{{ search }}">
+                <select name="barangay" class="form-input" style="min-width:140px;" onchange="this.form.submit()">
+                    <option value="">All Barangays</option>
+                    {% for b in barangays %}
+                    <option value="{{ b.pk }}" {% if brgy_filter|stringformat:"s" == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+    <div class="card-body-flush">
+        {% if page_obj %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Barangay</th>
+                        <th>Fee</th>
+                        <th>Requirements</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dt in page_obj %}
+                    <tr>
+                        <td class="fw-600">{{ dt.name }}</td>
+                        <td class="text-sm">{{ dt.barangay.name }}</td>
+                        <td class="text-sm">{% if dt.fee %}&#8369;{{ dt.fee|floatformat:2 }}{% else %}Free{% endif %}</td>
+                        <td class="text-sm" style="max-width:200px;">
+                            {% for req in dt.requirements_list %}
+                            <span class="badge badge-muted" style="margin:2px;">{{ req }}</span>
+                            {% empty %}
+                            <span class="text-muted">None specified</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if dt.is_active %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'edit_document_type' dt.pk %}" class="btn btn-ghost btn-xs">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&search={{ search }}&barangay={{ brgy_filter }}">&laquo;</a>{% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}<span class="active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}&search={{ search }}&barangay={{ brgy_filter }}">{{ num }}</a>{% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&search={{ search }}&barangay={{ brgy_filter }}">&raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-file-circle-check"></i>
+            <h4>No Document Types</h4>
+            <p>Add document types above. Make sure barangays are created first.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

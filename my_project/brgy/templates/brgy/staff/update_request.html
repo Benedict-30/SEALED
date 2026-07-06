@@ -1,0 +1,80 @@
+{% extends 'brgy/base.html' %}
+{% block nav_staff_requests %}active{% endblock %}
+{% block page_title %}Update Request {{ doc_request.request_number }}{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+    <div class="card">
+        <div class="card-header">
+            <h3>Update Request Status</h3>
+            <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </a>
+        </div>
+        <div class="card-body">
+            <!-- Request Details -->
+            <div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+                    <div>
+                        <span class="text-muted">Request #</span><br>
+                        <span class="fw-700">{{ doc_request.request_number }}</span>
+                    </div>
+                    <div>
+                        <span class="text-muted">Document</span><br>
+                        <span class="fw-700">{{ doc_request.document_type.name }}</span>
+                    </div>
+                    <div>
+                        <span class="text-muted">Resident</span><br>
+                        <span class="fw-700">{{ doc_request.resident.display_name }}</span>
+                    </div>
+                    <div>
+                        <span class="text-muted">Current Status</span><br>
+                        <span class="badge badge-{{ doc_request.status_color }}">{{ doc_request.get_status_display }}</span>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <span class="text-muted">Purpose</span><br>
+                        <span>{{ doc_request.purpose }}</span>
+                    </div>
+                    {% if doc_request.staff_notes %}
+                    <div style="grid-column:1/-1;">
+                        <span class="text-muted">Previous Notes</span><br>
+                        <span>{{ doc_request.staff_notes }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if form.errors %}
+            <div class="form-error-list" style="margin-bottom:16px;">
+                {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">New Status</label>
+                    {{ form.status }}
+                    {% for error in form.status.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Staff Notes</label>
+                    {{ form.staff_notes }}
+                    {% for error in form.staff_notes.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="form-group {% if doc_request.status != 'rejected' %}hidden{% endif %}" id="rejectionReasonGroup">
+                    <label class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+                    {{ form.rejection_reason }}
+                    {% for error in form.rejection_reason.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-check"></i> Update Status
+                    </button>
+                    <a href="{% url 'manage_requests' %}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

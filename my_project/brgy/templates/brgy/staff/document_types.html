@@ -1,0 +1,129 @@
+{% extends 'brgy/base.html' %}
+
+{% block nav_staff_doctypes %}active{% endblock %}
+{% block page_title %}Document Types{% endblock %}
+
+{% block content %}
+<!-- Create Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Add New Document Type</h3>
+        <button class="btn btn-ghost btn-sm" onclick="this.closest('.card').querySelector('.card-body').style.display = this.closest('.card').querySelector('.card-body').style.display === 'none' ? 'block' : 'none'">
+            <i class="fa-solid fa-chevron-down"></i> Toggle
+        </button>
+    </div>
+    <div class="card-body">
+        {% if form.errors %}
+        <div class="form-error-list" style="margin-bottom:16px;">
+            {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Document Name</label>
+                    {{ form.name }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Barangay</label>
+                    <input type="text" class="form-input" value="{{ brgy.name }}" disabled style="background:var(--bg);">
+                    <input type="hidden" name="barangay" value="{{ brgy.pk }}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                {{ form.description }}
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Requirements (one per line)</label>
+                    {{ form.requirements }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fee (&#8369;)</label>
+                    {{ form.fee }}
+                </div>
+            </div>
+            <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                {{ form.is_active }}
+                <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Document Type</button>
+        </form>
+    </div>
+</div>
+
+<!-- List -->
+<div class="card">
+    <div class="card-header">
+        <h3>Document Types — {{ brgy.name }}</h3>
+        <form method="get" class="search-input-wrapper">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" name="search" class="form-input" placeholder="Search..." value="{{ search }}" style="min-width:140px;">
+        </form>
+    </div>
+    <div class="card-body-flush">
+        {% if page_obj %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Fee</th>
+                        <th>Requirements</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dt in page_obj %}
+                    <tr>
+                        <td class="fw-600">{{ dt.name }}</td>
+                        <td class="text-sm" style="max-width:180px;">{{ dt.description|truncatechars:60|default:"-" }}</td>
+                        <td class="text-sm">{% if dt.fee %}&#8369;{{ dt.fee|floatformat:2 }}{% else %}Free{% endif %}</td>
+                        <td style="max-width:200px;">
+                            {% for req in dt.requirements_list %}
+                            <span class="badge badge-muted" style="margin:2px;">{{ req }}</span>
+                            {% empty %}
+                            <span class="text-muted text-sm">None specified</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if dt.is_active %}<span class="badge badge-success">Active</span>
+                            {% else %}<span class="badge badge-danger">Inactive</span>{% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'staff_edit_document_type' dt.pk %}" class="btn btn-ghost btn-xs">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&search={{ search }}">&laquo;</a>{% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}<span class="active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}&search={{ search }}">{{ num }}</a>{% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&search={{ search }}">&raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-file-circle-check"></i>
+            <h4>No Document Types</h4>
+            <p>Add document types that residents can request from your barangay.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

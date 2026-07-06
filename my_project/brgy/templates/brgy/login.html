@@ -1,0 +1,61 @@
+{% extends 'brgy/base_auth.html' %}
+{% load static %}
+
+{% block title %}Login - Barangay Document System{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-left">
+        <div class="auth-left-content">
+            <div class="auth-left-icon">BG</div>
+            <h1>Barangay Document Request System</h1>
+            <p>Streamline your barangay document requests. Submit, track, and collect documents efficiently online.</p>
+            <ul class="auth-features">
+                <li><i class="fa-solid fa-shield-halved"></i> Secure account verification</li>
+                <li><i class="fa-solid fa-file-lines"></i> Request barangay documents online</li>
+                <li><i class="fa-solid fa-eye"></i> Real-time request tracking</li>
+                <li><i class="fa-solid fa-bell"></i> Instant status notifications</li>
+                <li><i class="fa-solid fa-chart-simple"></i> Comprehensive reports</li>
+            </ul>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-form-wrapper">
+            <h2>Welcome back</h2>
+            <p class="auth-subtitle">Sign in to your account to continue</p>
+
+            {% if form.errors %}
+            <div class="form-error-list">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    {{ form.username }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    {{ form.password }}
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top:8px;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Don't have an account? <a href="{% url 'register' %}">Create one here</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

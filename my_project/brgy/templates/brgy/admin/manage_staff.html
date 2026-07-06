@@ -1,0 +1,144 @@
+{% extends 'brgy/base.html' %}
+{% block nav_admin_staff %}active{% endblock %}
+{% block page_title %}Manage Staff{% endblock %}
+
+{% block content %}
+<!-- Create Staff Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Create New Staff Account</h3>
+        <button class="btn btn-ghost btn-sm" onclick="this.closest('.card').querySelector('.card-body').style.display = this.closest('.card').querySelector('.card-body').style.display === 'none' ? 'block' : 'none'">
+            <i class="fa-solid fa-chevron-down"></i> Toggle
+        </button>
+    </div>
+    <div class="card-body">
+        {% if form.errors %}
+        <div class="form-error-list" style="margin-bottom:16px;">
+            {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    {{ form.first_name }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    {{ form.last_name }}
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    {{ form.email }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    {{ form.phone_number }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Barangay</label>
+                {{ form.barangay }}
+                {% for error in form.barangay.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    {{ form.password }}
+                    {% for error in form.password.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    {{ form.password_confirm }}
+                    {% for error in form.password_confirm.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-user-plus"></i> Create Staff Account
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Staff List -->
+<div class="card">
+    <div class="card-header">
+        <h3>Staff Accounts</h3>
+        <form method="get" class="search-input-wrapper">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" name="search" class="form-input" placeholder="Search staff..." value="{{ search }}">
+        </form>
+    </div>
+    <div class="card-body-flush">
+        {% if page_obj %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Barangay</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in page_obj %}
+                    <tr>
+                        <td>
+                            <div class="fw-600">{{ staff.display_name }}</div>
+                            <div class="text-xs text-muted">@{{ staff.username }}</div>
+                        </td>
+                        <td class="text-sm">{{ staff.email }}</td>
+                        <td class="text-sm">{{ staff.barangay.name|default:"-" }}</td>
+                        <td>
+                            {% if staff.is_active %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-sm text-muted">{{ staff.date_joined|date:"M d, Y" }}</td>
+                        <td>
+                            <div style="display:flex;gap:4px;">
+                                <a href="{% url 'edit_staff' staff.pk %}" class="btn btn-ghost btn-xs">
+                                    <i class="fa-solid fa-pen"></i> Edit
+                                </a>
+                                <a href="{% url 'toggle_staff_active' staff.pk %}" class="btn {% if staff.is_active %}btn-danger{% else %}btn-success{% endif %} btn-xs" data-confirm="{% if staff.is_active %}Deactivate{% else %}Activate{% endif %} {{ staff.display_name }}?">
+                                    <i class="fa-solid {% if staff.is_active %}fa-ban{% else %}fa-check{% endif %}"></i>
+                                    {% if staff.is_active %}Deactivate{% else %}Activate{% endif %}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&search={{ search }}">&laquo;</a>{% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}<span class="active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}&search={{ search }}">{{ num }}</a>{% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&search={{ search }}">&raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-user-shield"></i>
+            <h4>No Staff Accounts</h4>
+            <p>Create your first staff account above.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

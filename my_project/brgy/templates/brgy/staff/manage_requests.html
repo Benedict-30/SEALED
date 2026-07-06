@@ -1,0 +1,96 @@
+{% extends 'brgy/base.html' %}
+{% block nav_staff_requests %}active{% endblock %}
+{% block page_title %}Document Requests{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Manage Document Requests</h3>
+    </div>
+    <div class="card-body">
+        <div class="filter-bar mb-4">
+            <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;">
+                <div class="search-input-wrapper">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" name="search" class="form-input" placeholder="Search request #, resident, document..." value="{{ search }}">
+                </div>
+                <select name="status" class="form-input" style="width:auto;min-width:160px;" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="date_from" class="form-input" style="width:auto;" value="{{ date_from }}" title="From date">
+                <input type="date" name="date_to" class="form-input" style="width:auto;" value="{{ date_to }}" title="To date">
+                {% if status_filter or search or date_from or date_to %}
+                <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i> Clear</a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+            </form>
+        </div>
+
+        {% if page_obj %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Request #</th>
+                        <th>Resident</th>
+                        <th>Document</th>
+                        <th>Purpose</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Processed By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in page_obj %}
+                    <tr>
+                        <td class="fw-600 text-sm">{{ req.request_number }}</td>
+                        <td>
+                            <div class="text-sm fw-600">{{ req.resident.display_name }}</div>
+                            <div class="text-xs text-muted">{{ req.resident.email }}</div>
+                        </td>
+                        <td class="text-sm">{{ req.document_type.name }}</td>
+                        <td class="text-sm" style="max-width:150px;" title="{{ req.purpose }}">{{ req.purpose|truncatechars:40 }}</td>
+                        <td><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
+                        <td class="text-sm text-muted">{{ req.created_at|date:"M d, Y" }}</td>
+                        <td class="text-sm text-muted">{{ req.processed_by.display_name|default:"-" }}</td>
+                        <td>
+                            {% if req.status != 'completed' %}
+                            <a href="{% url 'update_request_status' req.pk %}" class="btn btn-primary btn-xs">
+                                <i class="fa-solid fa-pen"></i> Update
+                            </a>
+                            {% else %}
+                            <span class="text-xs text-muted">Done</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&search={{ search }}&date_from={{ date_from }}&date_to={{ date_to }}">&laquo;</a>{% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}<span class="active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}&status={{ status_filter }}&search={{ search }}&date_from={{ date_from }}&date_to={{ date_to }}">{{ num }}</a>{% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&search={{ search }}&date_from={{ date_from }}&date_to={{ date_to }}">&raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-folder-open"></i>
+            <h4>No Requests Found</h4>
+            <p>{% if status_filter or search %}No requests match your filters.{% else %}No document requests have been submitted yet.{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

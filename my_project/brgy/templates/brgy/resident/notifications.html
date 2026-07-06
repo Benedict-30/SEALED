@@ -1,0 +1,56 @@
+{% extends 'brgy/base.html' %}
+{% block nav_res_notifications %}active{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>All Notifications</h3>
+        {% if unread_notification_count > 0 %}
+        <a href="{% url 'mark_all_notifications_read' %}" class="btn btn-ghost btn-sm">
+            <i class="fa-solid fa-check-double"></i> Mark All Read
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body-flush">
+        {% if page_obj %}
+        {% for notif in page_obj %}
+        <a href="{% url 'mark_notification_read' notif.pk %}" style="display:block;text-decoration:none;color:inherit;">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;gap:14px;align-items:flex-start;transition:background 0.2s;{% if not notif.is_read %}background:var(--primary-50);border-left:3px solid var(--primary-light);{% endif %}" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='{% if not notif.is_read %}var(--primary-50){% else %}transparent{% endif %}'">
+                <div style="width:36px;height:36px;border-radius:50%;background:{% if notif.is_read %}var(--bg){% else %}var(--primary-100){% endif %};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fa-solid fa-bell" style="font-size:14px;color:{% if notif.is_read %}var(--text-muted){% else %}var(--primary){% endif %}"></i>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div class="fw-600 text-sm">{{ notif.title }}</div>
+                    <div class="text-sm text-muted mt-2">{{ notif.message }}</div>
+                    <div class="text-xs text-muted mt-2"><i class="fa-regular fa-clock"></i> {{ notif.created_at|date:"M d, Y h:i A" }}</div>
+                </div>
+                {% if not notif.is_read %}
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:6px;"></div>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">&laquo;</a>{% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}<span class="active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}">{{ num }}</a>{% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">&raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-bell-slash"></i>
+            <h4>No Notifications</h4>
+            <p>You're all caught up. No notifications to show.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

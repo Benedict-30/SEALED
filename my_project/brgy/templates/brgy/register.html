@@ -1,0 +1,137 @@
+{% extends 'brgy/base_auth.html' %}
+{% load static %}
+
+{% block title %}Register - Barangay Document System{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-left">
+        <div class="auth-left-content">
+            <div class="auth-left-icon">BG</div>
+            <h1>Join Your Barangay</h1>
+            <p>Create an account to start requesting barangay documents online. Upload a valid ID for verification by barangay staff.</p>
+            <ul class="auth-features">
+                <li><i class="fa-solid fa-user-plus"></i> Quick and easy registration</li>
+                <li><i class="fa-solid fa-id-card"></i> ID verification for security</li>
+                <li><i class="fa-solid fa-clock"></i> Fast verification process</li>
+                <li><i class="fa-solid fa-lock"></i> Your data is secure</li>
+            </ul>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-form-wrapper">
+            <h2>Create Account</h2>
+            <p class="auth-subtitle">Fill in your details and upload your ID</p>
+
+            {% if form.errors %}
+            <div class="form-error-list">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        {{ form.first_name }}
+                        {% for error in form.first_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        {{ form.last_name }}
+                        {% for error in form.last_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    {{ form.username }}
+                    {% for error in form.username.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    {{ form.email }}
+                    {% for error in form.email.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Barangay</label>
+                    {{ form.barangay }}
+                    {% for error in form.barangay.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Full Address</label>
+                    {{ form.address }}
+                    {% for error in form.address.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        {{ form.phone_number }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Birth Date</label>
+                        {{ form.birth_date }}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        {{ form.gender }}
+                    </div>
+                    <div class="form-group"></div>
+                </div>
+
+                <!-- ID Upload Section -->
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:8px 0 18px;">
+                    <div class="fw-700" style="font-size:14px;margin-bottom:4px;">
+                        <i class="fa-solid fa-id-card" style="color:var(--primary);"></i> Valid ID Upload
+                    </div>
+                    <div class="text-xs text-muted" style="margin-bottom:16px;">Upload a clear photo of your valid ID (front and back). Accepted: JPG, PNG.</div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">ID Front <span class="text-danger">*</span></label>
+                            {{ form.id_front }}
+                            {% for error in form.id_front.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                            <div class="form-helptext">Front side of your ID</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">ID Back <span class="text-danger">*</span></label>
+                            {{ form.id_back }}
+                            {% for error in form.id_back.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                            <div class="form-helptext">Back side of your ID</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        {{ form.password1 }}
+                        {% for error in form.password1.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        {{ form.password2 }}
+                        {% for error in form.password2.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top:4px;">
+                    <i class="fa-solid fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Already have an account? <a href="{% url 'login' %}">Sign in here</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

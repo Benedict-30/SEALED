@@ -1,0 +1,127 @@
+{% extends 'brgy/base.html' %}
+{% block nav_admin_barangays %}active{% endblock %}
+{% block page_title %}Manage Barangays{% endblock %}
+
+{% block content %}
+<!-- Create Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Add New Barangay</h3>
+        <button class="btn btn-ghost btn-sm" onclick="this.closest('.card').querySelector('.card-body').style.display = this.closest('.card').querySelector('.card-body').style.display === 'none' ? 'block' : 'none'">
+            <i class="fa-solid fa-chevron-down"></i> Toggle
+        </button>
+    </div>
+    <div class="card-body">
+        {% if form.errors %}
+        <div class="form-error-list" style="margin-bottom:16px;">
+            {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Barangay Name</label>
+                    {{ form.name }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Chairman Name</label>
+                    {{ form.chairman_name }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Address</label>
+                {{ form.address }}
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Contact Number</label>
+                    {{ form.contact_number }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    {{ form.email }}
+                </div>
+            </div>
+            <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                {{ form.is_active }}
+                <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Barangay</button>
+        </form>
+    </div>
+</div>
+
+<!-- List -->
+<div class="card">
+    <div class="card-header">
+        <h3>Barangays</h3>
+        <form method="get" class="search-input-wrapper">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" name="search" class="form-input" placeholder="Search barangays..." value="{{ search }}">
+        </form>
+    </div>
+    <div class="card-body-flush">
+        {% if page_obj %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Address</th>
+                        <th>Chairman</th>
+                        <th>Contact</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for brgy in page_obj %}
+                    <tr>
+                        <td class="fw-600">{{ brgy.name }}</td>
+                        <td class="text-sm" style="max-width:200px;">{{ brgy.address|truncatechars:50 }}</td>
+                        <td class="text-sm">{{ brgy.chairman_name|default:"-" }}</td>
+                        <td class="text-sm">
+                            {% if brgy.contact_number %}{{ brgy.contact_number }}<br>{% endif %}
+                            {% if brgy.email %}<span class="text-xs text-muted">{{ brgy.email }}</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if brgy.is_active %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'edit_barangay' brgy.pk %}" class="btn btn-ghost btn-xs">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&search={{ search }}">&laquo;</a>{% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}<span class="active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}&search={{ search }}">{{ num }}</a>{% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&search={{ search }}">&raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-building"></i>
+            <h4>No Barangays</h4>
+            <p>Add your first barangay above to get started.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

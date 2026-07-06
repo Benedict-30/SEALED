@@ -1,0 +1,144 @@
+{% extends 'brgy/base.html' %}
+{% block nav_staff_dashboard %}active{% endblock %}
+{% block page_title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card" style="--stat-color: var(--accent)">
+        <div class="stat-icon accent"><i class="fa-solid fa-user-clock"></i></div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ pending_verifications }}">0</div>
+            <div class="stat-label">Pending Verifications</div>
+        </div>
+    </div>
+    <div class="stat-card" style="--stat-color: var(--primary)">
+        <div class="stat-icon primary"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ verified_residents }}">0</div>
+            <div class="stat-label">Verified Residents</div>
+        </div>
+    </div>
+    <div class="stat-card" style="--stat-color: var(--warning)">
+        <div class="stat-icon warning"><i class="fa-solid fa-file-circle-exclamation"></i></div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ pending_requests }}">0</div>
+            <div class="stat-label">Pending Requests</div>
+        </div>
+    </div>
+    <div class="stat-card" style="--stat-color: var(--info)">
+        <div class="stat-icon info"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ approved_requests }}">0</div>
+            <div class="stat-label">Approved</div>
+        </div>
+    </div>
+    <div class="stat-card" style="--stat-color: var(--success)">
+        <div class="stat-icon success"><i class="fa-solid fa-hand-holding"></i></div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ ready_requests }}">0</div>
+            <div class="stat-label">Ready for Pickup</div>
+        </div>
+    </div>
+    <div class="stat-card" style="--stat-color: var(--accent)">
+        <div class="stat-icon accent"><i class="fa-solid fa-flag-checkered"></i></div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ completed_requests }}">0</div>
+            <div class="stat-label">Completed</div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Stats -->
+<div class="card mb-4">
+    <div class="card-body" style="display:flex;gap:32px;flex-wrap:wrap;align-items:center;">
+        <div>
+            <div class="text-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:0.5px;">Today's Requests</div>
+            <div style="font-size:28px;font-weight:800;color:var(--primary);margin-top:4px;">{{ today_requests }}</div>
+        </div>
+        <div style="width:1px;height:40px;background:var(--border);"></div>
+        <div>
+            <div class="text-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:0.5px;">Today's Completed</div>
+            <div style="font-size:28px;font-weight:800;color:var(--success);margin-top:4px;">{{ today_completed }}</div>
+        </div>
+        <div style="width:1px;height:40px;background:var(--border);"></div>
+        <div>
+            <div class="text-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:0.5px;">Total Requests</div>
+            <div style="font-size:28px;font-weight:800;color:var(--text);margin-top:4px;">{{ total_requests }}</div>
+        </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <!-- Pending Verifications -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Pending Verifications</h3>
+            <a href="{% url 'verify_residents' %}" class="btn btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="card-body-flush">
+            {% if pending_residents %}
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead><tr><th>Name</th><th>Date</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {% for res in pending_residents %}
+                        <tr>
+                            <td>
+                                <div class="fw-600">{{ res.display_name }}</div>
+                                <div class="text-xs text-muted">{{ res.email }}</div>
+                            </td>
+                            <td class="text-sm text-muted">{{ res.date_joined|date:"M d" }}</td>
+                            <td>
+                                <a href="{% url 'approve_resident' res.pk %}" class="btn btn-success btn-xs" data-confirm="Approve {{ res.display_name }}?">Approve</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state" style="padding:32px;">
+                <i class="fa-solid fa-check-circle" style="font-size:32px;color:var(--success);"></i>
+                <h4>All Caught Up</h4>
+                <p>No pending verifications.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Requests -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Pending Document Requests</h3>
+            <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="card-body-flush">
+            {% if pending_doc_requests %}
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead><tr><th>Request #</th><th>Resident</th><th>Document</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {% for req in pending_doc_requests %}
+                        <tr>
+                            <td class="fw-600 text-sm">{{ req.request_number }}</td>
+                            <td class="text-sm">{{ req.resident.display_name }}</td>
+                            <td class="text-sm">{{ req.document_type.name }}</td>
+                            <td>
+                                <a href="{% url 'update_request_status' req.pk %}" class="btn btn-primary btn-xs">Process</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state" style="padding:32px;">
+                <i class="fa-solid fa-check-circle" style="font-size:32px;color:var(--success);"></i>
+                <h4>All Processed</h4>
+                <p>No pending document requests.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

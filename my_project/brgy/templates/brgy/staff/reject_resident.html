@@ -1,0 +1,41 @@
+{% extends 'brgy/base.html' %}
+{% block nav_staff_verify %}active{% endblock %}
+{% block page_title %}Reject Resident{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;">
+    <div class="card">
+        <div class="card-header">
+            <h3>Reject Resident Verification</h3>
+        </div>
+        <div class="card-body">
+            <div style="background:var(--danger-bg);border:1px solid rgba(220,38,38,0.15);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:20px;">
+                <div class="fw-600 text-sm" style="color:var(--danger);">
+                    <i class="fa-solid fa-triangle-exclamation"></i> You are about to reject the account of <strong>{{ resident.display_name }}</strong>.
+                </div>
+                <div class="text-sm text-muted mt-2">
+                    Email: {{ resident.email }}<br>
+                    Address: {{ resident.address|truncatechars:80 }}<br>
+                    Registered: {{ resident.date_joined|date:"M d, Y" }}
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Reason for Rejection <span class="text-danger">*</span></label>
+                    {{ form.reason }}
+                    {% for error in form.reason.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    <div class="form-helptext">This reason will be shown to the resident.</div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa-solid fa-xmark"></i> Reject Account
+                    </button>
+                    <a href="{% url 'verify_residents' %}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

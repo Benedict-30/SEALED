@@ -1,0 +1,56 @@
+{% extends 'brgy/base.html' %}
+{% block nav_admin_barangays %}active{% endblock %}
+{% block page_title %}Edit Barangay - {{ barangay.name }}{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+    <div class="card">
+        <div class="card-header">
+            <h3>Edit Barangay</h3>
+            <a href="{% url 'manage_barangays' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        </div>
+        <div class="card-body">
+            {% if form.errors %}
+            <div class="form-error-list" style="margin-bottom:16px;">
+                {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+            </div>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Barangay Name</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Chairman Name</label>
+                        {{ form.chairman_name }}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Address</label>
+                    {{ form.address }}
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Contact Number</label>
+                        {{ form.contact_number }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        {{ form.email }}
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                    {{ form.is_active }}
+                    <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Changes</button>
+                    <a href="{% url 'manage_barangays' %}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

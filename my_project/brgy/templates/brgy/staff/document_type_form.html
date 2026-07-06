@@ -1,0 +1,60 @@
+{% extends 'brgy/base.html' %}
+
+{% block nav_staff_doctypes %}active{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+    <div class="card">
+        <div class="card-header">
+            <h3>{{ title }}</h3>
+            <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost btn-sm">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </a>
+        </div>
+        <div class="card-body">
+            {% if form.errors %}
+            <div class="form-error-list" style="margin-bottom:16px;">
+                {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+            </div>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Document Name</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Barangay</label>
+                        <input type="text" class="form-input" value="{{ brgy.name }}" disabled style="background:var(--bg);">
+                        <input type="hidden" name="barangay" value="{{ brgy.pk }}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    {{ form.description }}
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Requirements (one per line)</label>
+                        {{ form.requirements }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fee (&#8369;)</label>
+                        {{ form.fee }}
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                    {{ form.is_active }}
+                    <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Changes</button>
+                    <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

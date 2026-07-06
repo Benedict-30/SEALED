@@ -1,0 +1,34 @@
+{% extends 'brgy/base.html' %}
+{% block nav_res_request %}active{% endblock %}
+{% block page_title %}Request Document{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+    <div class="card">
+        <div class="card-header">
+            <h3>New Document Request</h3>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Document Type</label>
+                    {{ form.document_type }}
+                    {% for error in form.document_type.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Purpose</label>
+                    {{ form.purpose }}
+                    {% for error in form.purpose.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Request
+                    </button>
+                    <a href="{% url 'resident_dashboard' %}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
