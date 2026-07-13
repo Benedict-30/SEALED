@@ -140,21 +140,40 @@ def request_document(request):
     if not user.is_verified_resident:
         messages.warning(request, 'Your account must be verified before you can request documents.')
         return redirect('resident_dashboard')
+
+    doc_types = DocumentType.objects.filter(barangay=user.barangay, is_active=True)
+
+    return render(request, 'brgy/resident/request_document.html', {
+        'doc_types': doc_types,
+    })
+
+
+@login_required
+@role_required('resident')
+def request_document_submit(request, pk):
+    user = request.user
+    if not user.is_verified_resident:
+        messages.warning(request, 'Your account must be verified before you can request documents.')
+        return redirect('resident_dashboard')
+
+    doc_type = get_object_or_404(DocumentType, pk=pk, barangay=user.barangay, is_active=True)
+
     if request.method == 'POST':
-        form = DocumentRequestForm(request.POST, resident=user)
-        if form.is_valid():
-            doc_req = form.save(commit=False)
-            doc_req.resident = user
-            doc_req.save()
+        purpose = request.POST.get('purpose', '').strip()
+        if not purpose:
+            messages.error(request, 'Please state the purpose of your request.')
+        else:
+            doc_req = DocumentRequest.objects.create(
+                resident=user,
+                document_type=doc_type,
+                purpose=purpose,
+            )
             messages.success(request, f'Document request submitted! Request #: {doc_req.request_number}')
             return redirect('request_history')
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = DocumentRequestForm(resident=user)
-    if not form.fields['document_type'].queryset.exists():
-        messages.info(request, 'No document types are currently available for your barangay.')
-    return render(request, 'brgy/resident/request_document.html', {'form': form})
+
+    return render(request, 'brgy/resident/request_document_submit.html', {
+        'doc_type': doc_type,
+    })
 
 
 @login_required

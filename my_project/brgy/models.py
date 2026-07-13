@@ -88,7 +88,7 @@ class DocumentType(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     requirements = models.TextField(blank=True, help_text="One requirement per line")
-    fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    fee = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     barangay = models.ForeignKey(Barangay, on_delete=models.CASCADE, related_name='document_types')
     created_at = models.DateTimeField(auto_now_add=True)

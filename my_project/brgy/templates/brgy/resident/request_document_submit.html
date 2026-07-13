@@ -1,0 +1,136 @@
+{% extends 'brgy/base.html' %}
+
+{% block nav_res_request %}active{% endblock %}
+{% block page_title %}Request - {{ doc_type.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .doc-detail-card {
+        background: var(--primary-50);
+        border: 1px solid var(--primary-200);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    .doc-detail-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: var(--primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+    .doc-detail-info h3 {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 2px;
+    }
+    .doc-detail-info p {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+    .req-list {
+        margin-bottom: 20px;
+    }
+    .req-list .req-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        font-size: 13.5px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-light);
+    }
+    .req-list .req-item:last-child {
+        border-bottom: none;
+    }
+    .req-list .req-item i {
+        color: var(--primary);
+        font-size: 12px;
+        width: 16px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .fee-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--accent-50);
+        color: var(--accent-dark);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;">
+    <a href="{% url 'request_document' %}" class="btn btn-ghost btn-sm mb-3" style="display:inline-flex;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Documents
+    </a>
+
+    <div class="doc-detail-card">
+        <div class="doc-detail-icon">
+            <i class="fa-solid fa-file-lines"></i>
+        </div>
+        <div class="doc-detail-info">
+            <h3>{{ doc_type.name }}</h3>
+            <p>{{ doc_type.description|default:"Barangay document" }}</p>
+            {% if doc_type.fee %}
+            <div class="fee-tag"><i class="fa-solid fa-receipt"></i> Fee: &#8369;{{ doc_type.fee|floatformat:2 }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if doc_type.requirements_list %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Requirements</h3>
+        </div>
+        <div class="card-body" style="padding:12px 20px;">
+            <div class="req-list">
+                {% for req in doc_type.requirements_list %}
+                <div class="req-item">
+                    <i class="fa-solid fa-check"></i>
+                    <span>{{ req }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Submit Request</h3>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Purpose of Request <span class="text-danger">*</span></label>
+                    <textarea name="purpose" class="form-input" rows="4" placeholder="State the purpose of your request (e.g., Employment requirement, School enrollment, Loan application...)" required>{{ purpose|default:"" }}</textarea>
+                    <div class="form-helptext">Provide a clear reason for requesting this document.</div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Request
+                    </button>
+                    <a href="{% url 'request_document' %}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -16,6 +16,7 @@ urlpatterns = [
     # Resident
     path('resident/', views.resident_dashboard, name='resident_dashboard'),
     path('resident/request/', views.request_document, name='request_document'),
+    path('resident/request/<uuid:pk>/', views.request_document_submit, name='request_document_submit'),
     path('resident/history/', views.request_history, name='request_history'),
     path('resident/notifications/', views.notifications_view, name='notifications'),
     path('resident/notifications/read/<uuid:pk>/', views.mark_notification_read, name='mark_notification_read'),

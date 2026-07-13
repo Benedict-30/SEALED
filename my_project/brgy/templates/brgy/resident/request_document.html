@@ -1,34 +1,140 @@
 {% extends 'brgy/base.html' %}
+
 {% block nav_res_request %}active{% endblock %}
-{% block page_title %}Request Document{% endblock %}
+{% block page_title %}Request Documents{% endblock %}
+
+{% block extra_css %}
+<style>
+    .doc-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+    .doc-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 28px 24px;
+        text-align: center;
+        transition: all 0.25s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+    }
+    .doc-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--primary);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+    .doc-card:hover {
+        border-color: var(--primary-200);
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-4px);
+    }
+    .doc-card:hover::before {
+        transform: scaleX(1);
+    }
+    .doc-card-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: var(--primary-50);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        margin-bottom: 16px;
+        transition: all 0.25s ease;
+    }
+    .doc-card:hover .doc-card-icon {
+        background: var(--primary);
+        color: #fff;
+    }
+    .doc-card h3 {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 6px;
+    }
+    .doc-card p {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        margin-bottom: 14px;
+    }
+    .doc-card .doc-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        background: var(--success-bg);
+        color: var(--success);
+    }
+    .doc-card .doc-badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+    .doc-card-fee {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 8px;
+    }
+    @media (max-width: 1024px) {
+        .doc-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+        .doc-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="max-width:640px;">
-    <div class="card">
-        <div class="card-header">
-            <h3>New Document Request</h3>
-        </div>
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label class="form-label">Document Type</label>
-                    {{ form.document_type }}
-                    {% for error in form.document_type.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Purpose</label>
-                    {{ form.purpose }}
-                    {% for error in form.purpose.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-                </div>
-                <div style="display:flex;gap:10px;margin-top:20px;">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fa-solid fa-paper-plane"></i> Submit Request
-                    </button>
-                    <a href="{% url 'resident_dashboard' %}" class="btn btn-ghost">Cancel</a>
-                </div>
-            </form>
-        </div>
-    </div>
+<div style="margin-bottom:24px;">
+    <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">Request Documents</h2>
+    <p class="text-sm text-muted">Select a document to request</p>
 </div>
+
+{% if doc_types %}
+<div class="doc-grid">
+    {% for dt in doc_types %}
+    <a href="{% url 'request_document_submit' dt.pk %}" class="doc-card">
+        <div class="doc-card-icon">
+            <i class="fa-solid fa-file-lines"></i>
+        </div>
+        <h3>{{ dt.name }}</h3>
+        <p>Click to request document</p>
+        <span class="doc-badge">Available</span>
+        {% if dt.fee %}
+        <div class="doc-card-fee">Fee: &#8369;{{ dt.fee|floatformat:2 }}</div>
+        {% endif %}
+    </a>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <i class="fa-solid fa-file-circle-xmark"></i>
+    <h4>No Documents Available</h4>
+    <p>There are no document types available for your barangay yet. Please check back later.</p>
+</div>
+{% endif %}
 {% endblock %}
