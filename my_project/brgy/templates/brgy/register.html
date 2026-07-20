@@ -3,13 +3,17 @@
 
 {% block title %}Register - Barangay Document System{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/register.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="auth-page">
     <div class="auth-left">
         <div class="auth-left-content">
             <div class="auth-left-icon">📝</div>
             <h1>Join Your Barangay</h1>
-            <p>Create an account to start requesting barangay documents online. Upload a valid ID for verification by barangay staff.</p>
+            <p>Create an account to start requesting barangay documents online. Ensure your profile is complete for faster verification.</p>
             <ul class="auth-features">
                 <li><i class="fa-solid fa-user-plus"></i> Quick and easy registration</li>
                 <li><i class="fa-solid fa-id-card"></i> ID verification for security</li>
@@ -21,10 +25,10 @@
     <div class="auth-right">
         <div class="auth-form-wrapper">
             <h2>Create Account</h2>
-            <p class="auth-subtitle">Fill in your details and upload your ID</p>
+            <p class="auth-subtitle">Fill in your details to get started</p>
 
             {% if form.errors %}
-            <div class="form-error-list">
+            <ul class="form-error-list">
                 {% for field in form %}
                     {% for error in field.errors %}
                     <li>{{ error }}</li>
@@ -33,99 +37,205 @@
                 {% for error in form.non_field_errors %}
                 <li>{{ error }}</li>
                 {% endfor %}
-            </div>
+            </ul>
             {% endif %}
 
-            <form method="post" enctype="multipart/form-data">
+            <div class="step-progress">
+                <div class="step-progress-item active" data-step="1">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Account</div>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-progress-item" data-step="2">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Location</div>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-progress-item" data-step="3">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">Profile</div>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-progress-item" data-step="4">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">Security</div>
+                </div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" id="registerForm">
                 {% csrf_token %}
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">First Name</label>
-                        {{ form.first_name }}
-                        {% for error in form.first_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+
+                <!-- STEP 1: Account -->
+                <div class="step-panel active" data-panel="1">
+                    <div class="form-row-3">
+                        <div class="form-group form-floating">
+                            {{ form.first_name }}
+                            <label class="form-label" for="id_first_name">First Name</label>
+                            {% for error in form.first_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="form-group form-floating">
+                            {{ form.middle_name }}
+                            <label class="form-label" for="id_middle_name">Middle Name</label>
+                            {% for error in form.middle_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="form-group form-floating">
+                            {{ form.last_name }}
+                            <label class="form-label" for="id_last_name">Last Name</label>
+                            {% for error in form.last_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Last Name</label>
-                        {{ form.last_name }}
-                        {% for error in form.last_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    <div class="form-group form-floating">
+                        {{ form.username }}
+                        <label class="form-label" for="id_username">Username</label>
+                        {% for error in form.username.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        <div class="form-helptext">This will be your unique login identifier.</div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Username</label>
-                    {{ form.username }}
-                    {% for error in form.username.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email Address</label>
-                    {{ form.email }}
-                    {% for error in form.email.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Barangay</label>
-                    {{ form.barangay }}
-                    {% for error in form.barangay.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Full Address</label>
-                    {{ form.address }}
-                    {% for error in form.address.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Phone Number</label>
-                        {{ form.phone_number }}
+                    <div class="form-group form-floating">
+                        {{ form.email }}
+                        <label class="form-label" for="id_email">Email Address</label>
+                        {% for error in form.email.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        <div class="form-helptext">We will send verification updates to this email.</div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Birth Date</label>
-                        {{ form.birth_date }}
+                    <div class="step-actions">
+                        <div></div>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(1)">
+                            Continue <i class="fa-solid fa-arrow-right"></i>
+                        </button>
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Gender</label>
-                        {{ form.gender }}
-                    </div>
-                    <div class="form-group"></div>
                 </div>
 
-                <!-- ID Upload Section -->
-                <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:8px 0 18px;">
-                    <div class="fw-700" style="font-size:14px;margin-bottom:4px;">
-                        <i class="fa-solid fa-id-card" style="color:var(--primary);"></i> Valid ID Upload
+                <!-- STEP 2: Location -->
+                <div class="step-panel" data-panel="2">
+                    <div class="form-group form-floating">
+                        {{ form.barangay }}
+                        <label class="form-label" for="id_barangay">Barangay</label>
+                        {% for error in form.barangay.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        <div class="form-helptext">Select the barangay where you are currently residing.</div>
                     </div>
-                    <div class="text-xs text-muted" style="margin-bottom:16px;">Upload a clear photo of your valid ID (front and back). Accepted: JPG, PNG.</div>
+                    <div class="form-group form-floating">
+                        {{ form.address }}
+                        <label class="form-label" for="id_address">Full Address</label>
+                        {% for error in form.address.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        <div class="form-helptext">Include House/Lot Number, Block, Street, Subdivision, or Purok.</div>
+                    </div>
+                    <div class="step-actions">
+                        <button type="button" class="btn-ghost-step" onclick="prevStep(2)">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(2)">
+                            Continue <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
 
+                <!-- STEP 3: Profile -->
+                <div class="step-panel" data-panel="3">
                     <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">ID Front <span class="text-danger">*</span></label>
-                            {{ form.id_front }}
-                            {% for error in form.id_front.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-                            <div class="form-helptext">Front side of your ID</div>
+                        <div class="form-group form-floating">
+                            {{ form.phone_number }}
+                            <label class="form-label" for="id_phone_number">Phone Number</label>
+                            {% for error in form.phone_number.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                            <div class="form-helptext">e.g., 09123456789</div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">ID Back <span class="text-danger">*</span></label>
-                            {{ form.id_back }}
-                            {% for error in form.id_back.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-                            <div class="form-helptext">Back side of your ID</div>
+                        <div class="form-group form-floating">
+                            {{ form.birth_date }}
+                            <label class="form-label" for="id_birth_date">Birth Date</label>
+                            {% for error in form.birth_date.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
                         </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group form-floating">
+                            {{ form.gender }}
+                            <label class="form-label" for="id_gender">Gender</label>
+                            {% for error in form.gender.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="form-group form-floating">
+                            {{ form.civil_status }}
+                            <label class="form-label" for="id_civil_status">Civil Status</label>
+                            {% for error in form.civil_status.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-group form-floating">
+                        {{ form.occupation }}
+                        <label class="form-label" for="id_occupation">Occupation</label>
+                        {% for error in form.occupation.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        <div class="form-helptext">e.g., Employee, Self-Employed, Student, Unemployed.</div>
+                    </div>
+                    <div class="step-actions">
+                        <button type="button" class="btn-ghost-step" onclick="prevStep(3)">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(3)">
+                            Continue <i class="fa-solid fa-arrow-right"></i>
+                        </button>
                     </div>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Password</label>
-                        {{ form.password1 }}
-                        {% for error in form.password1.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                <!-- STEP 4: Security & ID -->
+                <div class="step-panel" data-panel="4">
+                    <div class="form-group form-floating" style="margin-bottom:16px;">
+                        {{ form.id_type }}
+                        <label class="form-label" for="id_id_type">Type of Valid ID</label>
+                        {% for error in form.id_type.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Confirm Password</label>
-                        {{ form.password2 }}
-                        {% for error in form.password2.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+
+                    <div class="form-info-box">
+                        <div class="form-info-box-title">
+                            <i class="fa-solid fa-id-card" style="color:var(--primary);"></i> Valid ID Upload
+                        </div>
+                        <div class="form-info-box-desc">Upload a clear photo or take a picture of any valid government ID (front and back). Accepted: JPG, PNG.</div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">ID Front</label>
+                                <label class="custom-file-upload" for="id_id_front">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <span data-text="Choose Front Image...">Choose Front Image...</span>
+                                </label>
+                                {{ form.id_front }}
+                                <button type="button" class="btn-camera" onclick="openCamera('front')">
+                                    <i class="fa-solid fa-camera"></i> Take Picture
+                                </button>
+                                {% for error in form.id_front.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">ID Back</label>
+                                <label class="custom-file-upload" for="id_id_back">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <span data-text="Choose Back Image...">Choose Back Image...</span>
+                                </label>
+                                {{ form.id_back }}
+                                <button type="button" class="btn-camera" onclick="openCamera('back')">
+                                    <i class="fa-solid fa-camera"></i> Take Picture
+                                </button>
+                                {% for error in form.id_back.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row" style="margin-top:20px;">
+                        <div class="form-group form-floating">
+                            {{ form.password1 }}
+                            <label class="form-label" for="id_password1">Password</label>
+                            {% for error in form.password1.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="form-group form-floating">
+                            {{ form.password2 }}
+                            <label class="form-label" for="id_password2">Confirm Password</label>
+                            {% for error in form.password2.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="step-actions">
+                        <button type="button" class="btn-ghost-step" onclick="prevStep(4)">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-user-plus"></i> Create Account
+                        </button>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" style="margin-top:4px;">
-                    <i class="fa-solid fa-user-plus"></i> Create Account
-                </button>
+
             </form>
 
             <div class="auth-footer">
@@ -134,4 +244,28 @@
         </div>
     </div>
 </div>
+
+<!-- Camera Modal -->
+<div id="cameraModal" class="camera-modal" style="display:none;">
+    <div class="camera-modal-content">
+        <div class="camera-modal-header">
+            <h3 id="cameraModalTitle">Take a Picture</h3>
+            <button type="button" class="camera-close-btn" onclick="closeCamera()">&times;</button>
+        </div>
+        <div class="camera-body">
+            <video id="cameraFeed" autoplay playsinline></video>
+            <canvas id="cameraCanvas" style="display:none;"></canvas>
+        </div>
+        <div class="camera-modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeCamera()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="capturePhoto()">
+                <i class="fa-solid fa-circle"></i> Capture
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/register.js' %}"></script>
 {% endblock %}

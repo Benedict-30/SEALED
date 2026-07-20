@@ -58,11 +58,18 @@ class CustomUser(AbstractUser):
     address = models.TextField(blank=True)
     birth_date = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=10, blank=True)
+    middle_name = models.CharField(max_length=150, blank=True)
+    civil_status = models.CharField(max_length=20, blank=True, default='')
+    occupation = models.CharField(max_length=100, blank=True, default='')
+    id_type = models.CharField(max_length=50, blank=True, default='')
     id_front = models.ImageField(upload_to='resident_ids/', blank=True, null=True)
     id_back = models.ImageField(upload_to='resident_ids/', blank=True, null=True)
-    rejection_reason = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Added profile picture field for the profile page we made earlier
+    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+    
+    # Used to store rejection reasons specifically for profile/ID rejections
+    rejection_reason = models.TextField(blank=True, default='')
 
     class Meta:
         ordering = ['-date_joined']
@@ -91,6 +98,16 @@ class DocumentType(models.Model):
     fee = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     barangay = models.ForeignKey(Barangay, on_delete=models.CASCADE, related_name='document_types')
+    
+    # ---> ADDED TEMPLATE FILE FIELD HERE <---
+    template_file = models.FileField(
+        upload_to='document_templates/', 
+        blank=True, 
+        null=True, 
+        help_text="Upload a .docx template for this document"
+    )
+    # ----------------------------------------
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -104,6 +121,13 @@ class DocumentType(models.Model):
         if not self.requirements:
             return []
         return [r.strip() for r in self.requirements.split('\n') if r.strip()]
+        
+    # ---> ADDED HELPER PROPERTY HERE <---
+    @property
+    def has_template(self):
+        # Returns True if a template is uploaded, False otherwise
+        return bool(self.template_file and self.template_file.name)
+    # --------------------------------------
 
 
 class DocumentRequest(models.Model):

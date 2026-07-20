@@ -17,53 +17,58 @@ class CustomAuthForm(AuthenticationForm):
 
 
 class ResidentRegistrationForm(UserCreationForm):
-    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'First Name'}))
-    last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Last Name'}))
-    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Email Address'}))
-    phone_number = forms.CharField(
-        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Phone Number'}),
-        required=False
-    )
-    address = forms.CharField(
-        widget=forms.Textarea(attrs={'class': 'form-input', 'placeholder': 'Full Address', 'rows': 3})
-    )
-    birth_date = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
-        required=False
-    )
-    gender = forms.ChoiceField(
-        choices=[('', 'Select Gender'), ('Male', 'Male'), ('Female', 'Female')],
-        widget=forms.Select(attrs={'class': 'form-input'}),
-        required=False
-    )
+    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': ''}))
+    middle_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': ''}), required=False)
+    last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': ''}))
+    username = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': ''}))
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': ''}))
     barangay = forms.ModelChoiceField(
         queryset=Barangay.objects.filter(is_active=True),
         widget=forms.Select(attrs={'class': 'form-input'}),
         empty_label='Select Barangay'
     )
-    id_front = forms.ImageField(
-        widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}),
-        required=False,
-        label='ID Front Photo'
+    address = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-input', 'rows': 3}))
+    phone_number = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': ''}), required=False)
+    birth_date = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}), required=False)
+    gender = forms.ChoiceField(
+        choices=[('', 'Select Gender'), ('Male', 'Male'), ('Female', 'Female')],
+        widget=forms.Select(attrs={'class': 'form-input'}),
+        required=False
     )
-    id_back = forms.ImageField(
-        widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}),
-        required=False,
-        label='ID Back Photo'
+    civil_status = forms.ChoiceField(
+        choices=[('', 'Select Status'), ('Single', 'Single'), ('Married', 'Married'), ('Widowed', 'Widowed'), ('Separated', 'Separated')],
+        widget=forms.Select(attrs={'class': 'form-input'}),
+        required=False
     )
-    password1 = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Password'})
+    occupation = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': ''}), required=False)
+    id_type = forms.ChoiceField(
+        choices=[
+            ('', 'Select ID Type'),
+            ('National ID', 'National ID'),
+            ('Driver\'s License', 'Driver\'s License'),
+            ('PhilHealth ID', 'PhilHealth ID'),
+            ('Voter\'s ID', 'Voter\'s ID'),
+            ('Passport', 'Passport'),
+            ('SSS/GSIS ID', 'SSS/GSIS ID'),
+            ('Postal ID', 'Postal ID'),
+            ('Senior Citizen ID', 'Senior Citizen ID'),
+            ('PWD ID', 'PWD ID'),
+            ('Other', 'Other'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-input'}),
+        required=False
     )
-    password2 = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Confirm Password'})
-    )
+    id_front = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
+    id_back = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
+    password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': ''}))
+    password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': ''}))
 
     class Meta:
         model = CustomUser
         fields = [
-            'username', 'first_name', 'last_name', 'email',
-            'phone_number', 'address', 'birth_date', 'gender', 'barangay',
-            'id_front', 'id_back',
+            'first_name', 'middle_name', 'last_name', 'username', 'email',
+            'barangay', 'address', 'phone_number', 'birth_date', 'gender',
+            'civil_status', 'occupation', 'id_type', 'id_front', 'id_back',
             'password1', 'password2'
         ]
 
@@ -196,10 +201,18 @@ class DocumentTypeForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-input'}),
         empty_label='Select Barangay'
     )
+    
+    # ---> ADDED TEMPLATE FILE FIELD HERE <---
+    template_file = forms.FileField(
+        widget=forms.FileInput(attrs={'accept': '.docx,.doc,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'}),
+        required=False,
+        help_text="Upload a .docx template for this document."
+    )
 
     class Meta:
         model = DocumentType
-        fields = ['name', 'description', 'requirements', 'fee', 'barangay', 'is_active']
+        # ---> ADDED 'template_file' TO THE FIELDS LIST HERE <---
+        fields = ['name', 'description', 'requirements', 'fee', 'barangay', 'is_active', 'template_file']
 
 
 class RejectForm(forms.Form):

@@ -69,7 +69,7 @@ def register_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     if request.method == 'POST':
-        form = ResidentRegistrationForm(request.POST)
+        form = ResidentRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save()
             messages.success(request, 'Registration successful! Your account is pending verification by barangay staff. You can log in to check your verification status.')
@@ -131,6 +131,59 @@ def resident_dashboard(request):
         'recent_requests': recent,
         'announcements': announcements,
     })
+
+
+@login_required
+@role_required('resident')
+def resident_profile(request):
+    user = request.user
+    
+    if request.method == 'POST':
+        if request.POST.get('edit_mode') == 'true':
+            user.first_name = request.POST.get('first_name', user.first_name)
+            user.middle_name = request.POST.get('middle_name', user.middle_name)
+            user.last_name = request.POST.get('last_name', user.last_name)
+            user.email = request.POST.get('email', user.email)
+            user.phone_number = request.POST.get('phone_number', user.phone_number)
+            user.occupation = request.POST.get('occupation', user.occupation)
+            user.address = request.POST.get('address', user.address)
+            
+            birth_date = request.POST.get('birth_date')
+            user.birth_date = birth_date if birth_date else None
+
+            gender = request.POST.get('gender')
+            if gender:
+                user.gender = gender
+                
+            civil_status = request.POST.get('civil_status')
+            if civil_status:
+                user.civil_status = civil_status
+
+            id_type = request.POST.get('id_type')
+            if id_type:
+                user.id_type = id_type
+
+            # Handle Profile Picture Upload
+            if 'profile_picture' in request.FILES:
+                user.profile_picture = request.FILES['profile_picture']
+
+            if 'id_front' in request.FILES:
+                user.id_front = request.FILES['id_front']
+            if 'id_back' in request.FILES:
+                user.id_back = request.FILES['id_back']
+
+            if 'id_front' in request.FILES or 'id_back' in request.FILES:
+                if user.verification_status == 'rejected':
+                    user.verification_status = 'pending'
+                    user.rejection_reason = ''
+
+            user.save()
+            log_activity(user, 'Profile Updated', f'{user.display_name} updated their profile.', request)
+            messages.success(request, 'Profile updated successfully!')
+            
+        return redirect('profile')
+
+    return render(request, 'brgy/resident/profile.html')
 
 
 @login_required
@@ -325,7 +378,7 @@ def reject_resident(request, pk):
             return redirect('verify_residents')
     else:
         form = RejectForm()
-    return render(request, 'brgy/staff/reject_resident.html', {'resident': resident, 'form': form})
+    return render(request, 'brgy/staff/reject_residents.html', {'resident': resident, 'form': form})
 
 
 @login_required
@@ -414,6 +467,7 @@ def staff_reports(request):
         'total_fees': total_fees,
         'monthly_stats': monthly_stats,
     })
+
 @login_required
 @role_required('staff')
 def staff_manage_document_types(request):
@@ -424,7 +478,8 @@ def staff_manage_document_types(request):
         doc_types = doc_types.filter(Q(name__icontains=search))
 
     if request.method == 'POST':
-        form = DocumentTypeForm(request.POST)
+        # ---> ADDED request.FILES HERE <---
+        form = DocumentTypeForm(request.POST, request.FILES)
         if form.is_valid():
             dt = form.save(commit=False)
             dt.barangay = brgy
@@ -450,7 +505,8 @@ def staff_manage_document_types(request):
 def staff_create_document_type(request):
     brgy = request.user.barangay
     if request.method == 'POST':
-        form = DocumentTypeForm(request.POST)
+        # ---> ADDED request.FILES HERE <---
+        form = DocumentTypeForm(request.POST, request.FILES)
         if form.is_valid():
             dt = form.save(commit=False)
             dt.barangay = brgy
@@ -472,7 +528,8 @@ def staff_edit_document_type(request, pk):
     brgy = request.user.barangay
     doc_type = get_object_or_404(DocumentType, pk=pk, barangay=brgy)
     if request.method == 'POST':
-        form = DocumentTypeForm(request.POST, instance=doc_type)
+        # ---> ADDED request.FILES HERE <---
+        form = DocumentTypeForm(request.POST, request.FILES, instance=doc_type)
         if form.is_valid():
             form.save()
             messages.success(request, f'{doc_type.name} updated successfully.')
@@ -636,7 +693,8 @@ def manage_document_types(request):
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     if request.method == 'POST':
-        form = DocumentTypeForm(request.POST)
+        # ---> ADDED request.FILES HERE FOR ADMIN <---
+        form = DocumentTypeForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             messages.success(request, 'Document type added successfully.')
@@ -657,7 +715,8 @@ def manage_document_types(request):
 def edit_document_type(request, pk):
     doc_type = get_object_or_404(DocumentType, pk=pk)
     if request.method == 'POST':
-        form = DocumentTypeForm(request.POST, instance=doc_type)
+        # ---> ADDED request.FILES HERE FOR ADMIN <---
+        form = DocumentTypeForm(request.POST, request.FILES, instance=doc_type)
         if form.is_valid():
             form.save()
             messages.success(request, f'{doc_type.name} updated successfully.')

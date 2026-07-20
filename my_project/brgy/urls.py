@@ -15,6 +15,7 @@ urlpatterns = [
 
     # Resident
     path('resident/', views.resident_dashboard, name='resident_dashboard'),
+    path('resident/profile/', views.resident_profile, name='profile'), # <-- ADDED HERE
     path('resident/request/', views.request_document, name='request_document'),
     path('resident/request/<uuid:pk>/', views.request_document_submit, name='request_document_submit'),
     path('resident/history/', views.request_history, name='request_history'),

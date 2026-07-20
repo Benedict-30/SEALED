@@ -1,60 +1,119 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
 
 {% block nav_staff_doctypes %}active{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/document_type_form.css' %}">
+{% endblock %}
+
 {% block content %}
-<div style="max-width:640px;">
-    <div class="card">
-        <div class="card-header">
-            <h3>{{ title }}</h3>
+<div style="margin-bottom: 32px;">
+    <h2 style="font-size: 22px; font-weight: 800; color: var(--text, #12263f); margin-bottom: 6px;">{{ title }}</h2>
+    <p class="text-sm text-muted">Modify the details below. The preview updates in real-time.</p>
+</div>
+
+{% if form.errors %}
+<div class="form-error-list" style="margin-bottom: 20px;">
+    {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+</div>
+{% endif %}
+
+<div class="form-layout">
+    <div class="form-container">
+        <div class="form-header">
+            <h3><i class="fa-solid fa-pen-to-square" style="color:var(--primary); margin-right:8px;"></i>Document Details</h3>
             <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost btn-sm">
-                <i class="fa-solid fa-arrow-left"></i> Back
+                <i class="fa-solid fa-arrow-left"></i> Back to List
             </a>
         </div>
-        <div class="card-body">
-            {% if form.errors %}
-            <div class="form-error-list" style="margin-bottom:16px;">
-                {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+
+        <!-- enctype is REQUIRED for file uploads -->
+        <form method="post" class="clean-form" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label" for="id_name">Document Name</label>
+                {{ form.name }}
             </div>
-            {% endif %}
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Document Name</label>
-                        {{ form.name }}
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Barangay</label>
-                        <input type="text" class="form-input" value="{{ brgy.name }}" disabled style="background:var(--bg);">
-                        <input type="hidden" name="barangay" value="{{ brgy.pk }}">
-                    </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_description">Description</label>
+                {{ form.description }}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="id_fee">Processing Fee (&#8369;)</label>
+                    {{ form.fee }}
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Description</label>
-                    {{ form.description }}
+                    <label class="form-label" for="id_requirements">Requirements</label>
+                    {{ form.requirements }}
+                    <small style="color:var(--text-muted); font-size:12px; margin-top:6px; display:block;">One per line.</small>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Requirements (one per line)</label>
-                        {{ form.requirements }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Assigned Barangay</label>
+                <input type="text" class="form-input" value="{{ brgy.name }}" disabled style="opacity: 0.7; cursor: not-allowed; background: var(--bg, #f8fafc);">
+                <input type="hidden" name="barangay" value="{{ brgy.pk }}">
+            </div>
+
+            <!-- FILE UPLOAD SECTION -->
+            <div class="form-group">
+                <label class="form-label">Document Template (.docx)</label>
+                
+                {% if form.instance.template_file %}
+                    <div class="current-file-actions" style="margin-bottom: 12px; justify-content: flex-start;">
+                        <i class="fa-solid fa-file-word" style="color: #2b579a; font-size: 20px;"></i>
+                        <span style="font-size: 14px; font-weight: 600; color: var(--text);">{{ form.instance.template_file.name }}</span>
+                        <a href="{{ form.instance.template_file.url }}" target="_blank" class="btn btn-ghost btn-xs">
+                            <i class="fa-solid fa-eye"></i> View Current
+                        </a>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Fee (&#8369;)</label>
-                        {{ form.fee }}
-                    </div>
+                {% endif %}
+
+                <div class="file-upload-area">
+                    <input type="file" name="template_file" id="id_template_file" accept=".docx,.doc">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Drag & drop your template here or <strong>browse</strong></p>
+                    <p style="font-size: 12px; margin-top: 6px; opacity: 0.7;">Supports .docx format only</p>
                 </div>
-                <div class="form-group" style="display:flex;align-items:center;gap:8px;">
-                    {{ form.is_active }}
-                    <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
-                </div>
-                <div style="display:flex;gap:10px;margin-top:20px;">
-                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Changes</button>
-                    <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost">Cancel</a>
-                </div>
-            </form>
+            </div>
+
+            <label class="checkbox-group" for="id_is_active">
+                {{ form.is_active }}
+                <span style="font-weight: 600; color: var(--text, #12263f);">Actively available for residents to request</span>
+            </label>
+
+            <div style="display: flex; gap: 16px; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border, #e9ecef);">
+                <button type="submit" class="btn btn-primary" style="flex:1; padding: 14px; font-size: 15px; border-radius: 10px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+                <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost" style="padding: 14px; font-size: 15px;">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="preview-section">
+        <h4><i class="fa-solid fa-eye"></i> Resident Preview</h4>
+        <div class="doc-card">
+            <div class="doc-card-icon"><i class="fa-solid fa-file-lines"></i></div>
+            <h3 id="previewName">{{ form.name.value|default:"Document Name" }}</h3>
+            <p id="previewDesc">{{ form.description.value|default:"Click to request document" }}</p>
+            <span class="doc-badge {% if not form.is_active.value %}unavailable{% endif %}" id="previewStatus">
+                {% if form.is_active.value %}Available{% else %}Unavailable{% endif %}
+            </span>
+            <div class="doc-card-fee" id="previewFee">
+                {% if form.fee.value %}Fee: &#8369;{{ form.fee.value|floatformat:2 }}{% else %}No Fee{% endif %}
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/document_type_form.js' %}"></script>
 {% endblock %}

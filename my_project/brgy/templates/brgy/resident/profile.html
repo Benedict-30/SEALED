@@ -1,0 +1,221 @@
+{% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <!-- Sidebar -->
+    <div class="profile-sidebar">
+        <div class="profile-avatar-wrapper">
+            {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="profile-avatar">
+            {% else %}
+                <div class="profile-avatar" style="display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #6e84a3; background-color: #e9ecef;">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+            {% endif %}
+            <div class="avatar-edit-overlay" onclick="document.getElementById('id_profile_picture').click();">
+                <i class="fa-solid fa-camera"></i> Edit
+            </div>
+            <input type="file" id="id_profile_picture" name="profile_picture" accept="image/*" style="display: none;" onchange="previewAvatar(this)">
+        </div>
+        
+        <h2 class="profile-name">{{ user.get_full_name }}</h2>
+        
+        <div class="profile-status status-{{ user.verification_status|default:'pending' }}">
+            <span class="status-dot"></span>
+            {{ user.get_verification_status_display|default:"Pending Verification" }}
+        </div>
+
+        <ul class="sidebar-menu">
+            <li><a href="#personal-info" class="active"><i class="fa-solid fa-user"></i> Personal Info</a></li>
+            <li><a href="#address-info"><i class="fa-solid fa-location-dot"></i> Address</a></li>
+            <li><a href="#id-verification"><i class="fa-solid fa-id-card"></i> ID Verification</a></li>
+            <li><a href="#security-settings"><i class="fa-solid fa-shield-halved"></i> Security</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="profile-main">
+        <div class="profile-header">
+            <div>
+                <h1>My Profile</h1>
+                <p>Manage your personal information and account settings</p>
+            </div>
+            <button class="btn btn-primary" id="editProfileBtn" onclick="toggleEditMode()">
+                <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+            </button>
+        </div>
+
+        <form method="post" action="{% url 'profile' %}" id="profileForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="edit_mode" id="editModeFlag" value="false">
+
+            <!-- Personal Information -->
+            <div class="profile-card" id="personal-info">
+                <div class="profile-card-title">
+                    <i class="fa-solid fa-user"></i> Personal Information
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">First Name</span>
+                        <span class="info-value view-mode">{{ user.first_name }}</span>
+                        <input type="text" name="first_name" value="{{ user.first_name }}" class="form-control edit-mode" style="display:none;">
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Middle Name</span>
+                        <span class="info-value view-mode">{{ user.middle_name }}</span>
+                        <input type="text" name="middle_name" value="{{ user.middle_name }}" class="form-control edit-mode" style="display:none;">
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Last Name</span>
+                        <span class="info-value view-mode">{{ user.last_name }}</span>
+                        <input type="text" name="last_name" value="{{ user.last_name }}" class="form-control edit-mode" style="display:none;">
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Username</span>
+                        <span class="info-value view-mode">{{ user.username }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email Address</span>
+                        <span class="info-value view-mode">{{ user.email }}</span>
+                        <input type="email" name="email" value="{{ user.email }}" class="form-control edit-mode" style="display:none;">
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Phone Number</span>
+                        <span class="info-value view-mode">{{ user.phone_number|default:"Not set" }}</span>
+                        <input type="text" name="phone_number" value="{{ user.phone_number }}" class="form-control edit-mode" style="display:none;">
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Birth Date</span>
+                        <span class="info-value view-mode">{{ user.birth_date|date:"F d, Y"|default:"Not set" }}</span>
+                        <input type="date" name="birth_date" value="{{ user.birth_date|date:'Y-m-d' }}" class="form-control edit-mode" style="display:none;">
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Gender</span>
+                        <span class="info-value view-mode">{{ user.get_gender_display|default:"Not set" }}</span>
+                        <select name="gender" class="form-control edit-mode" style="display:none;">
+                            <option value="">Select Gender</option>
+                            <option value="M" {% if user.gender == 'M' %}selected{% endif %}>Male</option>
+                            <option value="F" {% if user.gender == 'F' %}selected{% endif %}>Female</option>
+                            <option value="O" {% if user.gender == 'O' %}selected{% endif %}>Prefer not to say</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Civil Status</span>
+                        <span class="info-value view-mode">{{ user.get_civil_status_display|default:"Not set" }}</span>
+                        <select name="civil_status" class="form-control edit-mode" style="display:none;">
+                            <option value="">Select Status</option>
+                            <option value="Single" {% if user.civil_status == 'Single' %}selected{% endif %}>Single</option>
+                            <option value="Married" {% if user.civil_status == 'Married' %}selected{% endif %}>Married</option>
+                            <option value="Widowed" {% if user.civil_status == 'Widowed' %}selected{% endif %}>Widowed</option>
+                            <option value="Separated" {% if user.civil_status == 'Separated' %}selected{% endif %}>Separated</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Occupation</span>
+                        <span class="info-value view-mode">{{ user.occupation|default:"Not set" }}</span>
+                        <input type="text" name="occupation" value="{{ user.occupation }}" class="form-control edit-mode" style="display:none;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Information -->
+            <div class="profile-card" id="address-info">
+                <div class="profile-card-title">
+                    <i class="fa-solid fa-location-dot"></i> Address Information
+                </div>
+                <div class="info-grid">
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Barangay</span>
+                        <span class="info-value view-mode">{{ user.barangay.name|default:"Not assigned" }}</span>
+                    </div>
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Full Address</span>
+                        <span class="info-value view-mode">{{ user.address|default:"Not set" }}</span>
+                        <textarea name="address" class="form-control edit-mode" style="display:none;" rows="3">{{ user.address }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ID Verification -->
+            <div class="profile-card" id="id-verification">
+                <div class="profile-card-title">
+                    <i class="fa-solid fa-id-card"></i> ID Verification
+                </div>
+                <div class="info-item" style="margin-bottom: 1.5rem; max-width: 300px;">
+                    <span class="info-label">ID Type Submitted</span>
+                    <span class="info-value view-mode">{{ user.get_id_type_display|default:"None" }}</span>
+                    <select name="id_type" class="form-control edit-mode" style="display:none;">
+                        <option value="">Select ID Type</option>
+                        <option value="National_ID" {% if user.id_type == 'National_ID' %}selected{% endif %}>National ID (PhilSys)</option>
+                        <option value="Drivers_License" {% if user.id_type == 'Drivers_License' %}selected{% endif %}>Driver's License</option>
+                        <option value="Passport" {% if user.id_type == 'Passport' %}selected{% endif %}>Passport</option>
+                        <option value="Voters_ID" {% if user.id_type == 'Voters_ID' %}selected{% endif %}>Voter's ID</option>
+                        <option value="Postal_ID" {% if user.id_type == 'Postal_ID' %}selected{% endif %}>Postal ID</option>
+                        <option value="SSS_GSIS" {% if user.id_type == 'SSS_GSIS' %}selected{% endif %}>SSS / GSIS ID</option>
+                    </select>
+                </div>
+
+                <div class="id-preview-container">
+                    <div class="id-preview-box">
+                        {% if user.id_front %}
+                            <img src="{{ user.id_front.url }}" alt="ID Front">
+                        {% else %}
+                            <i class="fa-solid fa-image" style="font-size: 2rem; color: #cbd3da; margin-bottom: 10px;"></i>
+                            <p style="color: #6e84a3; margin:0;">No Front ID Uploaded</p>
+                        {% endif %}
+                        <div class="id-preview-label">Front View</div>
+                        <input type="file" name="id_front" accept="image/*" class="edit-mode" style="display:none; margin-top:10px;">
+                    </div>
+                    <div class="id-preview-box">
+                        {% if user.id_back %}
+                            <img src="{{ user.id_back.url }}" alt="ID Back">
+                        {% else %}
+                            <i class="fa-solid fa-image" style="font-size: 2rem; color: #cbd3da; margin-bottom: 10px;"></i>
+                            <p style="color: #6e84a3; margin:0;">No Back ID Uploaded</p>
+                        {% endif %}
+                        <div class="id-preview-label">Back View</div>
+                        <input type="file" name="id_back" accept="image/*" class="edit-mode" style="display:none; margin-top:10px;">
+                    </div>
+                </div>
+                {% if user.verification_status == 'rejected' %}
+                <div style="margin-top: 1rem; color: #721c24; background: #f8d7da; padding: 10px 15px; border-radius: 6px; font-size: 0.9rem;">
+                    <strong>Reason for Rejection:</strong> {{ user.rejection_reason|default:"No details provided." }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Security Settings -->
+            <div class="profile-card" id="security-settings">
+                <div class="profile-card-title">
+                    <i class="fa-solid fa-shield-halved"></i> Account Security
+                </div>
+                <p style="color: #6e84a3; margin-bottom: 1.5rem;">To change your password, please contact your barangay admin.</p>
+                <button type="button" class="btn btn-secondary" disabled>
+                    <i class="fa-solid fa-key"></i> Change Password (Coming Soon)
+                </button>
+            </div>
+
+            <!-- Save/Cancel Buttons -->
+            <div class="edit-mode" id="saveActions" style="display:none; margin-top: 1.5rem; text-align: right; gap: 10px;">
+                <button type="button" class="btn btn-ghost" onclick="toggleEditMode()">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/profile.js' %}"></script>
+{% endblock %}
