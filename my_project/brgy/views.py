@@ -1,3 +1,7 @@
+import os
+import io
+from django.http import FileResponse
+from docxtpl import DocxTemplate
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -9,7 +13,7 @@ from django.core.paginator import Paginator
 from functools import wraps
 
 from .models import (
-    CustomUser, Barangay, DocumentType, DocumentRequest, Notification, ActivityLog
+    CustomUser, Barangay, DocumentType, DocumentRequest, DocumentRequestItem, Notification, ActivityLog
 )
 from .forms import (
     CustomAuthForm, ResidentRegistrationForm, DocumentRequestForm,
@@ -163,10 +167,8 @@ def resident_profile(request):
             if id_type:
                 user.id_type = id_type
 
-            # Handle Profile Picture Upload
             if 'profile_picture' in request.FILES:
                 user.profile_picture = request.FILES['profile_picture']
-
             if 'id_front' in request.FILES:
                 user.id_front = request.FILES['id_front']
             if 'id_back' in request.FILES:
@@ -195,38 +197,45 @@ def request_document(request):
         return redirect('resident_dashboard')
 
     doc_types = DocumentType.objects.filter(barangay=user.barangay, is_active=True)
-
-    return render(request, 'brgy/resident/request_document.html', {
-        'doc_types': doc_types,
-    })
+    return render(request, 'brgy/resident/request_document.html', {'doc_types': doc_types})
 
 
 @login_required
 @role_required('resident')
-def request_document_submit(request, pk):
+def submit_bulk_request(request):
     user = request.user
     if not user.is_verified_resident:
         messages.warning(request, 'Your account must be verified before you can request documents.')
         return redirect('resident_dashboard')
 
-    doc_type = get_object_or_404(DocumentType, pk=pk, barangay=user.barangay, is_active=True)
-
     if request.method == 'POST':
-        purpose = request.POST.get('purpose', '').strip()
-        if not purpose:
-            messages.error(request, 'Please state the purpose of your request.')
-        else:
-            doc_req = DocumentRequest.objects.create(
-                resident=user,
-                document_type=doc_type,
-                purpose=purpose,
-            )
-            messages.success(request, f'Document request submitted! Request #: {doc_req.request_number}')
-            return redirect('request_history')
+        doc_ids = request.POST.getlist('document_type[]')
+        purpose = request.POST.get('purpose', 'Bulk Document Request')
+        contact_number = request.POST.get('contact_number', user.phone_number)
 
-    return render(request, 'brgy/resident/request_document_submit.html', {
-        'doc_type': doc_type,
-    })
+        if not doc_ids:
+            messages.error(request, 'Please add at least one document to your request.')
+            return redirect('request_document')
+
+        doc_req = DocumentRequest.objects.create(
+            resident=user,
+            purpose=purpose,
+            contact_number=contact_number,
+            pickup_date=timezone.now().date()
+        )
+
+        for doc_id in doc_ids:
+            doc_type = get_object_or_404(DocumentType, pk=doc_id, barangay=user.barangay)
+            DocumentRequestItem.objects.create(
+                request=doc_req,
+                document_type=doc_type,
+                quantity=1,
+            )
+
+        messages.success(request, f'Your document request has been submitted successfully! Request #: {doc_req.request_number}')
+        return redirect('request_history')
+
+    return redirect('request_document')
 
 
 @login_required
@@ -287,7 +296,8 @@ def staff_dashboard(request):
     brgy = user.barangay
     pending_verifications = CustomUser.objects.filter(role='resident', barangay=brgy, verification_status='pending').count()
     verified_residents = CustomUser.objects.filter(role='resident', barangay=brgy, verification_status='approved').count()
-    doc_requests = DocumentRequest.objects.filter(document_type__barangay=brgy)
+    
+    doc_requests = DocumentRequest.objects.filter(resident__barangay=brgy)
     pending_requests = doc_requests.filter(status='pending').count()
     approved_requests = doc_requests.filter(status='approved').count()
     ready_requests = doc_requests.filter(status='ready_for_pickup').count()
@@ -298,6 +308,7 @@ def staff_dashboard(request):
     today_completed = doc_requests.filter(completed_at__date=today).count()
     pending_residents = CustomUser.objects.filter(role='resident', barangay=brgy, verification_status='pending')[:5]
     pending_doc_requests = doc_requests.filter(status='pending')[:5]
+    
     return render(request, 'brgy/staff/dashboard.html', {
         'pending_verifications': pending_verifications,
         'verified_residents': verified_residents,
@@ -386,7 +397,7 @@ def reject_resident(request, pk):
 def manage_requests(request):
     user = request.user
     brgy = user.barangay
-    doc_requests = DocumentRequest.objects.filter(document_type__barangay=brgy)
+    doc_requests = DocumentRequest.objects.filter(resident__barangay=brgy)
     status_filter = request.GET.get('status', '')
     search = request.GET.get('search', '')
     date_from = request.GET.get('date_from', '')
@@ -396,8 +407,8 @@ def manage_requests(request):
     if search:
         doc_requests = doc_requests.filter(
             Q(request_number__icontains=search) | Q(resident__first_name__icontains=search)
-            | Q(resident__last_name__icontains=search) | Q(document_type__name__icontains=search)
-        )
+            | Q(resident__last_name__icontains=search) | Q(items__document_type__name__icontains=search)
+        ).distinct()
     if date_from:
         doc_requests = doc_requests.filter(created_at__date__gte=date_from)
     if date_to:
@@ -418,7 +429,7 @@ def manage_requests(request):
 @login_required
 @role_required('staff')
 def update_request_status(request, pk):
-    doc_request = get_object_or_404(DocumentRequest, pk=pk, document_type__barangay=request.user.barangay)
+    doc_request = get_object_or_404(DocumentRequest, pk=pk, resident__barangay=request.user.barangay)
     if request.method == 'POST':
         current = doc_request.status
         choices = [(s, l) for s, l in DocumentRequest.Status.choices if s != current]
@@ -446,17 +457,48 @@ def update_request_status(request, pk):
 
 @login_required
 @role_required('staff')
+def reject_request(request, pk):
+    doc_request = get_object_or_404(DocumentRequest, pk=pk, resident__barangay=request.user.barangay)
+    
+    if request.method == 'POST':
+        Notification.objects.create(
+            user=doc_request.resident,
+            title='Request Rejected',
+            message=f'Your document request ({doc_request.request_number}) has been rejected by the barangay staff. Please contact the barangay hall for more details.',
+            link='/resident/history/'
+        )
+        log_activity(request.user, 'Request Rejected & Deleted', f'Request {doc_request.request_number} was rejected and deleted.', request)
+        
+        request_number = doc_request.request_number
+        doc_request.delete()
+        
+        messages.success(request, f'Request {request_number} has been rejected and deleted.')
+        return redirect('manage_requests')
+        
+    return redirect('manage_requests')
+
+
+@login_required
+@role_required('staff')
 def staff_reports(request):
     brgy = request.user.barangay
-    doc_requests = DocumentRequest.objects.filter(document_type__barangay=brgy)
+    doc_requests = DocumentRequest.objects.filter(resident__barangay=brgy)
     daily_stats = doc_requests.annotate(date=TruncDate('created_at')).values('date').annotate(
         count=Count('id'), completed=Count('id', filter=Q(status='completed'))
     ).order_by('-date')[:30]
     status_breakdown = doc_requests.values('status').annotate(count=Count('id'))
-    doc_type_breakdown = doc_requests.values('document_type__name').annotate(count=Count('id')).order_by('-count')
-    total_fees = doc_requests.filter(status='completed').aggregate(
+    
+    doc_type_breakdown = DocumentRequestItem.objects.filter(
+        request__resident__barangay=brgy
+    ).values('document_type__name').annotate(count=Count('id')).order_by('-count')
+    
+    total_fees = DocumentRequestItem.objects.filter(
+        request__status='completed', 
+        request__resident__barangay=brgy
+    ).aggregate(
         total=Coalesce(Sum('document_type__fee'), 0, output_field=DecimalField())
     )['total']
+    
     monthly_stats = doc_requests.annotate(month=TruncDate('created_at')).values('month').annotate(
         count=Count('id')
     ).order_by('-month')[:12]
@@ -478,7 +520,6 @@ def staff_manage_document_types(request):
         doc_types = doc_types.filter(Q(name__icontains=search))
 
     if request.method == 'POST':
-        # ---> ADDED request.FILES HERE <---
         form = DocumentTypeForm(request.POST, request.FILES)
         if form.is_valid():
             dt = form.save(commit=False)
@@ -505,7 +546,6 @@ def staff_manage_document_types(request):
 def staff_create_document_type(request):
     brgy = request.user.barangay
     if request.method == 'POST':
-        # ---> ADDED request.FILES HERE <---
         form = DocumentTypeForm(request.POST, request.FILES)
         if form.is_valid():
             dt = form.save(commit=False)
@@ -528,7 +568,6 @@ def staff_edit_document_type(request, pk):
     brgy = request.user.barangay
     doc_type = get_object_or_404(DocumentType, pk=pk, barangay=brgy)
     if request.method == 'POST':
-        # ---> ADDED request.FILES HERE <---
         form = DocumentTypeForm(request.POST, request.FILES, instance=doc_type)
         if form.is_valid():
             form.save()
@@ -541,6 +580,46 @@ def staff_edit_document_type(request, pk):
     return render(request, 'brgy/staff/document_type_form.html', {
         'form': form, 'title': f'Edit - {doc_type.name}', 'brgy': brgy,
     })
+
+@login_required
+@role_required('staff')
+def print_document(request, req_pk, item_pk):
+    doc_req = get_object_or_404(DocumentRequest, pk=req_pk, resident__barangay=request.user.barangay)
+    item = get_object_or_404(DocumentRequestItem, pk=item_pk, request=doc_req)
+    
+    doc_type = item.document_type
+    
+    if not doc_type.template_file or not os.path.exists(doc_type.template_file.path):
+        messages.error(request, f"No Word template uploaded for {doc_type.name}.")
+        return redirect('manage_requests')
+        
+    doc = DocxTemplate(doc_type.template_file.path)
+    
+    context = {
+        'resident_name': doc_req.resident.display_name,
+        'resident_address': doc_req.resident.address,
+        'purpose': doc_req.purpose,
+        'date_today': timezone.now().strftime('%B %d, %Y'),
+        'barangay_name': doc_req.resident.barangay.name if doc_req.resident.barangay else '',
+        'chairman_name': doc_req.resident.barangay.chairman_name if doc_req.resident.barangay else '',
+        'request_number': doc_req.request_number,
+    }
+    
+    doc.render(context)
+    
+    file_stream = io.BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+    
+    filename = f"{doc_type.name}_{doc_req.resident.last_name}_{doc_req.request_number}.docx"
+    
+    response = FileResponse(
+        file_stream,
+        as_attachment=False,
+        filename=filename
+    )
+    response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    return response
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -561,10 +640,12 @@ def admin_dashboard(request):
     pending_requests = all_requests.filter(status='pending').count()
     completed_requests = all_requests.filter(status='completed').count()
     recent_logs = ActivityLog.objects.all()[:10]
+    
     barangay_stats = Barangay.objects.filter(is_active=True).annotate(
         total_residents=Count('users', filter=Q(users__role='resident', users__verification_status='approved')),
-        total_requests=Count('document_types__requests'),
+        total_requests=Count('users__documentrequest', distinct=True),
     ).order_by('-total_requests')[:5]
+    
     monthly_trend = all_requests.annotate(month=TruncDate('created_at')).values('month').annotate(
         count=Count('id')
     ).order_by('-month')[:6]
@@ -693,7 +774,6 @@ def manage_document_types(request):
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     if request.method == 'POST':
-        # ---> ADDED request.FILES HERE FOR ADMIN <---
         form = DocumentTypeForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
@@ -715,7 +795,6 @@ def manage_document_types(request):
 def edit_document_type(request, pk):
     doc_type = get_object_or_404(DocumentType, pk=pk)
     if request.method == 'POST':
-        # ---> ADDED request.FILES HERE FOR ADMIN <---
         form = DocumentTypeForm(request.POST, request.FILES, instance=doc_type)
         if form.is_valid():
             form.save()

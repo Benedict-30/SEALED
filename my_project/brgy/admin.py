@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Barangay, CustomUser, DocumentType, DocumentRequest, Notification, ActivityLog
+from .models import Barangay, CustomUser, DocumentType, DocumentRequest, DocumentRequestItem, Notification, ActivityLog
 
 
 @admin.register(Barangay)
@@ -23,11 +23,31 @@ class DocumentTypeAdmin(admin.ModelAdmin):
     list_filter = ['barangay', 'is_active']
 
 
+# NEW: Inline to show cart items inside the Document Request page
+class DocumentRequestItemInline(admin.TabularInline):
+    model = DocumentRequestItem
+    extra = 0
+    readonly_fields = ['document_type', 'quantity']
+
+
 @admin.register(DocumentRequest)
 class DocumentRequestAdmin(admin.ModelAdmin):
-    list_display = ['request_number', 'resident', 'document_type', 'status', 'created_at']
+    # Removed 'document_type' from list_display
+    list_display = ['request_number', 'resident', 'status', 'created_at']
     search_fields = ['request_number', 'resident__first_name', 'resident__last_name']
-    list_filter = ['status', 'document_type', 'created_at']
+    # Removed 'document_type' from list_filter
+    list_filter = ['status', 'created_at']
+    
+    # Attach the inline items
+    inlines = [DocumentRequestItemInline]
+
+
+# NEW: Register the Item model so it has its own page in Admin
+@admin.register(DocumentRequestItem)
+class DocumentRequestItemAdmin(admin.ModelAdmin):
+    list_display = ['request', 'document_type', 'quantity']
+    search_fields = ['request__request_number', 'document_type__name']
+    list_filter = ['document_type']
 
 
 @admin.register(Notification)

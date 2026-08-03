@@ -31,9 +31,7 @@
     .doc-card::before {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
+        top: 0; left: 0; right: 0;
         height: 3px;
         background: var(--primary);
         transform: scaleX(0);
@@ -44,79 +42,86 @@
         box-shadow: var(--shadow-lg);
         transform: translateY(-4px);
     }
-    .doc-card:hover::before {
-        transform: scaleX(1);
-    }
+    .doc-card:hover::before { transform: scaleX(1); }
     .doc-card-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
-        background: var(--primary-50);
-        color: var(--primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        margin-bottom: 16px;
+        width: 56px; height: 56px; border-radius: 14px;
+        background: var(--primary-50); color: var(--primary);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; margin-bottom: 16px;
         transition: all 0.25s ease;
     }
     .doc-card:hover .doc-card-icon {
-        background: var(--primary);
-        color: #fff;
+        background: var(--primary); color: #fff;
     }
-    .doc-card h3 {
-        font-size: 15px;
-        font-weight: 700;
-        color: var(--text);
-        margin-bottom: 6px;
-    }
-    .doc-card p {
-        font-size: 12.5px;
-        color: var(--text-muted);
-        margin-bottom: 14px;
-    }
+    .doc-card h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .doc-card p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; }
     .doc-card .doc-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-        background: var(--success-bg);
-        color: var(--success);
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 4px 12px; border-radius: 20px;
+        font-size: 11px; font-weight: 600;
+        background: var(--success-bg); color: var(--success);
     }
     .doc-card .doc-badge::before {
-        content: '';
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: currentColor;
+        content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
     }
-    .doc-card-fee {
-        font-size: 12px;
-        color: var(--text-muted);
-        margin-top: 8px;
+    .doc-card-fee { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+
+    /* MODAL STYLES */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center;
+        z-index: 1050; padding: 20px;
     }
-    @media (max-width: 1024px) {
-        .doc-grid { grid-template-columns: repeat(2, 1fr); }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+        background: var(--card); border-radius: var(--radius);
+        width: 100%; max-width: 480px; padding: 32px;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        animation: slideUp 0.3s ease;
+        max-height: 90vh; overflow-y: auto;
     }
-    @media (max-width: 640px) {
-        .doc-grid { grid-template-columns: 1fr; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 20px; text-align: center; }
+    .modal-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; text-align: center;}
+    
+    .req-item-list {
+        margin-top: 15px; margin-bottom: 15px; max-height: 150px;
+        overflow-y: auto; padding-right: 5px;
     }
+    .req-item-row {
+        display: flex; justify-content: space-between; align-items: center;
+        background: var(--bg-body); padding: 10px 12px; border-radius: 8px;
+        margin-bottom: 8px; font-size: 13px;
+    }
+    .req-item-row .remove-btn {
+        background: #fee2e2; color: #ef4444; border: none; border-radius: 6px;
+        width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+
+    @media (max-width: 1024px) { .doc-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .doc-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="margin-bottom:24px;">
-    <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">Request Documents</h2>
-    <p class="text-sm text-muted">Select a document to request</p>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:10px;">
+    <div>
+        <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">Request Documents</h2>
+        <p class="text-sm text-muted">Select a document to request</p>
+    </div>
+    
+    <!-- BUTTON TO OPEN MODAL -->
+    <button onclick="openModal()" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Request Document
+    </button>
 </div>
 
 {% if doc_types %}
 <div class="doc-grid">
     {% for dt in doc_types %}
-    <a href="{% url 'request_document_submit' dt.pk %}" class="doc-card">
+    <div class="doc-card" onclick="openModal('{{ dt.id }}', '{{ dt.name }}')">
         <div class="doc-card-icon">
             <i class="fa-solid fa-file-lines"></i>
         </div>
@@ -126,10 +131,9 @@
         {% if dt.fee %}
         <div class="doc-card-fee">Fee: &#8369;{{ dt.fee|floatformat:2 }}</div>
         {% endif %}
-    </a>
+    </div>
     {% endfor %}
 </div>
-
 {% else %}
 <div class="empty-state">
     <i class="fa-solid fa-file-circle-xmark"></i>
@@ -137,4 +141,132 @@
     <p>There are no document types available for your barangay yet. Please check back later.</p>
 </div>
 {% endif %}
+
+<!-- REQUEST DOCUMENT MODAL -->
+<div class="modal-overlay" id="reqModal">
+    <div class="modal-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="margin:0; font-weight:700; font-size:18px;">REQUEST DOCUMENT</h3>
+            <button type="button" onclick="closeModal()" style="background:none; border:none; font-size:20px; color:var(--text-muted); cursor:pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        
+        <!-- This form will hold the dynamic list of documents -->
+        <form method="post" action="{% url 'submit_bulk_request' %}" id="bulkRequestForm">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label">Resident Name</label>
+                <input type="text" class="form-input" value="{{ request.user.display_name }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Purpose of Request <span class="text-danger">*</span></label>
+                <input type="text" name="purpose" class="form-input" placeholder="e.g. Employment requirement" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Contact Number <span class="text-danger">*</span></label>
+                <input type="text" name="contact_number" class="form-input" value="{{ request.user.phone_number }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Certificate Type <span class="text-danger">*</span></label>
+                <select id="docTypeSelect" class="form-input">
+                    {% for dt in doc_types %}
+                    <option value="{{ dt.id }}">{{ dt.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="button" onclick="addDocumentToList()" class="btn btn-ghost" style="width:100%; border: 1px dashed var(--primary); margin-bottom:15px;">
+                <i class="fa-solid fa-plus"></i> ADD DOCUMENT
+            </button>
+
+            <!-- Dynamic list of added documents goes here -->
+            <div class="req-item-list" id="documentList"></div>
+            
+            <!-- Hidden fields to store data for submission -->
+            <div id="hiddenInputs"></div>
+            
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button type="submit" class="btn btn-primary" style="flex:1;">
+                    <i class="fa-solid fa-paper-plane"></i> SUBMIT
+                </button>
+                <button type="button" onclick="closeModal()" class="btn btn-ghost">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(docId = null, docName = null) {
+        document.getElementById('reqModal').classList.add('active');
+        if (docId && docName) {
+            // If clicked from a card, pre-select that document
+            const select = document.getElementById('docTypeSelect');
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === docId) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('reqModal').classList.remove('active');
+    }
+
+    function addDocumentToList() {
+        const select = document.getElementById('docTypeSelect');
+        const docId = select.value;
+        const docName = select.options[select.selectedIndex].text;
+
+        if (!docId) {
+            alert('Please select a document type.');
+            return;
+        }
+
+        // Add visual row
+        const listDiv = document.getElementById('documentList');
+        const rowId = 'row_' + Date.now();
+        const row = document.createElement('div');
+        row.className = 'req-item-row';
+        row.id = rowId;
+        row.innerHTML = `
+            <div>
+                <strong style="color:var(--text);">${docName}</strong>
+            </div>
+            <button type="button" class="remove-btn" onclick="removeDocument('${rowId}', '${docId}')">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        `;
+        listDiv.appendChild(row);
+
+        // Add hidden input for form submission
+        const hiddenDiv = document.getElementById('hiddenInputs');
+        const hiddenDoc = document.createElement('input');
+        hiddenDoc.type = 'hidden';
+        hiddenDoc.name = 'document_type[]';
+        hiddenDoc.value = docId;
+        hiddenDiv.appendChild(hiddenDoc);
+    }
+
+    function removeDocument(rowId, docId) {
+        // Remove visual row
+        document.getElementById(rowId).remove();
+        
+        // Remove matching hidden input
+        const hiddenDiv = document.getElementById('hiddenInputs');
+        const inputs = hiddenDiv.querySelectorAll('input');
+        for (let i = 0; i < inputs.length; i++) {
+            if (inputs[i].value === docId) {
+                hiddenDiv.removeChild(inputs[i]);
+                break; // Remove only the first match
+            }
+        }
+    }
+</script>
 {% endblock %}

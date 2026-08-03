@@ -16,6 +16,11 @@ class Barangay(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    theme_color = models.CharField(
+        max_length=7, 
+        default='#4F46E5', 
+        help_text="Hex color for barangay theme (e.g. #4F46E5)"
+    )
     class Meta:
         ordering = ['name']
 
@@ -65,10 +70,7 @@ class CustomUser(AbstractUser):
     id_front = models.ImageField(upload_to='resident_ids/', blank=True, null=True)
     id_back = models.ImageField(upload_to='resident_ids/', blank=True, null=True)
     
-    # Added profile picture field for the profile page we made earlier
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
-    
-    # Used to store rejection reasons specifically for profile/ID rejections
     rejection_reason = models.TextField(blank=True, default='')
 
     class Meta:
@@ -99,14 +101,12 @@ class DocumentType(models.Model):
     is_active = models.BooleanField(default=True)
     barangay = models.ForeignKey(Barangay, on_delete=models.CASCADE, related_name='document_types')
     
-    # ---> ADDED TEMPLATE FILE FIELD HERE <---
     template_file = models.FileField(
         upload_to='document_templates/', 
         blank=True, 
         null=True, 
         help_text="Upload a .docx template for this document"
     )
-    # ----------------------------------------
     
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -122,12 +122,9 @@ class DocumentType(models.Model):
             return []
         return [r.strip() for r in self.requirements.split('\n') if r.strip()]
         
-    # ---> ADDED HELPER PROPERTY HERE <---
     @property
     def has_template(self):
-        # Returns True if a template is uploaded, False otherwise
         return bool(self.template_file and self.template_file.name)
-    # --------------------------------------
 
 
 class DocumentRequest(models.Model):
@@ -141,7 +138,12 @@ class DocumentRequest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     request_number = models.CharField(max_length=30, unique=True, editable=False)
     resident = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='requests')
-    document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE, related_name='requests')
+    
+    # Removed document_type from here, it is now in DocumentRequestItem
+    # Added contact_number and pickup_date for the checkout form
+    contact_number = models.CharField(max_length=20, blank=True, null=True)
+    pickup_date = models.DateField(null=True, blank=True)
+    
     purpose = models.TextField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     staff_notes = models.TextField(blank=True)
@@ -157,7 +159,7 @@ class DocumentRequest(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.request_number} - {self.document_type.name}"
+        return f"{self.request_number} - {self.resident.display_name}"
 
     def save(self, *args, **kwargs):
         if not self.request_number:
@@ -180,7 +182,8 @@ class DocumentRequest(models.Model):
 
     @property
     def barangay(self):
-        return self.document_type.barangay
+        # Changed to use resident's barangay
+        return self.resident.barangay if self.resident else None
 
     @property
     def status_color(self):
@@ -192,6 +195,22 @@ class DocumentRequest(models.Model):
             'rejected': 'danger',
         }
         return colors.get(self.status, 'muted')
+
+
+# NEW MODEL FOR CART ITEMS
+class DocumentRequestItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request = models.ForeignKey(DocumentRequest, related_name='items', on_delete=models.CASCADE)
+    document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.quantity}x {self.document_type.name}"
+        
+    @property
+    def total_fee(self):
+        return (self.document_type.fee or 0) * self.quantity
 
 
 class Notification(models.Model):

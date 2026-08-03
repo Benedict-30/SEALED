@@ -33,49 +33,59 @@ def on_user_created(sender, instance, created, **kwargs):
             )
 
 
+# FIXED: Use values_list to avoid instantiating the model and causing recursion
+@receiver(post_init, sender=DocumentRequest)
+def remember_old_status(sender, instance, **kwargs):
+    if instance.pk:
+        # This fetches the status directly from the DB without triggering post_init again
+        old_status = DocumentRequest.objects.filter(pk=instance.pk).values_list('status', flat=True).first()
+        instance._old_status = old_status
+    else:
+        instance._old_status = None
+
+
 @receiver(post_save, sender=DocumentRequest)
 def on_request_created(sender, instance, created, **kwargs):
     if created:
         # Notify staff of new request
-        if instance.barangay:
+        if instance.resident.barangay:
             staff_users = CustomUser.objects.filter(
-                role='staff', barangay=instance.barangay, is_active=True
+                role='staff', barangay=instance.resident.barangay, is_active=True
             )
             for staff in staff_users:
                 Notification.objects.create(
                     user=staff,
                     title='New Document Request',
-                    message=f'{instance.resident.display_name} requested {instance.document_type.name}.',
-                    link=f'/staff/requests/'
+                    message=f'{instance.resident.display_name} submitted a new document request ({instance.request_number}).',
+                    link='/staff/requests/'
                 )
         # Notify resident
         Notification.objects.create(
             user=instance.resident,
             title='Request Submitted',
-            message=f'Your request for {instance.document_type.name} has been submitted. Request #: {instance.request_number}',
+            message=f'Your document request has been submitted. Request #: {instance.request_number}',
             link='/resident/history/'
         )
         ActivityLog.objects.create(
             user=instance.resident,
             action='Document Request Submitted',
-            details=f'{instance.resident.display_name} requested {instance.document_type.name} ({instance.request_number})'
+            details=f'{instance.resident.display_name} submitted document request ({instance.request_number})'
         )
     else:
         # Status changed
-        old_status = None
-        try:
-            # Get old status from DB before save
-            old_instance = DocumentRequest.objects.get(pk=instance.pk)
-            old_status = old_instance.status
-        except DocumentRequest.DoesNotExist:
-            pass
-
+        old_status = getattr(instance, '_old_status', None)
+        
         if old_status and old_status != instance.status:
+            # Get all document names in this request
+            doc_names = ", ".join([item.document_type.name for item in instance.items.all()])
+            if not doc_names:
+                doc_names = "documents"
+                
             status_messages = {
-                'approved': f'Your request for {instance.document_type.name} has been approved.',
-                'ready_for_pickup': f'Your document {instance.document_type.name} is ready for pickup.',
-                'completed': f'Your request for {instance.document_type.name} has been completed.',
-                'rejected': f'Your request for {instance.document_type.name} has been rejected.',
+                'approved': f'Your request for {doc_names} has been approved.',
+                'ready_for_pickup': f'Your document(s) [{doc_names}] is/are ready for pickup.',
+                'completed': f'Your request for {doc_names} has been completed.',
+                'rejected': f'Your request for {doc_names} has been rejected.',
             }
             msg = status_messages.get(instance.status, f'Your request status has been updated to {instance.get_status_display()}.')
 

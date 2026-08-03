@@ -15,9 +15,14 @@ urlpatterns = [
 
     # Resident
     path('resident/', views.resident_dashboard, name='resident_dashboard'),
-    path('resident/profile/', views.resident_profile, name='profile'), # <-- ADDED HERE
+    path('resident/profile/', views.resident_profile, name='profile'), 
+    
+    # Document Requests
     path('resident/request/', views.request_document, name='request_document'),
-    path('resident/request/<uuid:pk>/', views.request_document_submit, name='request_document_submit'),
+    
+    # NEW: Submit bulk request from the modal
+    path('resident/request/submit-bulk/', views.submit_bulk_request, name='submit_bulk_request'),
+    
     path('resident/history/', views.request_history, name='request_history'),
     path('resident/notifications/', views.notifications_view, name='notifications'),
     path('resident/notifications/read/<uuid:pk>/', views.mark_notification_read, name='mark_notification_read'),
@@ -30,9 +35,11 @@ urlpatterns = [
     path('staff/verify-residents/<uuid:pk>/reject/', views.reject_resident, name='reject_resident'),
     path('staff/requests/', views.manage_requests, name='manage_requests'),
     path('staff/requests/<uuid:pk>/', views.update_request_status, name='update_request_status'),
+    path('staff/requests/<uuid:pk>/reject/', views.reject_request, name='reject_request'),
     path('staff/reports/', views.staff_reports, name='staff_reports'),
     path('staff/document-types/', views.staff_manage_document_types, name='staff_manage_document_types'),
     path('staff/document-types/<uuid:pk>/edit/', views.staff_edit_document_type, name='staff_edit_document_type'),
+    path('staff/requests/print/<uuid:req_pk>/<uuid:item_pk>/', views.print_document, name='print_document'),
 
     # Admin
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),

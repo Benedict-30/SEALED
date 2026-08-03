@@ -2,6 +2,120 @@
 {% block nav_admin_barangays %}active{% endblock %}
 {% block page_title %}Manage Barangays{% endblock %}
 
+{% block extra_css %}
+<style>
+/* ─── Color Swatches ──────────────────────────────────── */
+.color-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.color-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.color-swatch:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.color-swatch.selected {
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--text);
+}
+
+.color-swatch.selected::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 13px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.color-custom-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-light);
+}
+
+.color-custom-row label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.color-input-wrap {
+    position: relative;
+    width: 44px;
+    height: 32px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.color-input-wrap input[type="color"] {
+    position: absolute;
+    inset: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    border: none;
+    cursor: pointer;
+    background: none;
+}
+
+.color-hex-display {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Plus Jakarta Sans', monospace;
+    color: var(--text);
+    background: var(--bg);
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    min-width: 90px;
+    text-align: center;
+}
+
+/* Table color dot */
+.color-dot {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    vertical-align: middle;
+    margin-right: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Preview bar */
+.theme-preview-bar {
+    height: 6px;
+    border-radius: 3px;
+    margin-top: 6px;
+    transition: background 0.2s ease;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Create Form -->
 <div class="card mb-4">
@@ -17,7 +131,7 @@
             {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
         </div>
         {% endif %}
-        <form method="post">
+        <form method="post" id="createBrgyForm">
             {% csrf_token %}
             <div class="form-row">
                 <div class="form-group">
@@ -43,6 +157,33 @@
                     {{ form.email }}
                 </div>
             </div>
+
+            <!-- Theme Color Picker -->
+            <div class="form-group">
+                <label class="form-label">Theme Color</label>
+                {{ form.theme_color }}
+                <div class="color-swatches" id="createSwatches">
+                    <div class="color-swatch selected" data-color="#4F46E5" style="background:#4F46E5;" title="Indigo"></div>
+                    <div class="color-swatch" data-color="#2563EB" style="background:#2563EB;" title="Blue"></div>
+                    <div class="color-swatch" data-color="#0891B2" style="background:#0891B2;" title="Cyan"></div>
+                    <div class="color-swatch" data-color="#059669" style="background:#059669;" title="Emerald"></div>
+                    <div class="color-swatch" data-color="#65A30D" style="background:#65A30D;" title="Lime"></div>
+                    <div class="color-swatch" data-color="#CA8A04" style="background:#CA8A04;" title="Yellow"></div>
+                    <div class="color-swatch" data-color="#EA580C" style="background:#EA580C;" title="Orange"></div>
+                    <div class="color-swatch" data-color="#DC2626" style="background:#DC2626;" title="Red"></div>
+                    <div class="color-swatch" data-color="#9333EA" style="background:#9333EA;" title="Purple"></div>
+                    <div class="color-swatch" data-color="#DB2777" style="background:#DB2777;" title="Pink"></div>
+                </div>
+                <div class="color-custom-row">
+                    <label>Custom:</label>
+                    <div class="color-input-wrap">
+                        <input type="color" id="createCustomColor" value="#4F46E5">
+                    </div>
+                    <span class="color-hex-display" id="createHexDisplay">#4F46E5</span>
+                </div>
+                <div class="theme-preview-bar" id="createPreviewBar" style="background:#4F46E5;"></div>
+            </div>
+
             <div class="form-group" style="display:flex;align-items:center;gap:8px;">
                 {{ form.is_active }}
                 <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
@@ -68,6 +209,7 @@
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Theme</th>
                         <th>Address</th>
                         <th>Chairman</th>
                         <th>Contact</th>
@@ -79,6 +221,10 @@
                     {% for brgy in page_obj %}
                     <tr>
                         <td class="fw-600">{{ brgy.name }}</td>
+                        <td>
+                            <span class="color-dot" style="background:{{ brgy.theme_color }};"></span>
+                            <span class="text-xs text-muted">{{ brgy.theme_color }}</span>
+                        </td>
                         <td class="text-sm" style="max-width:200px;">{{ brgy.address|truncatechars:50 }}</td>
                         <td class="text-sm">{{ brgy.chairman_name|default:"-" }}</td>
                         <td class="text-sm">
@@ -124,4 +270,41 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ─── Color Swatch Logic for Create Form ─────────────────
+(function() {
+    const hidden = document.querySelector('#createBrgyForm input[name="theme_color"]');
+    const swatches = document.querySelectorAll('#createSwatches .color-swatch');
+    const customInput = document.getElementById('createCustomColor');
+    const hexDisplay = document.getElementById('createHexDisplay');
+    const previewBar = document.getElementById('createPreviewBar');
+
+    function selectColor(color, activeSwatch) {
+        hidden.value = color;
+        hexDisplay.textContent = color.toUpperCase();
+        hexDisplay.style.color = color;
+        previewBar.style.background = color;
+        customInput.value = color;
+        swatches.forEach(s => s.classList.remove('selected'));
+        if (activeSwatch) activeSwatch.classList.add('selected');
+    }
+
+    swatches.forEach(swatch => {
+        swatch.addEventListener('click', function() {
+            selectColor(this.dataset.color, this);
+        });
+    });
+
+    customInput.addEventListener('input', function() {
+        swatches.forEach(s => s.classList.remove('selected'));
+        selectColor(this.value, null);
+    });
+
+    // Init
+    selectColor(hidden.value || '#4F46E5', document.querySelector('#createSwatches .color-swatch'));
+})();
+</script>
 {% endblock %}

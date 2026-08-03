@@ -162,24 +162,17 @@ class StaffCreationForm(forms.ModelForm):
 
 
 class BarangayForm(forms.ModelForm):
-    name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Barangay Name'}))
-    address = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-input', 'placeholder': 'Full Address', 'rows': 3}))
-    contact_number = forms.CharField(
-        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Contact Number'}),
-        required=False
-    )
-    email = forms.EmailField(
-        widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Email'}),
-        required=False
-    )
-    chairman_name = forms.CharField(
-        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Barangay Chairman Name'}),
-        required=False
-    )
-
     class Meta:
         model = Barangay
-        fields = ['name', 'address', 'contact_number', 'email', 'chairman_name', 'is_active']
+        fields = '__all__'
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. Barangay Calicanto'}),
+            'chairman_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. Juan Dela Cruz'}),
+            'address': forms.Textarea(attrs={'class': 'form-input', 'rows': 2, 'placeholder': 'Full address'}),
+            'contact_number': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. 09123456789'}),
+            'email': forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'e.g. brgy@email.com'}),
+            'theme_color': forms.HiddenInput(),  # We control this via JS swatches
+        }
 
 
 class DocumentTypeForm(forms.ModelForm):
