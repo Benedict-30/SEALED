@@ -2,6 +2,109 @@
 {% block nav_res_dashboard %}active{% endblock %}
 {% block page_title %}Resident Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* CIRCULAR PROGRESS STYLES */
+    .track-card {
+        background: linear-gradient(135deg, var(--primary-50) 0%, #ffffff 100%);
+        border: 1px solid var(--primary-200);
+        border-radius: var(--radius);
+        padding: 28px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .track-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.12);
+        border-color: var(--primary);
+    }
+    
+    /* Wrapper controls size and shadow */
+    .progress-ring-wrapper {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        flex-shrink: 0;
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+    }
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+    .progress-ring__circle {
+        transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        stroke-linecap: round;
+    }
+    
+    /* Active pulse animation */
+    .progress-ring__circle.active {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+
+    .progress-text {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        background: #fff;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .progress-text .percentage {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--primary);
+        line-height: 1;
+    }
+    .progress-text .label {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+        font-weight: 600;
+    }
+    
+    .track-info h4 {
+        margin: 0 0 6px 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+    }
+    .track-info p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+    .track-status-badge {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        background: #fff;
+        border: 1px solid var(--border-light);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 {% if unverified %}
 <!-- Unverified Resident View -->
@@ -63,50 +166,101 @@
 </div>
 
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
-    <!-- Recent Requests -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Recent Requests</h3>
-            <a href="{% url 'request_history' %}" class="btn btn-ghost btn-sm">View All</a>
-        </div>
-        <div class="card-body-flush">
-            {% if recent_requests %}
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Request #</th>
-                            <th>Document</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for req in recent_requests %}
-                        <tr>
-                            <td class="fw-600">{{ req.request_number }}</td>
-                            <td>{{ req.document_type.name }}</td>
-                            <td><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
-                            <td class="text-muted text-sm">{{ req.created_at|date:"M d, Y" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Left Column: Tracking & Recent Requests -->
+    <div>
+        <!-- LATEST REQUEST TRACKING CARD -->
+        {% if recent_requests %}
+        {% with latest_req=recent_requests|first %}
+        <a href="{% url 'track_request' latest_req.pk %}" class="track-card">
+            <div class="progress-ring-wrapper">
+                <svg class="progress-ring" width="140" height="140">
+                    <!-- Background Circle -->
+                    <circle class="progress-ring__circle" stroke="#e5e7eb" stroke-width="12" fill="transparent" r="60" cx="70" cy="70" />
+                    <!-- Progress Circle -->
+                    <!-- Circumference = 2 * pi * 60 = 376.99 -->
+                    <circle 
+                        class="progress-ring__circle {% if latest_req.status == 'pending' or latest_req.status == 'approved' or latest_req.status == 'ready_for_pickup' %}active{% endif %}" 
+                        stroke="var(--primary)" 
+                        stroke-width="12" 
+                        fill="transparent" 
+                        r="60" 
+                        cx="70" 
+                        cy="70" 
+                        stroke-dasharray="376.99" 
+                        stroke-dashoffset="{% if latest_req.status == 'completed' %}0{% elif latest_req.status == 'ready_for_pickup' %}94.25{% elif latest_req.status == 'approved' %}188.5{% elif latest_req.status == 'pending' %}282.74{% else %}376.99{% endif %}" 
+                    />
+                </svg>
+                <div class="progress-text">
+                    <div class="percentage">{% if latest_req.status == 'completed' %}100%{% elif latest_req.status == 'ready_for_pickup' %}75%{% elif latest_req.status == 'approved' %}50%{% elif latest_req.status == 'pending' %}25%{% else %}0%{% endif %}</div>
+                    <div class="label">Progress</div>
+                </div>
             </div>
-            {% else %}
-            <div class="empty-state">
-                <i class="fa-solid fa-inbox"></i>
-                <h4>No Requests Yet</h4>
-                <p>Start by requesting a barangay document.</p>
-                <a href="{% url 'request_document' %}" class="btn btn-primary btn-sm mt-3">
-                    <i class="fa-solid fa-plus"></i> Request Document
-                </a>
+            <div class="track-info">
+                <h4>Track Latest Request</h4>
+                <p><strong>{{ latest_req.request_number }}</strong> &middot; Submitted {{ latest_req.created_at|date:"M d" }}</p>
+                <div class="track-status-badge" style="color: var(--text); border-color: var(--border);">
+                    Status: {{ latest_req.get_status_display }}
+                </div>
+                <p style="margin-top: 12px; font-size: 13px; color: var(--primary); font-weight: 700;">Click to view full timeline &rarr;</p>
             </div>
-            {% endif %}
+        </a>
+        {% endwith %}
+        {% endif %}
+
+        <!-- Recent Requests Table -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Recent Requests</h3>
+                <a href="{% url 'request_history' %}" class="btn btn-ghost btn-sm">View All</a>
+            </div>
+            <div class="card-body-flush">
+                {% if recent_requests %}
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Request #</th>
+                                <th>Document(s)</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in recent_requests %}
+                            <tr>
+                                <td class="fw-600">
+                                    <a href="{% url 'track_request' req.pk %}" style="color: var(--primary); text-decoration: none;">
+                                        {{ req.request_number }}
+                                    </a>
+                                </td>
+                                <!-- FIXED: Now correctly loops through items -->
+                                <td>
+                                    {% for item in req.items.all %}
+                                        <span class="text-sm">{{ item.document_type.name }}</span><br>
+                                    {% endfor %}
+                                </td>
+                                <td><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
+                                <td class="text-muted text-sm">{{ req.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-inbox"></i>
+                    <h4>No Requests Yet</h4>
+                    <p>Start by requesting a barangay document.</p>
+                    <a href="{% url 'request_document' %}" class="btn btn-primary btn-sm mt-3">
+                        <i class="fa-solid fa-plus"></i> Request Document
+                    </a>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <!-- Notifications & Quick Actions -->
+    <!-- Right Column: Notifications & Quick Actions -->
     <div style="display:flex;flex-direction:column;gap:20px;">
         <div class="card">
             <div class="card-header">
@@ -146,5 +300,6 @@
         {% endif %}
     </div>
 </div>
+
 {% endif %}
 {% endblock %}

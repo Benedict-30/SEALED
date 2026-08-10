@@ -38,18 +38,28 @@
                 <thead>
                     <tr>
                         <th>Request #</th>
-                        <th>Document Type</th>
+                        <th>Document(s) Requested</th>
                         <th>Purpose</th>
                         <th>Status</th>
                         <th>Submitted</th>
                         <th>Notes</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for req in page_obj %}
                     <tr>
-                        <td class="fw-600">{{ req.request_number }}</td>
-                        <td>{{ req.document_type.name }}</td>
+                        <td class="fw-600">
+    <a href="{% url 'track_request' req.pk %}" style="color: var(--primary); text-decoration: none;">
+        {{ req.request_number }} <i class="fa-solid fa-arrow-right fa-xs"></i>
+    </a>
+</td>
+                        <!-- FIXED: Now loops through the items to show all documents requested -->
+                        <td>
+                            {% for item in req.items.all %}
+                                <span class="text-sm">{{ item.document_type.name }}</span><br>
+                            {% endfor %}
+                        </td>
                         <td style="max-width:200px;"><span class="text-sm">{{ req.purpose|truncatechars:50 }}</span></td>
                         <td><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
                         <td class="text-sm text-muted">{{ req.created_at|date:"M d, Y" }}</td>
@@ -60,6 +70,19 @@
                             <span class="text-xs text-danger" title="{{ req.rejection_reason }}">{{ req.rejection_reason|truncatechars:40 }}</span>
                             {% else %}
                             <span class="text-xs text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <!-- NEW: Actions Column with Cancel Button -->
+                        <td>
+                            {% if req.status == 'pending' %}
+                                <form method="post" action="{% url 'cancel_request' req.pk %}" onsubmit="return confirm('Are you sure you want to cancel this request?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-xs" style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;" title="Cancel Request">
+                                        <i class="fa-solid fa-times"></i> Cancel
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-xs text-muted">-</span>
                             {% endif %}
                         </td>
                     </tr>

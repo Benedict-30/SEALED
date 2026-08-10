@@ -27,6 +27,8 @@ urlpatterns = [
     path('resident/notifications/', views.notifications_view, name='notifications'),
     path('resident/notifications/read/<uuid:pk>/', views.mark_notification_read, name='mark_notification_read'),
     path('resident/notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('resident/history/cancel/<uuid:pk>/', views.cancel_request, name='cancel_request'),
+    path('resident/history/track/<uuid:pk>/', views.track_request, name='track_request'),
 
     # Staff
     path('staff/', views.staff_dashboard, name='staff_dashboard'),

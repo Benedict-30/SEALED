@@ -284,6 +284,38 @@ def mark_all_notifications_read(request):
     messages.success(request, 'All notifications marked as read.')
     return redirect('notifications')
 
+@login_required
+@role_required('resident')
+def cancel_request(request, pk):
+    doc_req = get_object_or_404(DocumentRequest, pk=pk, resident=request.user)
+    
+    # Only allow cancellation if the request is still pending
+    if doc_req.status == 'pending':
+        # Notify staff
+        if doc_req.resident.barangay:
+            staff_users = CustomUser.objects.filter(role='staff', barangay=doc_req.resident.barangay, is_active=True)
+            for staff in staff_users:
+                Notification.objects.create(
+                    user=staff,
+                    title='Request Cancelled',
+                    message=f'{doc_req.resident.display_name} cancelled their document request ({doc_req.request_number}).',
+                    link='/staff/requests/'
+                )
+        
+        log_activity(request.user, 'Request Cancelled', f'Resident cancelled request {doc_req.request_number}.', request)
+        req_num = doc_req.request_number
+        doc_req.delete()
+        messages.success(request, f'Request {req_num} has been successfully cancelled.')
+    else:
+        messages.error(request, 'You can only cancel pending requests.')
+        
+    return redirect('request_history')
+
+@login_required
+@role_required('resident')
+def track_request(request, pk):
+    doc_req = get_object_or_404(DocumentRequest, pk=pk, resident=request.user)
+    return render(request, 'brgy/resident/track_request.html', {'req': doc_req})
 
 # ═══════════════════════════════════════════════════════════════
 # STAFF VIEWS
@@ -440,6 +472,15 @@ def update_request_status(request, pk):
             rejection_reason = form.cleaned_data.get('rejection_reason', '')
             doc_request.status = new_status
             doc_request.processed_by = request.user
+
+            if new_status == 'approved' and not doc_request.approved_at:
+                doc_request.approved_at = timezone.now()
+            elif new_status == 'ready_for_pickup' and not doc_request.ready_at:
+                doc_request.ready_at = timezone.now()
+            elif new_status == 'completed' and not doc_request.completed_at:
+                doc_request.completed_at = timezone.now()
+            # ------------------------------------------------
+
             if notes:
                 doc_request.staff_notes = notes
             if new_status == 'rejected' and rejection_reason:
