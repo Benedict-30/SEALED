@@ -211,6 +211,22 @@
                                 {% for error in form.id_back.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
                             </div>
                         </div>
+
+                        <!-- NEW: Selfie with ID -->
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label class="form-label">Selfie while holding the ID</label>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <label class="custom-file-upload" for="id_id_selfie" style="flex:1;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <span data-text="Choose Selfie Image...">Choose Selfie Image...</span>
+                                </label>
+                                <button type="button" class="btn-camera" onclick="openCamera('selfie')">
+                                    <i class="fa-solid fa-camera"></i> Take Picture
+                                </button>
+                            </div>
+                            {{ form.id_selfie }}
+                            {% for error in form.id_selfie.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        </div>
                     </div>
 
                     <div class="form-row" style="margin-top:20px;">

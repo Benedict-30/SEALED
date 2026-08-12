@@ -139,11 +139,18 @@ function openCamera(target) {
     const video = document.getElementById('cameraFeed');
     const title = document.getElementById('cameraModalTitle');
 
-    title.textContent = target === 'front' ? 'Capture ID Front' : 'Capture ID Back';
+    // Updated titles for all 3 targets
+    if (target === 'front') title.textContent = 'Capture ID Front';
+    else if (target === 'back') title.textContent = 'Capture ID Back';
+    else if (target === 'selfie') title.textContent = 'Capture Selfie with ID';
+
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    // Use front camera (user) for selfie, rear camera (environment) for ID pictures
+    const facingMode = (target === 'selfie') ? 'user' : 'environment';
+    
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } })
         .then(function(stream) {
             videoStream = stream;
             video.srcObject = stream;
@@ -176,6 +183,13 @@ function capturePhoto() {
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+    
+    // If taking a selfie, mirror the image so it looks natural to the user
+    if (currentCameraTarget === 'selfie') {
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+    }
+    
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob(function(blob) {
@@ -184,8 +198,14 @@ function capturePhoto() {
             return;
         }
 
-        const capturedFile = new File([blob], 'captured_id_' + currentCameraTarget + '.jpg', { type: 'image/jpeg' });
-        const inputId = currentCameraTarget === 'front' ? 'id_id_front' : 'id_id_back';
+        const capturedFile = new File([blob], 'captured_' + currentCameraTarget + '.jpg', { type: 'image/jpeg' });
+        
+        // Map the target to the correct input ID
+        let inputId;
+        if (currentCameraTarget === 'front') inputId = 'id_id_front';
+        else if (currentCameraTarget === 'back') inputId = 'id_id_back';
+        else if (currentCameraTarget === 'selfie') inputId = 'id_id_selfie';
+
         const fileInput = document.getElementById(inputId);
 
         const dataTransfer = new DataTransfer();

@@ -684,7 +684,7 @@ def admin_dashboard(request):
     
     barangay_stats = Barangay.objects.filter(is_active=True).annotate(
         total_residents=Count('users', filter=Q(users__role='resident', users__verification_status='approved')),
-        total_requests=Count('users__documentrequest', distinct=True),
+        total_requests=Count('users__requests', distinct=True),
     ).order_by('-total_requests')[:5]
     
     monthly_trend = all_requests.annotate(month=TruncDate('created_at')).values('month').annotate(

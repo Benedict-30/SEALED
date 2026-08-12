@@ -60,15 +60,20 @@ class ResidentRegistrationForm(UserCreationForm):
     )
     id_front = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
     id_back = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
+    
+    # ---> ADDED id_selfie FIELD HERE <---
+    id_selfie = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
+    
     password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': ''}))
     password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': ''}))
 
     class Meta:
         model = CustomUser
+        # ---> ADDED 'id_selfie' TO THE FIELDS LIST HERE <---
         fields = [
             'first_name', 'middle_name', 'last_name', 'username', 'email',
             'barangay', 'address', 'phone_number', 'birth_date', 'gender',
-            'civil_status', 'occupation', 'id_type', 'id_front', 'id_back',
+            'civil_status', 'occupation', 'id_type', 'id_front', 'id_back', 'id_selfie',
             'password1', 'password2'
         ]
 
@@ -195,7 +200,6 @@ class DocumentTypeForm(forms.ModelForm):
         empty_label='Select Barangay'
     )
     
-    # ---> ADDED TEMPLATE FILE FIELD HERE <---
     template_file = forms.FileField(
         widget=forms.FileInput(attrs={'accept': '.docx,.doc,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'}),
         required=False,
@@ -204,7 +208,6 @@ class DocumentTypeForm(forms.ModelForm):
 
     class Meta:
         model = DocumentType
-        # ---> ADDED 'template_file' TO THE FIELDS LIST HERE <---
         fields = ['name', 'description', 'requirements', 'fee', 'barangay', 'is_active', 'template_file']
 
 

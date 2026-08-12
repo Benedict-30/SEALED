@@ -69,6 +69,7 @@ class CustomUser(AbstractUser):
     id_type = models.CharField(max_length=50, blank=True, default='')
     id_front = models.ImageField(upload_to='resident_ids/', blank=True, null=True)
     id_back = models.ImageField(upload_to='resident_ids/', blank=True, null=True)
+    id_selfie = models.ImageField(upload_to='resident_ids/', blank=True, null=True, help_text="Picture of the user holding their valid ID")
     
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     rejection_reason = models.TextField(blank=True, default='')
