@@ -163,6 +163,12 @@
             <a href="{% url 'staff_edit_document_type' dt.pk %}" class="btn-edit-card">
                 <i class="fa-solid fa-pen"></i> Edit
             </a>
+            <form method="post" action="{% url 'staff_delete_document_type' dt.pk %}" style="display:inline;" onsubmit="return confirm('Delete {{ dt.name }}? This cannot be undone.');">
+                {% csrf_token %}
+                <button type="submit" class="btn-edit-card" style="color:var(--danger);" title="Delete">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            </form>
         </div>
         
         <div class="doc-card-icon">

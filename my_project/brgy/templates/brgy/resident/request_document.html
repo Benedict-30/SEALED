@@ -99,6 +99,16 @@
         background: #fee2e2; color: #ef4444; border: none; border-radius: 6px;
         width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
+    .qty-btn {
+        width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border-light);
+        background: #fff; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .qty-input {
+        width: 40px; text-align: center; border: 1px solid var(--border-light);
+        border-radius: 6px; font-weight: 700; font-size: 13px; padding: 2px;
+        background: #fff; color: var(--text);
+    }
 
     @media (max-width: 1024px) { .doc-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 640px) { .doc-grid { grid-template-columns: 1fr; } }
@@ -170,12 +180,17 @@
                 <label class="form-label">Contact Number <span class="text-danger">*</span></label>
                 <input type="text" name="contact_number" class="form-input" value="{{ request.user.phone_number }}" required>
             </div>
+
+            <div class="form-group">
+                <label class="form-label">Preferred Pickup Date</label>
+                <input type="date" name="pickup_date" class="form-input" min="{{ today }}">
+            </div>
             
             <div class="form-group">
                 <label class="form-label">Certificate Type <span class="text-danger">*</span></label>
                 <select id="docTypeSelect" class="form-input">
                     {% for dt in doc_types %}
-                    <option value="{{ dt.id }}">{{ dt.name }}</option>
+                    <option value="{{ dt.id }}" data-fee="{{ dt.fee|default:'0' }}">{{ dt.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -186,6 +201,11 @@
 
             <!-- Dynamic list of added documents goes here -->
             <div class="req-item-list" id="documentList"></div>
+            
+            <div id="feeSummary" class="req-item-row" style="display:none; margin-bottom:15px;">
+                <span style="font-weight:600;">Total Fee:</span>
+                <span style="font-weight:800; color:var(--primary);" id="feeTotal"></span>
+            </div>
             
             <!-- Hidden fields to store data for submission -->
             <div id="hiddenInputs"></div>
@@ -201,6 +221,10 @@
 </div>
 
 <script>
+    const hiddenInputs = document.getElementById('hiddenInputs');
+    const feeSummary = document.getElementById('feeSummary');
+    const feeTotalEl = document.getElementById('feeTotal');
+
     function openModal(docId = null, docName = null) {
         document.getElementById('reqModal').classList.add('active');
         if (docId && docName) {
@@ -219,6 +243,30 @@
         document.getElementById('reqModal').classList.remove('active');
     }
 
+    function getDocFee(docId) {
+        const select = document.getElementById('docTypeSelect');
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === docId) {
+                return parseFloat(select.options[i].dataset.fee || '0') || 0;
+            }
+        }
+        return 0;
+    }
+
+    function formatPeso(amount) {
+        return '\u20B1' + amount.toFixed(2);
+    }
+
+    function updateFeeTotal() {
+        let total = 0;
+        const rows = document.querySelectorAll('#documentList .req-item-row');
+        rows.forEach(row => {
+            total += (parseFloat(row.dataset.fee) || 0) * (parseInt(row.dataset.qty) || 0);
+        });
+        feeTotalEl.textContent = formatPeso(total);
+        feeSummary.style.display = rows.length ? 'flex' : 'none';
+    }
+
     function addDocumentToList() {
         const select = document.getElementById('docTypeSelect');
         const docId = select.value;
@@ -229,15 +277,32 @@
             return;
         }
 
-        // Add visual row
+        // Prevent duplicate entries
+        const existing = document.querySelectorAll('#hiddenInputs input[name="document_type[]"]');
+        for (let i = 0; i < existing.length; i++) {
+            if (existing[i].value === docId) {
+                alert('This document is already in your request.');
+                return;
+            }
+        }
+
+        const fee = getDocFee(docId);
         const listDiv = document.getElementById('documentList');
         const rowId = 'row_' + Date.now();
         const row = document.createElement('div');
         row.className = 'req-item-row';
         row.id = rowId;
+        row.dataset.fee = fee;
+        row.dataset.qty = '1';
         row.innerHTML = `
-            <div>
-                <strong style="color:var(--text);">${docName}</strong>
+            <div style="flex:1;">
+                <strong style="color:var(--text); display:block;">${docName}</strong>
+                <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                    <button type="button" class="qty-btn" onclick="changeQty('${rowId}', -1)">&minus;</button>
+                    <input type="number" class="qty-input" value="1" min="1" max="20" readonly>
+                    <button type="button" class="qty-btn" onclick="changeQty('${rowId}', 1)">+</button>
+                    <span style="font-size:12px; color:var(--text-muted); margin-left:6px;" id="${rowId}_fee">${fee ? 'Fee: ' + formatPeso(fee) : 'Free'}</span>
+                </div>
             </div>
             <button type="button" class="remove-btn" onclick="removeDocument('${rowId}', '${docId}')">
                 <i class="fa-solid fa-times"></i>
@@ -245,28 +310,58 @@
         `;
         listDiv.appendChild(row);
 
-        // Add hidden input for form submission
-        const hiddenDiv = document.getElementById('hiddenInputs');
+        // Hidden inputs for form submission (kept in sync by row order)
         const hiddenDoc = document.createElement('input');
         hiddenDoc.type = 'hidden';
         hiddenDoc.name = 'document_type[]';
         hiddenDoc.value = docId;
-        hiddenDiv.appendChild(hiddenDoc);
+        hiddenInputs.appendChild(hiddenDoc);
+
+        const hiddenQty = document.createElement('input');
+        hiddenQty.type = 'hidden';
+        hiddenQty.name = 'quantity[]';
+        hiddenQty.value = '1';
+        hiddenQty.dataset.rowId = rowId;
+        hiddenInputs.appendChild(hiddenQty);
+
+        updateFeeTotal();
+    }
+
+    function changeQty(rowId, change) {
+        const row = document.getElementById(rowId);
+        const qtyInput = row.querySelector('.qty-input');
+        let qty = parseInt(qtyInput.value) + change;
+        if (qty < 1) qty = 1;
+        if (qty > 20) qty = 20;
+        qtyInput.value = qty;
+        row.dataset.qty = qty;
+
+        const feeSpan = document.getElementById(rowId + '_fee');
+        const fee = parseFloat(row.dataset.fee) || 0;
+        feeSpan.textContent = fee ? 'Fee: ' + formatPeso(fee * qty) : 'Free';
+
+        const qtyInputs = document.querySelectorAll('#hiddenInputs input[name="quantity[]"]');
+        qtyInputs.forEach(inp => {
+            if (inp.dataset.rowId === rowId) inp.value = qty;
+        });
+
+        updateFeeTotal();
     }
 
     function removeDocument(rowId, docId) {
-        // Remove visual row
         document.getElementById(rowId).remove();
-        
-        // Remove matching hidden input
-        const hiddenDiv = document.getElementById('hiddenInputs');
-        const inputs = hiddenDiv.querySelectorAll('input');
-        for (let i = 0; i < inputs.length; i++) {
-            if (inputs[i].value === docId) {
-                hiddenDiv.removeChild(inputs[i]);
-                break; // Remove only the first match
+
+        const docInputs = hiddenInputs.querySelectorAll('input[name="document_type[]"]');
+        const qtyInputs = hiddenInputs.querySelectorAll('input[name="quantity[]"]');
+        for (let i = 0; i < docInputs.length; i++) {
+            if (docInputs[i].value === docId) {
+                hiddenInputs.removeChild(docInputs[i]);
+                if (qtyInputs[i]) hiddenInputs.removeChild(qtyInputs[i]);
+                break;
             }
         }
+
+        updateFeeTotal();
     }
 </script>
 {% endblock %}

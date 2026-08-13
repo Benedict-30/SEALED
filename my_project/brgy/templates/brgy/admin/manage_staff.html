@@ -7,11 +7,11 @@
 <div class="card mb-4">
     <div class="card-header">
         <h3>Create New Staff Account</h3>
-        <button class="btn btn-ghost btn-sm" onclick="this.closest('.card').querySelector('.card-body').style.display = this.closest('.card').querySelector('.card-body').style.display === 'none' ? 'block' : 'none'">
-            <i class="fa-solid fa-chevron-down"></i> Toggle
+        <button type="button" class="btn btn-primary btn-sm" id="createStaffToggle" aria-expanded="false">
+            <i class="fa-solid fa-plus"></i> Create Staff Account
         </button>
     </div>
-    <div class="card-body">
+    <div class="card-body {% if not form.errors %}hidden{% endif %}" id="createStaffForm">
         {% if form.errors %}
         <div class="form-error-list" style="margin-bottom:16px;">
             {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
@@ -141,4 +141,28 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const formBody = document.getElementById('createStaffForm');
+    const toggleBtn = document.getElementById('createStaffToggle');
+    if (!formBody || !toggleBtn) return;
+
+    const updateBtn = function(open) {
+        toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        const icon = toggleBtn.querySelector('i');
+        if (icon) icon.className = open ? 'fa-solid fa-chevron-up' : 'fa-solid fa-plus';
+    };
+
+    updateBtn(!formBody.classList.contains('hidden'));
+
+    toggleBtn.addEventListener('click', function() {
+        const open = formBody.classList.toggle('hidden') === false;
+        updateBtn(open);
+        if (open) formBody.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+});
+</script>
 {% endblock %}

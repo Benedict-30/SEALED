@@ -147,7 +147,7 @@ img {
     padding: 24px 48px;
     position: relative;
     z-index: 10;
-    background: rgba(6, 78, 59, 0.5);
+    background: rgba(6, 78, 59, 0.72);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -165,14 +165,13 @@ img {
 .landing-logo-icon {
     width: 42px;
     height: 42px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    background: var(--accent);
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     color: #fff;
-    box-shadow: 0 4px 16px rgba(217,119,6,0.4);
     transition: transform var(--transition);
 }
 

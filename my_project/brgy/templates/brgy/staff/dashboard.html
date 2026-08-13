@@ -3,72 +3,85 @@
 {% block page_title %}Staff Dashboard{% endblock %}
 
 {% block content %}
-<div class="stats-grid">
-    <div class="stat-card" style="--stat-color: var(--accent)">
-        <div class="stat-icon accent"><i class="fa-solid fa-user-clock"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ pending_verifications }}">0</div>
-            <div class="stat-label">Pending Verifications</div>
+<div class="page-hero">
+    <div>
+        <div class="page-hero-title">
+            <i class="fa-solid fa-user-tie"></i>
+            Staff Overview
+        </div>
+        <div class="page-hero-sub">Welcome back, {{ user.first_name|default:user.username }}! Here's your barangay's current activity.</div>
+    </div>
+    <div class="page-hero-date"><i class="fa-regular fa-calendar"></i>{% now "l, F j, Y" %}</div>
+</div>
+
+<div class="stats-strip">
+    <div class="stat-cell">
+        <div class="stat-cell-icon accent"><i class="fa-solid fa-user-clock"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ pending_verifications }}</span>
+            <span class="stat-cell-label">Pending Verifications</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--primary)">
-        <div class="stat-icon primary"><i class="fa-solid fa-users"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ verified_residents }}">0</div>
-            <div class="stat-label">Verified Residents</div>
+    <div class="stat-cell">
+        <div class="stat-cell-icon primary"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ verified_residents }}</span>
+            <span class="stat-cell-label">Verified Residents</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--warning)">
-        <div class="stat-icon warning"><i class="fa-solid fa-file-circle-exclamation"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ pending_requests }}">0</div>
-            <div class="stat-label">Pending Requests</div>
+    <div class="stat-cell">
+        <div class="stat-cell-icon warning"><i class="fa-solid fa-file-circle-exclamation"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ pending_requests }}</span>
+            <span class="stat-cell-label">Pending Requests</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--info)">
-        <div class="stat-icon info"><i class="fa-solid fa-circle-check"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ approved_requests }}">0</div>
-            <div class="stat-label">Approved</div>
+    <div class="stat-cell">
+        <div class="stat-cell-icon info"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ approved_requests }}</span>
+            <span class="stat-cell-label">Approved</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--success)">
-        <div class="stat-icon success"><i class="fa-solid fa-hand-holding"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ ready_requests }}">0</div>
-            <div class="stat-label">Ready for Pickup</div>
+    <div class="stat-cell">
+        <div class="stat-cell-icon success"><i class="fa-solid fa-hand-holding"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ ready_requests }}</span>
+            <span class="stat-cell-label">Ready for Pickup</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--accent)">
-        <div class="stat-icon accent"><i class="fa-solid fa-flag-checkered"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ completed_requests }}">0</div>
-            <div class="stat-label">Completed</div>
+    <div class="stat-cell">
+        <div class="stat-cell-icon accent"><i class="fa-solid fa-flag-checkered"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ completed_requests }}</span>
+            <span class="stat-cell-label">Completed</span>
         </div>
     </div>
 </div>
 
 <!-- Daily Stats -->
 <div class="card mb-4">
-    <div class="card-body" style="display:flex;gap:32px;flex-wrap:wrap;align-items:center;">
-        <div>
-            <div class="text-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:0.5px;">Today's Requests</div>
-            <div style="font-size:28px;font-weight:800;color:var(--primary);margin-top:4px;">{{ today_requests }}</div>
-        </div>
-        <div style="width:1px;height:40px;background:var(--border);"></div>
-        <div>
-            <div class="text-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:0.5px;">Today's Completed</div>
-            <div style="font-size:28px;font-weight:800;color:var(--success);margin-top:4px;">{{ today_completed }}</div>
-        </div>
-        <div style="width:1px;height:40px;background:var(--border);"></div>
-        <div>
-            <div class="text-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:0.5px;">Total Requests</div>
-            <div style="font-size:28px;font-weight:800;color:var(--text);margin-top:4px;">{{ total_requests }}</div>
+    <div class="card-body">
+        <div class="daily-stats">
+            <div class="daily-stat">
+                <div class="stat-kicker">Today's Requests</div>
+                <div class="stat-number primary">{{ today_requests }}</div>
+            </div>
+            <div class="daily-divider"></div>
+            <div class="daily-stat">
+                <div class="stat-kicker">Today's Completed</div>
+                <div class="stat-number success">{{ today_completed }}</div>
+            </div>
+            <div class="daily-divider"></div>
+            <div class="daily-stat">
+                <div class="stat-kicker">Total Requests</div>
+                <div class="stat-number">{{ total_requests }}</div>
+            </div>
         </div>
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+<div class="dash-grid dash-grid-2">
     <!-- Pending Verifications -->
     <div class="card">
         <div class="card-header">

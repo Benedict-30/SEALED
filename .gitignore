@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environment
+venv/
+
+# Django
+*.sqlite3
+db.sqlite3
+
+# Secrets
+.env
+
+# Media uploads - user data / PII (never commit)
+media/resident_ids/
+media/profile_pictures/
+
+# OS
+.DS_Store
+Thumbs.db

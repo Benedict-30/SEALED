@@ -87,11 +87,11 @@
                                     <i class="fa-solid fa-pen"></i> Update
                                 </a>
                                 
-                                <!-- NEW REJECT BUTTON FORM -->
-                                <form method="post" action="{% url 'reject_request' req.pk %}" onsubmit="return confirm('Are you sure you want to REJECT and DELETE this request? The resident will be notified.');">
+                                <!-- REJECT BUTTON FORM -->
+                                <form method="post" action="{% url 'reject_request' req.pk %}" onsubmit="return confirm('Reject this request? The resident will be notified and the record will be kept with a Rejected status.');">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-xs" style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;" title="Reject and Delete Request">
-                                        <i class="fa-solid fa-trash-can"></i> Reject
+                                    <button type="submit" class="btn btn-xs" style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;" title="Reject Request">
+                                        <i class="fa-solid fa-ban"></i> Reject
                                     </button>
                                 </form>
                                 {% else %}

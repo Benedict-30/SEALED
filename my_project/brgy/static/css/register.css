@@ -22,10 +22,10 @@
 }
 
 .step-circle {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
-    background: var(--bg);
+    background: var(--card);
     border: 2px solid var(--border);
     display: flex;
     align-items: center;
@@ -34,6 +34,7 @@
     font-weight: 700;
     color: var(--text-muted);
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .step-label {
@@ -46,18 +47,20 @@
 
 .step-connector {
     width: 60px;
-    height: 2px;
+    height: 3px;
     background: var(--border);
     margin-bottom: 24px;
+    border-radius: 3px;
     transition: background 0.3s ease;
 }
 
 /* Active Step */
 .step-progress-item.active .step-circle {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--grad-primary);
+    border-color: transparent;
     color: #fff;
-    box-shadow: 0 4px 12px rgba(6, 95, 70, 0.3);
+    box-shadow: 0 8px 20px -4px rgba(6, 95, 70, 0.5);
+    transform: scale(1.08);
 }
 
 .step-progress-item.active .step-label {
@@ -67,9 +70,10 @@
 
 /* Completed Step */
 .step-progress-item.completed .step-circle {
-    background: var(--success);
-    border-color: var(--success);
+    background: linear-gradient(135deg, #10B981, #059669);
+    border-color: transparent;
     color: #fff;
+    box-shadow: 0 8px 18px -4px rgba(5,150,105,0.5);
 }
 
 .step-progress-item.completed .step-label {
@@ -77,11 +81,11 @@
 }
 
 .step-connector.active {
-    background: var(--primary);
+    background: var(--grad-primary);
 }
 
 .step-connector.completed {
-    background: var(--success);
+    background: linear-gradient(135deg, #10B981, #059669);
 }
 
 /* Step Panels */
@@ -116,10 +120,10 @@
     padding: 10px 20px;
     background: transparent;
     color: var(--text-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
     font-family: inherit;
@@ -129,6 +133,7 @@
     background: var(--bg);
     color: var(--text);
     border-color: var(--text-muted);
+    transform: translateY(-1px);
 }
 
 /* Form Floating Labels */
@@ -175,9 +180,9 @@
 
 /* Info Box for ID Upload */
 .form-info-box {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--bg) 0%, #FAFAF8 100%);
+    border: 1.5px dashed var(--border);
+    border-radius: 16px;
     padding: 20px;
     margin-bottom: 4px;
 }
@@ -207,18 +212,21 @@
     gap: 10px;
     padding: 20px;
     border: 2px dashed var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
     font-size: 13px;
     color: var(--text-muted);
     background: var(--card);
+    min-height: 60px;
 }
 
 .custom-file-upload:hover {
     border-color: var(--primary);
     color: var(--primary);
     background: var(--primary-50);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px -8px rgba(5,150,105,0.3);
 }
 
 .custom-file-upload i {

@@ -2,22 +2,63 @@
 {% block nav_admin_doctypes %}active{% endblock %}
 {% block page_title %}Document Types{% endblock %}
 
+{% block extra_css %}
+<style>
+    .file-upload-area {
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        padding: 24px 20px;
+        text-align: center;
+        background: var(--bg);
+        transition: all 0.2s;
+        position: relative;
+    }
+    .file-upload-area:hover {
+        border-color: var(--primary);
+        background: var(--primary-bg, #f0fdf4);
+    }
+    .file-upload-area input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+    .file-upload-area i {
+        font-size: 26px;
+        color: var(--primary);
+        margin-bottom: 8px;
+    }
+    .file-upload-area p {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin: 0;
+    }
+    .file-upload-area p strong { color: var(--primary); }
+    .current-file-actions {
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Create Form -->
 <div class="card mb-4">
     <div class="card-header">
         <h3>Add New Document Type</h3>
-        <button class="btn btn-ghost btn-sm" onclick="this.closest('.card').querySelector('.card-body').style.display = this.closest('.card').querySelector('.card-body').style.display === 'none' ? 'block' : 'none'">
-            <i class="fa-solid fa-chevron-down"></i> Toggle
+        <button type="button" class="btn btn-primary btn-sm" id="createDocTypeToggle" aria-expanded="false">
+            <i class="fa-solid fa-plus"></i> Add Document Type
         </button>
     </div>
-    <div class="card-body">
+    <div class="card-body {% if not form.errors %}hidden{% endif %}" id="createDocTypeForm">
         {% if form.errors %}
         <div class="form-error-list" style="margin-bottom:16px;">
             {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
         </div>
         {% endif %}
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="form-row">
                 <div class="form-group">
@@ -41,6 +82,15 @@
                 <div class="form-group">
                     <label class="form-label">Fee (&#8369;)</label>
                     {{ form.fee }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Document Template (.docx)</label>
+                <div class="file-upload-area">
+                    {{ form.template_file }}
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Drag &amp; drop your template here or <strong>browse</strong></p>
+                    <p style="font-size:12px;margin-top:6px;opacity:0.7;">Supports .docx format. Used to generate documents for residents.</p>
                 </div>
             </div>
             <div class="form-group" style="display:flex;align-items:center;gap:8px;">
@@ -82,6 +132,7 @@
                         <th>Barangay</th>
                         <th>Fee</th>
                         <th>Requirements</th>
+                        <th>Template</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -100,6 +151,15 @@
                             {% endfor %}
                         </td>
                         <td>
+                            {% if dt.has_template %}
+                            <a href="{{ dt.template_file.url }}" target="_blank" class="badge badge-info" style="text-decoration:none;" title="{{ dt.template_file.name }}">
+                                <i class="fa-solid fa-file-word"></i> View
+                            </a>
+                            {% else %}
+                            <span class="text-xs text-muted">None</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             {% if dt.is_active %}
                             <span class="badge badge-success">Active</span>
                             {% else %}
@@ -110,6 +170,12 @@
                             <a href="{% url 'edit_document_type' dt.pk %}" class="btn btn-ghost btn-xs">
                                 <i class="fa-solid fa-pen"></i> Edit
                             </a>
+                            <form method="post" action="{% url 'delete_document_type' dt.pk %}" style="display:inline;" onsubmit="return confirm('Delete {{ dt.name }}? This cannot be undone.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-xs">
+                                    <i class="fa-solid fa-trash"></i> Delete
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
@@ -138,4 +204,39 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const formBody = document.getElementById('createDocTypeForm');
+    const toggleBtn = document.getElementById('createDocTypeToggle');
+    if (!formBody || !toggleBtn) return;
+
+    const updateBtn = function(open) {
+        toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        const icon = toggleBtn.querySelector('i');
+        if (icon) icon.className = open ? 'fa-solid fa-chevron-up' : 'fa-solid fa-plus';
+    };
+
+    updateBtn(!formBody.classList.contains('hidden'));
+
+    toggleBtn.addEventListener('click', function() {
+        const open = formBody.classList.toggle('hidden') === false;
+        updateBtn(open);
+        if (open) formBody.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    const templateInput = document.getElementById('id_template_file');
+    if (templateInput) {
+        const area = templateInput.closest('.file-upload-area');
+        const fileText = area ? area.querySelector('p') : null;
+        templateInput.addEventListener('change', function() {
+            const name = templateInput.files && templateInput.files[0]
+                ? templateInput.files[0].name : '';
+            if (fileText && name) fileText.textContent = 'Selected: ' + name;
+        });
+    }
+});
+</script>
 {% endblock %}

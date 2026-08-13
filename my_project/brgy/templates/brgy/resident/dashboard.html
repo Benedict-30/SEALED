@@ -2,124 +2,23 @@
 {% block nav_res_dashboard %}active{% endblock %}
 {% block page_title %}Resident Dashboard{% endblock %}
 
-{% block extra_css %}
-<style>
-    /* CIRCULAR PROGRESS STYLES */
-    .track-card {
-        background: linear-gradient(135deg, var(--primary-50) 0%, #ffffff 100%);
-        border: 1px solid var(--primary-200);
-        border-radius: var(--radius);
-        padding: 28px;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 30px;
-        text-decoration: none;
-        color: inherit;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    .track-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.12);
-        border-color: var(--primary);
-    }
-    
-    /* Wrapper controls size and shadow */
-    .progress-ring-wrapper {
-        position: relative;
-        width: 140px;
-        height: 140px;
-        flex-shrink: 0;
-        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-    }
-    .progress-ring {
-        transform: rotate(-90deg);
-    }
-    .progress-ring__circle {
-        transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-        stroke-linecap: round;
-    }
-    
-    /* Active pulse animation */
-    .progress-ring__circle.active {
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.7; }
-        100% { opacity: 1; }
-    }
-
-    .progress-text {
-        position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-        background: #fff;
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-    }
-    .progress-text .percentage {
-        font-size: 28px;
-        font-weight: 800;
-        color: var(--primary);
-        line-height: 1;
-    }
-    .progress-text .label {
-        font-size: 10px;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-top: 4px;
-        font-weight: 600;
-    }
-    
-    .track-info h4 {
-        margin: 0 0 6px 0;
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text);
-    }
-    .track-info p {
-        margin: 0;
-        font-size: 14px;
-        color: var(--text-secondary);
-    }
-    .track-status-badge {
-        display: inline-block;
-        margin-top: 10px;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 700;
-        background: #fff;
-        border: 1px solid var(--border-light);
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 {% if unverified %}
 <!-- Unverified Resident View -->
 <div class="verification-banner {% if user.verification_status == 'rejected' %}rejected{% endif %}">
+    <div class="banner-icon">
+        {% if user.verification_status == 'pending' %}<i class="fa-solid fa-hourglass-half"></i>
+        {% elif user.verification_status == 'rejected' %}<i class="fa-solid fa-circle-xmark"></i>{% endif %}
+    </div>
     {% if user.verification_status == 'pending' %}
-    <i class="fa-solid fa-hourglass-half"></i>
     <h3>Account Pending Verification</h3>
     <p>Your account is currently being reviewed by barangay staff.</p>
     <p class="text-muted text-sm mt-2">You will be notified once your account has been verified. This usually takes 1-3 business days.</p>
     {% elif user.verification_status == 'rejected' %}
-    <i class="fa-solid fa-circle-xmark"></i>
     <h3>Verification Rejected</h3>
     <p>Your account verification was not approved.</p>
     {% if rejection_reason %}
-    <p class="text-sm mt-2" style="color:var(--danger);"><strong>Reason:</strong> {{ rejection_reason }}</p>
+    <p class="text-sm mt-2" style="color:var(--danger);font-weight:600;"><strong>Reason:</strong> {{ rejection_reason }}</p>
     {% endif %}
     <p class="text-muted text-sm mt-2">Please contact your barangay office for assistance.</p>
     {% endif %}
@@ -127,47 +26,58 @@
 
 {% else %}
 <!-- Verified Resident View -->
-<div class="stats-grid">
-    <div class="stat-card" style="--stat-color: var(--primary)">
-        <div class="stat-icon primary"><i class="fa-solid fa-file-lines"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ total }}">0</div>
-            <div class="stat-label">Total Requests</div>
+<div class="page-hero">
+    <div>
+        <div class="page-hero-title">
+            <i class="fa-solid fa-house-user"></i>
+            Welcome back, {{ user.first_name|default:user.username }}!
+        </div>
+        <div class="page-hero-sub">Here's what's happening with your document requests.</div>
+    </div>
+    <div class="page-hero-date"><i class="fa-regular fa-calendar"></i>{% now "l, F j, Y" %}</div>
+</div>
+
+<div class="stats-strip">
+    <div class="stat-cell">
+        <div class="stat-cell-icon primary"><i class="fa-solid fa-file-lines"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ total }}</span>
+            <span class="stat-cell-label">Total Requests</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--warning)">
-        <div class="stat-icon warning"><i class="fa-solid fa-clock"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ pending }}">0</div>
-            <div class="stat-label">Pending</div>
+    <div class="stat-cell">
+        <div class="stat-cell-icon warning"><i class="fa-solid fa-clock"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ pending }}</span>
+            <span class="stat-cell-label">Pending</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--info)">
-        <div class="stat-icon info"><i class="fa-solid fa-circle-check"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ approved }}">0</div>
-            <div class="stat-label">Approved</div>
+    <div class="stat-cell">
+        <div class="stat-cell-icon info"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ approved }}</span>
+            <span class="stat-cell-label">Approved</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--success)">
-        <div class="stat-icon success"><i class="fa-solid fa-hand-holding"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ ready }}">0</div>
-            <div class="stat-label">Ready for Pickup</div>
+    <div class="stat-cell">
+        <div class="stat-cell-icon success"><i class="fa-solid fa-hand-holding"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ ready }}</span>
+            <span class="stat-cell-label">Ready for Pickup</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--accent)">
-        <div class="stat-icon accent"><i class="fa-solid fa-flag-checkered"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ completed }}">0</div>
-            <div class="stat-label">Completed</div>
+    <div class="stat-cell">
+        <div class="stat-cell-icon accent"><i class="fa-solid fa-flag-checkered"></i></div>
+        <div class="stat-cell-text">
+            <span class="stat-cell-value">{{ completed }}</span>
+            <span class="stat-cell-label">Completed</span>
         </div>
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+<div class="dash-grid dash-grid-main">
     <!-- Left Column: Tracking & Recent Requests -->
-    <div>
+    <div class="dash-grid-stack">
         <!-- LATEST REQUEST TRACKING CARD -->
         {% if recent_requests %}
         {% with latest_req=recent_requests|first %}
@@ -178,16 +88,16 @@
                     <circle class="progress-ring__circle" stroke="#e5e7eb" stroke-width="12" fill="transparent" r="60" cx="70" cy="70" />
                     <!-- Progress Circle -->
                     <!-- Circumference = 2 * pi * 60 = 376.99 -->
-                    <circle 
-                        class="progress-ring__circle {% if latest_req.status == 'pending' or latest_req.status == 'approved' or latest_req.status == 'ready_for_pickup' %}active{% endif %}" 
-                        stroke="var(--primary)" 
-                        stroke-width="12" 
-                        fill="transparent" 
-                        r="60" 
-                        cx="70" 
-                        cy="70" 
-                        stroke-dasharray="376.99" 
-                        stroke-dashoffset="{% if latest_req.status == 'completed' %}0{% elif latest_req.status == 'ready_for_pickup' %}94.25{% elif latest_req.status == 'approved' %}188.5{% elif latest_req.status == 'pending' %}282.74{% else %}376.99{% endif %}" 
+                    <circle
+                        class="progress-ring__circle {% if latest_req.status == 'pending' or latest_req.status == 'approved' or latest_req.status == 'ready_for_pickup' %}active{% endif %}"
+                        stroke="var(--primary)"
+                        stroke-width="12"
+                        fill="transparent"
+                        r="60"
+                        cx="70"
+                        cy="70"
+                        stroke-dasharray="376.99"
+                        stroke-dashoffset="{% if latest_req.status == 'completed' %}0{% elif latest_req.status == 'ready_for_pickup' %}94.25{% elif latest_req.status == 'approved' %}188.5{% elif latest_req.status == 'pending' %}282.74{% else %}376.99{% endif %}"
                     />
                 </svg>
                 <div class="progress-text">
@@ -198,7 +108,7 @@
             <div class="track-info">
                 <h4>Track Latest Request</h4>
                 <p><strong>{{ latest_req.request_number }}</strong> &middot; Submitted {{ latest_req.created_at|date:"M d" }}</p>
-                <div class="track-status-badge" style="color: var(--text); border-color: var(--border);">
+                <div class="track-status-badge">
                     Status: {{ latest_req.get_status_display }}
                 </div>
                 <p style="margin-top: 12px; font-size: 13px; color: var(--primary); font-weight: 700;">Click to view full timeline &rarr;</p>
@@ -233,7 +143,6 @@
                                         {{ req.request_number }}
                                     </a>
                                 </td>
-                                <!-- FIXED: Now correctly loops through items -->
                                 <td>
                                     {% for item in req.items.all %}
                                         <span class="text-sm">{{ item.document_type.name }}</span><br>
@@ -261,7 +170,7 @@
     </div>
 
     <!-- Right Column: Notifications & Quick Actions -->
-    <div style="display:flex;flex-direction:column;gap:20px;">
+    <div class="dash-grid-stack">
         <div class="card">
             <div class="card-header">
                 <h3>Quick Actions</h3>

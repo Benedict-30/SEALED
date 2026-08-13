@@ -6,6 +6,10 @@
 {% block content %}
 <div class="auth-page">
     <div class="auth-left">
+        <div class="auth-shape s1"></div>
+        <div class="auth-shape s2"></div>
+        <div class="auth-shape s3"></div>
+        <div class="auth-shape s4"></div>
         <div class="auth-left-content">
             <div class="auth-left-icon">📝</div>
             <h1>Barangay Document Request System</h1>
@@ -21,6 +25,13 @@
     </div>
     <div class="auth-right">
         <div class="auth-form-wrapper">
+            <div class="auth-form-brand">
+                <div class="brand-icon">📝</div>
+                <div class="brand-text">
+                    SEALED
+                    <small>Document Request System</small>
+                </div>
+            </div>
             <h2>Welcome back</h2>
             <p class="auth-subtitle">Sign in to your account to continue</p>
 
@@ -41,11 +52,20 @@
                 {% csrf_token %}
                 <div class="form-group">
                     <label class="form-label">Username</label>
-                    {{ form.username }}
+                    <div class="password-wrap" style="position:relative;">
+                        <i class="fa-solid fa-user" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;"></i>
+                        <input type="text" name="username" class="form-input" style="padding-left:38px;" placeholder="Enter your username" autocomplete="username" {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Password</label>
-                    {{ form.password }}
+                    <div class="password-wrap">
+                        <i class="fa-solid fa-lock" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;z-index:1;"></i>
+                        <input type="password" name="password" class="form-input" style="padding-left:38px;" placeholder="Enter your password" autocomplete="current-password">
+                        <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top:8px;">
                     <i class="fa-solid fa-right-to-bracket"></i> Sign In

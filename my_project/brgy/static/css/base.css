@@ -14,8 +14,8 @@
     --accent-dark: #B45309;
     --accent-50: #FFFBEB;
     --accent-100: #FEF3C7;
-    --bg: #F5F5F0;
-    --bg-alt: #EDEDEA;
+    --bg: #F6F7F4;
+    --bg-alt: #EEF0EB;
     --card: #FFFFFF;
     --text: #1C1917;
     --text-secondary: #57534E;
@@ -30,14 +30,18 @@
     --danger-bg: #FEF2F2;
     --info: #0891B2;
     --info-bg: #ECFEFF;
+    --grad-primary: linear-gradient(135deg, #059669 0%, #065F46 100%);
+    --grad-accent: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    --grad-surface: #FFFFFF;
     --sidebar-width: 280px;
-    --topbar-height: 68px;
-    --radius: 12px;
-    --radius-sm: 8px;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
-    --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md: 0 6px 12px -2px rgba(0,0,0,0.08), 0 3px 6px -2px rgba(0,0,0,0.05);
-    --shadow-lg: 0 12px 24px -4px rgba(0,0,0,0.1), 0 6px 12px -4px rgba(0,0,0,0.05);
+    --topbar-height: 72px;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+    --shadow: 0 2px 6px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 8px 20px -4px rgba(6,78,59,0.12), 0 4px 8px -4px rgba(0,0,0,0.06);
+    --shadow-lg: 0 20px 40px -12px rgba(6,78,59,0.18), 0 8px 16px -8px rgba(0,0,0,0.08);
+    --shadow-accent: 0 10px 24px -6px rgba(217,119,6,0.35);
     --transition: 0.25s ease;
 }
 
@@ -75,6 +79,9 @@ img { max-width: 100%; height: auto; }
     padding: 32px;
     animation: fadeIn 0.3s ease;
 }
+
+.page-content > * { margin-bottom: 20px; }
+.page-content > *:last-child { margin-bottom: 0; }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }

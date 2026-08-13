@@ -4,8 +4,10 @@
 
 .topbar {
     height: var(--topbar-height);
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(231,229,228,0.8);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -25,20 +27,32 @@
     display: none;
     background: none;
     border: none;
-    font-size: 22px;
+    font-size: 20px;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 6px;
-    border-radius: var(--radius-sm);
-    transition: background var(--transition);
+    padding: 8px;
+    border-radius: 10px;
+    transition: all var(--transition);
 }
 
-.topbar-toggle:hover { background: var(--bg); }
+.topbar-toggle:hover { background: var(--primary-50); color: var(--primary); }
 
 .topbar-title {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text);
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.topbar-title::before {
+    content: '';
+    width: 6px;
+    height: 22px;
+    border-radius: 4px;
+    background: var(--accent);
 }
 
 .topbar-right {
@@ -49,9 +63,9 @@
 
 .topbar-btn {
     position: relative;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-sm);
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     border: 1px solid var(--border);
     background: var(--card);
     color: var(--text-secondary);
@@ -61,12 +75,15 @@
     cursor: pointer;
     transition: all var(--transition);
     font-size: 16px;
+    text-decoration: none;
 }
 
 .topbar-btn:hover {
     border-color: var(--primary-200);
     color: var(--primary);
     background: var(--primary-50);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px -4px rgba(5,150,105,0.35);
 }
 
 .topbar-badge {
@@ -86,6 +103,133 @@
     border: 2px solid var(--card);
 }
 
+/* ─── User Menu ────────────────────────────────────────────── */
+.user-menu {
+    position: relative;
+}
+
+.user-menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 12px 5px 5px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--card);
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.user-menu-btn:hover {
+    border-color: var(--primary-200);
+    box-shadow: 0 6px 14px -6px rgba(5,150,105,0.3);
+    transform: translateY(-1px);
+}
+
+.user-menu-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.user-menu-info { text-align: left; line-height: 1.2; }
+
+.user-menu-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-menu-role {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: capitalize;
+}
+
+.user-menu-btn .fa-chevron-down {
+    font-size: 11px;
+    color: var(--text-muted);
+    transition: transform var(--transition);
+}
+
+.user-menu.open .user-menu-btn .fa-chevron-down { transform: rotate(180deg); }
+
+.user-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 230px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    z-index: 200;
+    padding: 8px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.98);
+    transform-origin: top right;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.user-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.user-dropdown-header {
+    padding: 12px 12px;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-dropdown-header .user-menu-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+}
+
+.user-dropdown-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+.user-dropdown-email { font-size: 11.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
+
+.user-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: all 0.18s ease;
+}
+
+.user-dropdown-item i { width: 18px; text-align: center; font-size: 14px; }
+
+.user-dropdown-item:hover { background: var(--primary-50); color: var(--primary); }
+
+.user-dropdown-item.danger { color: var(--danger); }
+.user-dropdown-item.danger:hover { background: var(--danger-bg); color: var(--danger); }
+
+.user-dropdown-divider { height: 1px; background: var(--border-light); margin: 6px 4px; }
+
+/* ─── Notification Dropdown ────────────────────────────────── */
 .notification-dropdown {
     position: absolute;
     top: calc(100% + 10px);
@@ -93,7 +237,7 @@
     width: 380px;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 18px;
     box-shadow: var(--shadow-lg);
     z-index: 200;
     display: none;
@@ -108,9 +252,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background: var(--primary-50);
 }
 
-.notif-dropdown-header h4 { font-size: 15px; font-weight: 700; }
+.notif-dropdown-header h4 { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
 
 .notif-dropdown-body {
     max-height: 340px;
@@ -155,9 +300,10 @@
     padding: 12px 18px;
     text-align: center;
     border-top: 1px solid var(--border);
+    background: var(--bg);
 }
 
-.notif-dropdown-footer a { font-size: 13px; font-weight: 600; }
+.notif-dropdown-footer a { font-size: 13px; font-weight: 700; color: var(--primary); }
 
 @media (max-width: 1024px) {
     .topbar-toggle { display: flex; }
@@ -167,6 +313,8 @@
     .topbar { padding: 0 16px; }
     .topbar-title { font-size: 16px; }
     .notification-dropdown { width: 320px; right: -40px; }
+    .user-menu-info { display: none; }
+    .user-menu-btn { padding: 5px; }
 }
 
 @media (max-width: 480px) {

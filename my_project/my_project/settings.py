@@ -9,20 +9,37 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
 import os
 from pathlib import Path
+import firebase_admin
+from firebase_admin import credentials
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-brgy-doc-system-2024-change-this-in-production!'
+# Path to your downloaded Firebase credentials JSON file
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase_credentials.json')
 
-DEBUG = True
+# Initialize Firebase Admin SDK (check if already initialized to prevent duplicate app errors)
+if not firebase_admin._apps:
+    if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+        firebase_admin.initialize_app(cred)
+    else:
+        # No service account file: use Application Default Credentials, or the
+        # Firestore emulator when FIRESTORE_EMULATOR_HOST is set.
+        firebase_admin.initialize_app()
 
-ALLOWED_HOSTS = ['*']
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-brgy-doc-system-2024-change-this-in-production!'
+)
+
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('1', 'true', 'yes')
+
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -36,7 +53,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'brgy.middleware.FirestoreAuthMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -62,12 +79,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'my_project.wsgi.application'
 
+# All data lives in Cloud Firestore, so Django's ORM is not used.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.dummy',
     }
 }
+
+# Users are stored in Firestore; provide the custom backend and cookie sessions
+# so no database tables are needed for authentication.
+AUTHENTICATION_BACKENDS = ['brgy.auth.FirestoreBackend']
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -75,8 +97,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
-
-AUTH_USER_MODEL = 'brgy.CustomUser'
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Manila'

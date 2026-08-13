@@ -10,6 +10,10 @@
 {% block content %}
 <div class="auth-page">
     <div class="auth-left">
+        <div class="auth-shape s1"></div>
+        <div class="auth-shape s2"></div>
+        <div class="auth-shape s3"></div>
+        <div class="auth-shape s4"></div>
         <div class="auth-left-content">
             <div class="auth-left-icon">📝</div>
             <h1>Join Your Barangay</h1>
@@ -24,6 +28,13 @@
     </div>
     <div class="auth-right">
         <div class="auth-form-wrapper">
+            <div class="auth-form-brand">
+                <div class="brand-icon">📝</div>
+                <div class="brand-text">
+                    SEALED
+                    <small>Document Request System</small>
+                </div>
+            </div>
             <h2>Create Account</h2>
             <p class="auth-subtitle">Fill in your details to get started</p>
 
@@ -215,13 +226,23 @@
 
                     <div class="form-row" style="margin-top:20px;">
                         <div class="form-group form-floating">
-                            {{ form.password1 }}
-                            <label class="form-label" for="id_password1">Password</label>
+                            <div class="password-wrap">
+                                {{ form.password1 }}
+                                <label class="form-label" for="id_password1">Password</label>
+                                <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                            </div>
                             {% for error in form.password1.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
                         </div>
                         <div class="form-group form-floating">
-                            {{ form.password2 }}
-                            <label class="form-label" for="id_password2">Confirm Password</label>
+                            <div class="password-wrap">
+                                {{ form.password2 }}
+                                <label class="form-label" for="id_password2">Confirm Password</label>
+                                <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                            </div>
                             {% for error in form.password2.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
                         </div>
                     </div>

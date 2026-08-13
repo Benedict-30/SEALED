@@ -41,6 +41,7 @@ urlpatterns = [
     path('staff/reports/', views.staff_reports, name='staff_reports'),
     path('staff/document-types/', views.staff_manage_document_types, name='staff_manage_document_types'),
     path('staff/document-types/<uuid:pk>/edit/', views.staff_edit_document_type, name='staff_edit_document_type'),
+    path('staff/document-types/<uuid:pk>/delete/', views.staff_delete_document_type, name='staff_delete_document_type'),
     path('staff/requests/print/<uuid:req_pk>/<uuid:item_pk>/', views.print_document, name='print_document'),
 
     # Admin
@@ -50,7 +51,9 @@ urlpatterns = [
     path('admin/staff/<uuid:pk>/toggle/', views.toggle_staff_active, name='toggle_staff_active'),
     path('admin/barangays/', views.manage_barangays, name='manage_barangays'),
     path('admin/barangays/<uuid:pk>/edit/', views.edit_barangay, name='edit_barangay'),
+    path('admin/barangays/<uuid:pk>/logo/', views.change_barangay_logo, name='change_barangay_logo'),
     path('admin/document-types/', views.manage_document_types, name='manage_document_types'),
     path('admin/document-types/<uuid:pk>/edit/', views.edit_document_type, name='edit_document_type'),
+    path('admin/document-types/<uuid:pk>/delete/', views.delete_document_type, name='delete_document_type'),
     path('admin/activity-logs/', views.activity_logs, name='activity_logs'),
 ]
