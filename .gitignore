@@ -21,3 +21,5 @@ media/profile_pictures/
 # OS
 .DS_Store
 Thumbs.db
+
+firebase_credentials.json
