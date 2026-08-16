@@ -260,6 +260,7 @@ class _CustomUserQuerySet:
                     firestore_db.delete_doc('user', doc['id'])
         return Dummy()
 
+print("Creating CustomUser objects")
 CustomUser.objects = _CustomUserQuerySet()
 
 
