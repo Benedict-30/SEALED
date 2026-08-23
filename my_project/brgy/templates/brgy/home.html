@@ -30,6 +30,10 @@
                 </div>
             </a>
             <div class="landing-nav-actions">
+                <!-- ADDED VERIFY BUTTON IN NAVBAR -->
+                <a href="{% url 'verify_document' %}" class="btn-landing-secondary btn-nav-sm">
+                    <i class="fa-solid fa-shield-halved"></i> Verify
+                </a>
                 <a href="{% url 'login' %}" class="btn-landing-secondary btn-nav-sm">Sign In</a>
                 <a href="{% url 'register' %}" class="btn-landing-primary btn-nav-sm">Create Account</a>
             </div>
@@ -39,16 +43,11 @@
             <div class="landing-hero-content">
                 <h1>Barangay Documents,<br><span>Made Simple</span></h1>
                 <p>
-                    Request, track, and collect barangay documents online.
-                    No more long queues, no more repeated visits.
-                    Fast, transparent, and secure.
+                    Request and track your barangay documents online, then pick them up fast when they are ready.
                 </p>
                 <div class="landing-hero-actions">
                     <a href="{% url 'register' %}" class="btn-landing-primary">
-                        <i class="fa-solid fa-user-plus"></i> Create Account
-                    </a>
-                    <a href="{% url 'login' %}" class="btn-landing-secondary">
-                        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                        <i class="fa-solid fa-user-plus"></i> Get Started
                     </a>
                 </div>
             </div>
@@ -148,12 +147,31 @@
         </div>
     </section>
 
+    <!-- Verify Document Section (Changed to Button Redirect) -->
+    <section class="landing-verify" style="padding: 80px 20px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; text-align: center;">
+        <div class="reveal" style="max-width: 650px; margin: 0 auto;">
+            <div style="width: 70px; height: 70px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; font-size: 28px; box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2 style="font-size: 32px; font-weight: 800; margin-bottom: 12px;">Verify a Document</h2>
+            <p style="font-size: 16px; opacity: 0.8; margin-bottom: 32px;">
+                Received a barangay document? Click the button below to head over to our verification page and enter the 12-character code printed at the bottom of your document to confirm its authenticity.
+            </p>
+            
+            <!-- Replaced Form with Redirect Button -->
+            <a href="{% url 'verify_document' %}" class="btn-landing-primary" style="padding: 16px 32px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 700;">
+                <i class="fa-solid fa-magnifying-glass"></i> Go to Verification Page
+            </a>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="landing-footer">
         <span>&copy; {% now "Y" %} SEALED &mdash; Barangay Document Request &amp; Management System</span>
         <span>
             <a href="{% url 'login' %}">Sign In</a> &middot;
-            <a href="{% url 'register' %}">Register</a>
+            <a href="{% url 'register' %}">Register</a> &middot;
+            <a href="{% url 'verify_document' %}">Verify Document</a>
         </span>
     </footer>
 

@@ -12,6 +12,7 @@ urlpatterns = [
 
     # Dashboard redirect
     path('dashboard/', views.dashboard_redirect, name='dashboard'),
+    path('verify/', views.verify_document_view, name='verify_document'),
 
     # Resident
     path('resident/', views.resident_dashboard, name='resident_dashboard'),

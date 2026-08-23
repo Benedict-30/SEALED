@@ -2,6 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 import uuid
+import random
+import string
 
 
 class Barangay(models.Model):
@@ -140,8 +142,9 @@ class DocumentRequest(models.Model):
     request_number = models.CharField(max_length=30, unique=True, editable=False)
     resident = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='requests')
     
-    # Removed document_type from here, it is now in DocumentRequestItem
-    # Added contact_number and pickup_date for the checkout form
+    # ---> ADDED VERIFICATION CODE FIELD HERE <---
+    verification_code = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    
     contact_number = models.CharField(max_length=20, blank=True, null=True)
     pickup_date = models.DateField(null=True, blank=True)
     
@@ -179,6 +182,11 @@ class DocumentRequest(models.Model):
                 new_num = 1
             self.request_number = f'{prefix}{new_num:04d}'
 
+        # ---> ADDED LOGIC TO GENERATE VERIFICATION CODE <---
+        if not self.verification_code:
+            chars = string.ascii_uppercase + string.digits
+            self.verification_code = ''.join(random.choice(chars) for _ in range(12))
+
         if self.status == 'completed' and not self.completed_at:
             self.completed_at = timezone.now()
 
@@ -186,7 +194,6 @@ class DocumentRequest(models.Model):
 
     @property
     def barangay(self):
-        # Changed to use resident's barangay
         return self.resident.barangay if self.resident else None
 
     @property
@@ -201,7 +208,6 @@ class DocumentRequest(models.Model):
         return colors.get(self.status, 'muted')
 
 
-# NEW MODEL FOR CART ITEMS
 class DocumentRequestItem(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     request = models.ForeignKey(DocumentRequest, related_name='items', on_delete=models.CASCADE)

@@ -47,6 +47,25 @@ def home_page(request):
         return redirect('dashboard')
     return render(request, 'brgy/home.html')
 
+def verify_document_view(request):
+    code = request.GET.get('code', '').strip().upper()
+    doc_request = None
+    error = None
+    
+    if code:
+        try:
+            doc_request = DocumentRequest.objects.select_related('resident', 'resident__barangay').get(verification_code=code)
+            if doc_request.status != 'completed':
+                error = "This document exists but has not been fully processed/issued yet."
+        except DocumentRequest.DoesNotExist:
+            error = "Invalid verification code. This document is not recognized by the system."
+    
+    return render(request, 'brgy/verify.html', {
+        'doc_request': doc_request,
+        'query': code,
+        'error': error
+    })
+
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -644,6 +663,7 @@ def print_document(request, req_pk, item_pk):
         'barangay_name': doc_req.resident.barangay.name if doc_req.resident.barangay else '',
         'chairman_name': doc_req.resident.barangay.chairman_name if doc_req.resident.barangay else '',
         'request_number': doc_req.request_number,
+        'verification_code': doc_req.verification_code or 'N/A', 
     }
     
     doc.render(context)
