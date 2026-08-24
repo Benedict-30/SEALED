@@ -1,0 +1,363 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Document - SEALED</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #3730A3;
+        }
+        
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            color: #0f172a;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background Decorative Shapes */
+        .bg-shape {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.4;
+        }
+        .shape-1 { width: 400px; height: 400px; background: var(--primary); top: -100px; left: -100px; }
+        .shape-2 { width: 300px; height: 300px; background: #06b6d4; bottom: -50px; right: -50px; }
+
+        /* Navbar */
+        .verify-nav {
+            position: relative;
+            z-index: 2;
+            padding: 24px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .verify-nav .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #0f172a;
+            font-weight: 800;
+            font-size: 22px;
+        }
+        .verify-nav .logo-icon {
+            font-size: 28px;
+            background: #fff;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .verify-nav .logo small {
+            display: block;
+            font-size: 11px;
+            font-weight: 500;
+            color: #64748b;
+            margin-top: -2px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-back-home {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #334155;
+            font-weight: 600;
+            font-size: 14px;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .btn-back-home:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        /* Main Content */
+        .verify-container {
+            flex: 1;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .verify-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.5);
+            max-width: 580px;
+            width: 100%;
+            animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .verify-icon {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            margin: 0 auto 24px auto;
+            position: relative;
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        .verify-icon::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            opacity: 0.2;
+            animation: pulse 2s infinite;
+        }
+
+        .icon-valid { background: #dcfce7; color: #16a34a; }
+        .icon-valid::before { background: #16a34a; }
+        .icon-invalid { background: #fee2e2; color: #dc2626; }
+        .icon-invalid::before { background: #dc2626; }
+        .icon-search { background: #eef2ff; color: var(--primary); }
+        .icon-search::before { background: var(--primary); }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.2; }
+            50% { transform: scale(1.2); opacity: 0.1; }
+            100% { transform: scale(1); opacity: 0.2; }
+        }
+
+        .verify-card h2 { 
+            font-size: 28px; 
+            font-weight: 800; 
+            margin-bottom: 12px; 
+            letter-spacing: -0.5px;
+        }
+        .verify-card p { 
+            color: #64748b; 
+            font-size: 16px; 
+            line-height: 1.6; 
+            margin-bottom: 0; 
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .verify-details {
+            text-align: left;
+            background: #f8fafc;
+            padding: 24px;
+            border-radius: 16px;
+            margin-top: 32px;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Decorative top bar for the details */
+        .verify-details::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), #06b6d4);
+        }
+
+        .verify-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .verify-detail-row:last-child { border-bottom: none; }
+        .verify-detail-row .label { font-size: 14px; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .verify-detail-row .value { font-size: 15px; color: #0f172a; font-weight: 700; text-align: right; }
+
+        /* Form */
+        .verify-form {
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .verify-form input {
+            width: 100%;
+            padding: 18px 20px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            text-align: center;
+            font-size: 20px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: 0.2s;
+            background: #f8fafc;
+        }
+        .verify-form input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+        .btn-verify-submit {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+        .btn-verify-submit:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Footer */
+        .verify-footer {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 24px;
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Shapes -->
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+    <!-- Navbar -->
+    <nav class="verify-nav">
+        <a href="{% url 'home' %}" class="logo">
+            <span class="logo-icon">📝</span>
+            <div>
+                SEALED
+                <small>Document Request System</small>
+            </div>
+        </a>
+        <a href="{% url 'home' %}" class="btn-back-home">
+            <i class="fa-solid fa-arrow-left"></i> Back to Home
+        </a>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="verify-container">
+        <div class="verify-card">
+            
+            {% if error %}
+                <div class="verify-icon icon-invalid"><i class="fa-solid fa-xmark"></i></div>
+                <h2>Verification Failed</h2>
+                <p>{{ error }}</p>
+                <div class="verify-form">
+                    <a href="{% url 'verify_document' %}" class="btn-verify-submit">
+                        <i class="fa-solid fa-rotate-left"></i> Try Again
+                    </a>
+                </div>
+            {% elif doc_request %}
+                <div class="verify-icon icon-valid"><i class="fa-solid fa-check"></i></div>
+                <h2>Document is Authentic</h2>
+                <p>This document has been officially issued by the barangay and is verified in our system.</p>
+                
+                <div class="verify-details">
+                    <div class="verify-detail-row">
+                        <span class="label"><i class="fa-solid fa-user text-muted"></i> Issued To</span>
+                        <span class="value">{{ doc_request.resident.display_name }}</span>
+                    </div>
+                    <div class="verify-detail-row">
+                        <span class="label"><i class="fa-solid fa-building text-muted"></i> Barangay</span>
+                        <span class="value">{{ doc_request.resident.barangay.name }}</span>
+                    </div>
+                    <div class="verify-detail-row">
+                        <span class="label"><i class="fa-solid fa-calendar-day text-muted"></i> Date Issued</span>
+                        <span class="value">{{ doc_request.completed_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="verify-detail-row">
+                        <span class="label"><i class="fa-solid fa-barcode text-muted"></i> Verification Code</span>
+                        <span class="value" style="font-family: monospace; letter-spacing: 2px; color: var(--primary);">{{ doc_request.verification_code }}</span>
+                    </div>
+                </div>
+                <div class="verify-form">
+                    <a href="{% url 'verify_document' %}" class="btn-verify-submit">
+                        <i class="fa-solid fa-magnifying-glass"></i> Verify Another Document
+                    </a>
+                </div>
+            {% else %}
+                <div class="verify-icon icon-search"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <h2>Verify a Document</h2>
+                <p>Enter the 12-character Verification Code found at the bottom of your document to check its authenticity.</p>
+                
+                <form method="get" class="verify-form">
+                    <input type="text" name="code" placeholder="e.g. A1B2C3D4E5F6" required value="{{ query }}">
+                    <button type="submit" class="btn-verify-submit">
+                        <i class="fa-solid fa-shield-halved"></i> Check Authenticity
+                    </button>
+                </form>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="verify-footer">
+        &copy; {% now "Y" %} SEALED &mdash; Barangay Document Request &amp; Management System
+    </footer>
+
+</body>
+</html>

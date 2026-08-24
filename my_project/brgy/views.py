@@ -1,5 +1,7 @@
 import io
 import os
+import random
+import string
 from datetime import datetime, date, timedelta
 from functools import wraps
 
@@ -153,6 +155,29 @@ def home_page(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     return render(request, 'brgy/home.html')
+
+def verify_document_view(request):
+    code = request.GET.get('code', '').strip().upper()
+    doc_request = None
+    error = None
+    
+    if code:
+        matches = firestore_db.list_document_requests(
+            filters=[('verification_code', '==', code)]
+        )
+        if matches:
+            doc_request = DocumentRequest(matches[0])
+            if doc_request.status != 'completed':
+                error = "This document exists but has not been fully processed/issued yet."
+        else:
+            error = "Invalid verification code. This document is not recognized by the system."
+
+    return render(request, 'brgy/verify.html', {
+        'page_title': 'Verify Document',
+        'doc_request': doc_request,
+        'query': code,
+        'error': error,
+    })
 
 
 def login_view(request):
@@ -398,6 +423,9 @@ def submit_bulk_request(request):
         request_data = {
             'resident_id': user.pk,
             'request_number': firestore_db.next_request_number(),
+            'verification_code': ''.join(
+                random.choice(string.ascii_uppercase + string.digits) for _ in range(12)
+            ),
             'purpose': purpose,
             'contact_number': contact_number,
             'pickup_date': parsed_pickup,
@@ -992,6 +1020,7 @@ def print_document(request, req_pk, item_pk):
         'barangay_name': doc_req.barangay.name if doc_req.barangay else '',
         'chairman_name': doc_req.barangay.chairman_name if doc_req.barangay else '',
         'request_number': doc_req.request_number,
+        'verification_code': doc_req.verification_code or 'N/A', 
     }
     doc.render(context)
 

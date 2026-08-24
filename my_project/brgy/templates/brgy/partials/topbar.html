@@ -79,6 +79,9 @@
             </div>
         </div>
         {% else %}
+        <a href="{% url 'verify_document' %}" class="topbar-btn" title="Verify Document" aria-label="Verify Document" style="width:auto;padding:0 16px;gap:8px;">
+            <i class="fa-solid fa-shield-halved"></i> <span style="font-size:13px;font-weight:700;">Verify</span>
+        </a>
         <a href="{% url 'login' %}" class="topbar-btn" title="Sign In" aria-label="Sign In" style="width:auto;padding:0 16px;gap:8px;">
             <i class="fa-solid fa-right-to-bracket"></i> <span style="font-size:13px;font-weight:700;">Sign In</span>
         </a>

@@ -73,6 +73,7 @@ class ResidentRegistrationForm(forms.Form):
     )
     id_front = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
     id_back = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
+    id_selfie = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
     password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': ''}))
     password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': ''}))
 

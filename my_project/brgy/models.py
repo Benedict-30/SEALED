@@ -156,7 +156,7 @@ class Barangay(Base):
 
 class CustomUser(Base):
     _collection_key = 'user'
-    _file_fields = ('id_front', 'id_back', 'profile_picture')
+    _file_fields = ('id_front', 'id_back', 'id_selfie', 'profile_picture')
     _meta = type('Meta', (), {'app_label': 'brgy', 'model_name': 'customuser', 'fields': {}})()
 
     class Role:
