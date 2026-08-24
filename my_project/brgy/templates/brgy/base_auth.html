@@ -23,6 +23,8 @@
     </div>
     {% endif %}
 
+    {% include 'brgy/partials/topbar.html' with topbar_title=page_title %}
+
     {% block content %}{% endblock %}
 
     <script src="{% static 'js/script.js' %}"></script>

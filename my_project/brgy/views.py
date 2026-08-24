@@ -179,7 +179,7 @@ def login_view(request):
                     return redirect(next_url)
                 return redirect('dashboard')
             form.add_error(None, 'Invalid username or password.')
-    return render(request, 'brgy/login.html', {'form': form})
+    return render(request, 'brgy/login.html', {'form': form, 'page_title': 'Sign In'})
 
 
 def register_view(request):
@@ -209,7 +209,7 @@ def register_view(request):
         messages.error(request, 'Please correct the errors below.')
     else:
         form = ResidentRegistrationForm()
-    return render(request, 'brgy/register.html', {'form': form})
+    return render(request, 'brgy/register.html', {'form': form, 'page_title': 'Create Account'})
 
 
 def logout_view(request):
@@ -242,6 +242,7 @@ def resident_dashboard(request):
     if not user.is_verified_resident:
         return render(request, 'brgy/resident/dashboard.html', {
             'unverified': True,
+            'page_title': 'Resident Dashboard',
             'rejection_reason': user.rejection_reason if user.verification_status == 'rejected' else '',
         })
     reqs = firestore_db.list_document_requests(
@@ -266,6 +267,7 @@ def resident_dashboard(request):
     ]
     return render(request, 'brgy/resident/dashboard.html', {
         'unverified': False,
+        'page_title': 'Resident Dashboard',
         'total': total,
         'pending': pending,
         'approved': approved,
@@ -335,7 +337,7 @@ def resident_profile(request):
                          f'{request.user.display_name} updated their profile.', request)
             messages.success(request, 'Profile updated successfully!')
         return redirect('profile')
-    return render(request, 'brgy/resident/profile.html')
+    return render(request, 'brgy/resident/profile.html', {'page_title': 'My Profile'})
 
 
 @login_required
@@ -353,6 +355,7 @@ def request_document(request):
     return render(request, 'brgy/resident/request_document.html', {
         'doc_types': doc_types,
         'today': timezone.localdate().isoformat(),
+        'page_title': 'Request Documents',
     })
 
 
@@ -476,6 +479,7 @@ def request_history(request):
         'status_filter': status_filter,
         'search': search,
         'status_choices': DocumentRequest.Status.choices,
+        'page_title': 'Request History',
     })
 
 
@@ -491,7 +495,7 @@ def notifications_view(request):
     paginator = Paginator(notifications, 15)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
-    return render(request, 'brgy/resident/notifications.html', {'page_obj': page_obj})
+    return render(request, 'brgy/resident/notifications.html', {'page_obj': page_obj, 'page_title': 'Notifications'})
 
 
 @login_required
@@ -554,7 +558,7 @@ def track_request(request, pk):
     doc_req = _request_or_404(pk)
     if doc_req.resident_id != request.user.pk:
         raise Http404
-    return render(request, 'brgy/resident/track_request.html', {'req': doc_req})
+    return render(request, 'brgy/resident/track_request.html', {'req': doc_req, 'page_title': f'Track Request - {doc_req.request_number}'})
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -587,6 +591,7 @@ def staff_dashboard(request):
     pending_doc_requests = [r for r in doc_requests if r.status == 'pending'][:5]
 
     return render(request, 'brgy/staff/dashboard.html', {
+        'page_title': 'Staff Dashboard',
         'pending_verifications': pending_verifications,
         'verified_residents': verified_residents,
         'pending_requests': pending_requests,
@@ -633,6 +638,7 @@ def verify_residents(request):
         'page_obj': page_obj,
         'status_filter': status_filter,
         'search': search,
+        'page_title': 'Verify Residents',
     })
 
 
@@ -683,7 +689,7 @@ def reject_resident(request, pk):
             return redirect('verify_residents')
     else:
         form = RejectForm()
-    return render(request, 'brgy/staff/reject_residents.html', {'resident': resident, 'form': form})
+    return render(request, 'brgy/staff/reject_resident.html', {'resident': resident, 'form': form, 'page_title': 'Reject Resident'})
 
 
 @login_required
@@ -717,6 +723,7 @@ def manage_requests(request):
     page_obj = paginator.get_page(page_number)
     return render(request, 'brgy/staff/manage_requests.html', {
         'page_obj': page_obj,
+        'page_title': 'Document Requests',
         'status_filter': status_filter,
         'search': search,
         'date_from': date_from,
@@ -787,7 +794,7 @@ def update_request_status(request, pk):
         current = doc_request.status
         choices = [c for c in DocumentRequest.Status.choices if c[0] != current]
         form = UpdateStatusForm(choices=choices)
-    return render(request, 'brgy/staff/update_request.html', {'doc_request': doc_request, 'form': form})
+    return render(request, 'brgy/staff/update_request.html', {'doc_request': doc_request, 'form': form, 'page_title': f'Update Request - {doc_request.request_number}'})
 
 
 @login_required
@@ -873,6 +880,7 @@ def staff_reports(request):
         monthly_stats.append({'month': first.replace(day=1), 'count': monthly_counts.get(key, 0)})
 
     return render(request, 'brgy/staff/reports.html', {
+        'page_title': 'Reports',
         'daily_stats': daily_stats,
         'status_breakdown': status_breakdown,
         'doc_type_breakdown': doc_type_breakdown,
@@ -910,6 +918,7 @@ def staff_manage_document_types(request):
     page_obj = paginator.get_page(page_number)
     return render(request, 'brgy/staff/document_types.html', {
         'page_obj': page_obj, 'form': form, 'search': search, 'brgy': brgy,
+        'page_title': 'Document Types',
     })
 
 
@@ -932,6 +941,7 @@ def staff_edit_document_type(request, pk):
         form = DocumentTypeForm(instance=doc_type)
     return render(request, 'brgy/staff/document_type_form.html', {
         'form': form, 'title': f'Edit - {doc_type.name}', 'brgy': brgy,
+        'page_title': f'Edit - {doc_type.name}',
     })
 
 
@@ -1052,6 +1062,7 @@ def admin_dashboard(request):
         monthly_trend.append({'month': first.replace(day=1), 'count': monthly_counts.get(key, 0)})
 
     return render(request, 'brgy/admin/dashboard.html', {
+        'page_title': 'Admin Dashboard',
         'total_residents': total_residents,
         'verified_residents': verified_residents,
         'total_staff': total_staff,
@@ -1101,7 +1112,7 @@ def manage_staff(request):
         messages.error(request, 'Please correct the errors below.')
     else:
         form = StaffCreationForm()
-    return render(request, 'brgy/admin/manage_staff.html', {'page_obj': page_obj, 'form': form, 'search': search})
+    return render(request, 'brgy/admin/manage_staff.html', {'page_obj': page_obj, 'form': form, 'search': search, 'page_title': 'Manage Staff'})
 
 
 @login_required
@@ -1119,7 +1130,7 @@ def edit_staff(request, pk):
         messages.error(request, 'Please correct the errors below.')
     else:
         form = StaffCreationForm(instance=staff)
-    return render(request, 'brgy/admin/edit_staff.html', {'staff': staff, 'form': form})
+    return render(request, 'brgy/admin/edit_staff.html', {'staff': staff, 'form': form, 'page_title': f'Edit Staff - {staff.display_name}'})
 
 
 @login_required
@@ -1159,7 +1170,7 @@ def manage_barangays(request):
         messages.error(request, 'Please correct the errors below.')
     else:
         form = BarangayForm()
-    return render(request, 'brgy/admin/manage_barangays.html', {'page_obj': page_obj, 'form': form, 'search': search})
+    return render(request, 'brgy/admin/manage_barangays.html', {'page_obj': page_obj, 'form': form, 'search': search, 'page_title': 'Manage Barangays'})
 
 
 @login_required
@@ -1175,7 +1186,7 @@ def edit_barangay(request, pk):
         messages.error(request, 'Please correct the errors below.')
     else:
         form = BarangayForm(instance=barangay)
-    return render(request, 'brgy/admin/edit_barangay.html', {'barangay': barangay, 'form': form})
+    return render(request, 'brgy/admin/edit_barangay.html', {'barangay': barangay, 'form': form, 'page_title': 'Edit Barangay'})
 
 
 @login_required
@@ -1220,6 +1231,7 @@ def manage_document_types(request):
     return render(request, 'brgy/admin/document_types.html', {
         'page_obj': page_obj, 'form': form, 'search': search,
         'brgy_filter': brgy_filter, 'barangays': barangays,
+        'page_title': 'Document Types',
     })
 
 
@@ -1236,7 +1248,7 @@ def edit_document_type(request, pk):
         messages.error(request, 'Please correct the errors below.')
     else:
         form = DocumentTypeForm(instance=doc_type)
-    return render(request, 'brgy/admin/edit_document_type.html', {'doc_type': doc_type, 'form': form})
+    return render(request, 'brgy/admin/edit_document_type.html', {'doc_type': doc_type, 'form': form, 'page_title': f'Edit Document Type - {doc_type.name}'})
 
 
 @login_required
@@ -1291,6 +1303,7 @@ def activity_logs(request):
     page_obj = paginator.get_page(page_number)
     return render(request, 'brgy/admin/activity_logs.html', {
         'page_obj': page_obj,
+        'page_title': 'Activity Logs',
         'action_filter': action_filter,
         'search': search,
         'date_from': date_from,

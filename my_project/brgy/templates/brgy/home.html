@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/topbar.css' %}">
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
 </head>
 <body>
@@ -21,19 +23,7 @@
         <div class="deco-shape deco-3"></div>
         <div class="deco-shape deco-4"></div>
 
-        <nav class="landing-nav">
-            <a href="{% url 'home' %}" class="landing-logo">
-                <div class="landing-logo-icon">📝</div> 
-                <div class="landing-logo-text">
-                    SEALED
-                    <small>Document Request System</small>
-                </div>
-            </a>
-            <div class="landing-nav-actions">
-                <a href="{% url 'login' %}" class="btn-landing-secondary btn-nav-sm">Sign In</a>
-                <a href="{% url 'register' %}" class="btn-landing-primary btn-nav-sm">Create Account</a>
-            </div>
-        </nav>
+        {% include 'brgy/partials/topbar.html' with topbar_title="SEALED" %}
 
         <div class="landing-hero-body">
             <div class="landing-hero-content">
