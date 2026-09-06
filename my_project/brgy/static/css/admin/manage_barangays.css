@@ -1,0 +1,110 @@
+    .logo-thumb-wrap {
+        width: 46px;
+        height: 46px;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--card);
+        overflow: hidden;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .logo-thumb-wrap:hover {
+        transform: scale(1.08);
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .logo-thumb-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #fff;
+    }
+    .logo-thumb-fallback {
+        width: 100%;
+        height: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 16px;
+        background: var(--primary-bg, #f0fdf4);
+    }
+
+    .brgy-modal {
+        position: fixed; inset: 0; z-index: 1000;
+        background: rgba(0,0,0,0.7);
+        opacity: 0; visibility: hidden;
+        transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+    .brgy-modal.show { opacity: 1; visibility: visible; }
+    .brgy-modal-overlay {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .brgy-modal-content {
+        background: var(--card); border-radius: var(--radius); max-width: 760px; width: 100%;
+        box-shadow: var(--shadow-lg); overflow: hidden; max-height: 92vh; overflow-y: auto;
+        transform: translateY(18px) scale(0.98);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .brgy-modal.show .brgy-modal-content { transform: translateY(0) scale(1); }
+    .brgy-modal-header {
+        padding: 16px 20px; border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+        position: sticky; top: 0; background: var(--card); z-index: 1;
+    }
+    .brgy-modal-header h3 { font-size: 15px; font-weight: 700; }
+    .brgy-modal-close {
+        background: none; border: none; font-size: 20px; color: var(--text-muted);
+        cursor: pointer; padding: 4px;
+    }
+    .brgy-modal-close:hover { color: var(--text); }
+    .brgy-modal-body { padding: 20px; display: grid; grid-template-columns: 240px 1fr; gap: 20px; }
+    @media (max-width: 640px) { .brgy-modal-body { grid-template-columns: 1fr; } }
+
+    .brgy-preview-brand {
+        display: flex; flex-direction: column; gap: 12px; align-items: center;
+    }
+    .brgy-preview-logo {
+        width: 140px; height: 140px; border-radius: 16px; border: 1px solid var(--border);
+        background: #fff; display: flex; align-items: center; justify-content: center;
+        overflow: hidden; box-shadow: var(--shadow-sm);
+    }
+    .brgy-preview-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .brgy-preview-logo .no-logo {
+        color: var(--text-muted); font-size: 42px;
+    }
+    .brgy-preview-theme-bar {
+        width: 100%; height: 6px; border-radius: 20px; background: var(--border);
+        overflow: hidden;
+    }
+    .brgy-preview-theme-bar span { display: block; height: 100%; }
+    .brgy-preview-name { text-align: center; font-size: 14px; font-weight: 700; line-height: 1.3; }
+    .brgy-preview-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+    .brgy-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; font-size: 13px; }
+    .brgy-details .detail-item { min-width: 0; }
+    .brgy-details .detail-label {
+        color: var(--text-muted); font-size: 11px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .brgy-details .detail-value { font-weight: 600; word-break: break-word; }
+
+    .brgy-logo-upload {
+        border-top: 1px solid var(--border); padding: 16px 20px;
+        background: var(--bg);
+    }
+    .brgy-logo-upload h4 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+    .brgy-upload-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .brgy-new-logo-preview {
+        width: 52px; height: 52px; border-radius: 10px; border: 1px solid var(--border);
+        background: #fff; display: none; align-items: center; justify-content: center;
+        overflow: hidden; flex-shrink: 0;
+    }
+    .brgy-new-logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+    .brgy-new-logo-preview.visible { display: inline-flex; }
+    .brgy-upload-hint { font-size: 12px; color: var(--text-muted); width: 100%; margin-top: 6px; }

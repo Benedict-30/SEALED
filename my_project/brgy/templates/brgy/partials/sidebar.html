@@ -1,0 +1,110 @@
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="sidebar-logo">
+            {% if user.role != 'admin' and user.barangay and user.barangay.logo %}
+            <img src="{{ user.barangay.logo.url }}" alt="{{ user.barangay.name }} logo" class="sidebar-logo-img">
+            {% else %}
+            <div class="sidebar-logo-icon">📝</div>
+            {% endif %}
+            <div class="sidebar-logo-text">
+                {% if user.role != 'admin' and user.barangay %}
+                    {{ user.barangay.name }}
+                {% else %}
+                    SEALED
+                {% endif %}
+                <small>{% if user.role != 'admin' and user.barangay %}{{ user.barangay.name }} Document System{% elif user.role == 'admin' %}Barangay Document Request &amp; Management System{% else %}Document Request System{% endif %}</small>
+            </div>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        {% if user.role == 'resident' %}
+        <div class="sidebar-section-label">Main</div>
+        <a href="{% url 'resident_dashboard' %}" class="sidebar-item {% if sidebar_active == 'res_dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-house"></i> Dashboard
+        </a>
+        <a href="{% url 'request_document' %}" class="sidebar-item {% if sidebar_active == 'res_request' %}active{% endif %}">
+            <i class="fa-solid fa-file-circle-plus"></i> Request Document
+        </a>
+        <a href="{% url 'request_history' %}" class="sidebar-item {% if sidebar_active == 'res_history' %}active{% endif %}">
+            <i class="fa-solid fa-clock-rotate-left"></i> Request History
+        </a>
+        <div class="sidebar-section-label">Updates</div>
+        <a href="{% url 'notifications' %}" class="sidebar-item {% if sidebar_active == 'res_notifications' %}active{% endif %}">
+            <i class="fa-solid fa-bell"></i> Notifications
+            {% if unread_notification_count > 0 %}
+            <span class="badge-sidebar">{{ unread_notification_count }}</span>
+            {% endif %}
+        </a>
+
+        {% elif user.role == 'staff' %}
+        <div class="sidebar-section-label">Overview</div>
+        <a href="{% url 'staff_dashboard' %}" class="sidebar-item {% if sidebar_active == 'staff_dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-gauge-high"></i> Dashboard
+        </a>
+        <div class="sidebar-section-label">Management</div>
+        <a href="{% url 'verify_residents' %}" class="sidebar-item {% if sidebar_active == 'staff_verify' %}active{% endif %}">
+            <i class="fa-solid fa-user-check"></i> Verify Residents
+        </a>
+        <a href="{% url 'manage_requests' %}" class="sidebar-item {% if sidebar_active == 'staff_requests' %}active{% endif %}">
+            <i class="fa-solid fa-file-lines"></i> Document Requests
+        </a>
+        <a href="{% url 'staff_manage_document_types' %}" class="sidebar-item {% if sidebar_active == 'staff_doctypes' %}active{% endif %}">
+            <i class="fa-solid fa-file-circle-check"></i> Document Types
+        </a>
+        <a href="{% url 'manage_announcements' %}" class="sidebar-item {% if sidebar_active == 'announcements' %}active{% endif %}">
+            <i class="fa-solid fa-bullhorn"></i> Announcements
+        </a>
+        <div class="sidebar-section-label">Analytics</div>
+        <a href="{% url 'staff_reports' %}" class="sidebar-item {% if sidebar_active == 'staff_reports' %}active{% endif %}">
+            <i class="fa-solid fa-chart-bar"></i> Reports
+        </a>
+
+        {% elif user.role == 'admin' %}
+        <div class="sidebar-section-label">Overview</div>
+        <a href="{% url 'admin_dashboard' %}" class="sidebar-item {% if sidebar_active == 'admin_dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-gauge-high"></i> Dashboard
+        </a>
+        <div class="sidebar-section-label">Management</div>
+        <a href="{% url 'manage_staff' %}" class="sidebar-item {% if sidebar_active == 'admin_staff' %}active{% endif %}">
+            <i class="fa-solid fa-user-shield"></i> Manage Staff
+        </a>
+        <a href="{% url 'manage_barangays' %}" class="sidebar-item {% if sidebar_active == 'admin_barangays' %}active{% endif %}">
+            <i class="fa-solid fa-building"></i> Barangays
+        </a>
+        <a href="{% url 'manage_document_types' %}" class="sidebar-item {% if sidebar_active == 'admin_doctypes' %}active{% endif %}">
+            <i class="fa-solid fa-file-circle-check"></i> Document Types
+        </a>
+        <a href="{% url 'manage_announcements' %}" class="sidebar-item {% if sidebar_active == 'announcements' %}active{% endif %}">
+            <i class="fa-solid fa-bullhorn"></i> Announcements
+        </a>
+        <div class="sidebar-section-label">System</div>
+        <a href="{% url 'activity_logs' %}" class="sidebar-item {% if sidebar_active == 'admin_logs' %}active{% endif %}">
+            <i class="fa-solid fa-list-check"></i> Activity Logs
+        </a>
+        <a href="{% url 'admin_reports' %}" class="sidebar-item {% if sidebar_active == 'admin_reports' %}active{% endif %}">
+            <i class="fa-solid fa-chart-pie"></i> Reports
+        </a>
+        <a href="{% url 'admin_notifications' %}" class="sidebar-item {% if sidebar_active == 'admin_notifications' %}active{% endif %}">
+            <i class="fa-solid fa-bell"></i> Notifications
+            {% if unread_notification_count > 0 %}
+            <span class="badge-sidebar">{{ unread_notification_count }}</span>
+            {% endif %}
+        </a>
+        {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+        <!-- CHANGED: Wrapped the profile section in an anchor tag -->
+        <a href="{% if user.role == 'resident' %}{% url 'profile' %}{% elif user.role == 'staff' %}{% url 'staff_profile' %}{% else %}{% url 'dashboard' %}{% endif %}" class="sidebar-user">
+            <div class="sidebar-avatar">{{ user.initials }}</div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-name">{{ user.display_name }}</div>
+                <div class="sidebar-user-role">{{ user.get_role_display }}{% if user.barangay %} &middot; {{ user.barangay.name }}{% endif %}</div>
+            </div>
+        </a>
+    </div>
+</aside>

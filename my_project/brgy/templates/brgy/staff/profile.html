@@ -1,0 +1,125 @@
+{% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="profile-page" style="max-width: 860px; margin: 0 auto;">
+
+    <div class="page-hero">
+        <div>
+            <div class="page-hero-title">
+                <i class="fa-solid fa-user-gear"></i>
+                My Profile
+            </div>
+            <div class="page-hero-sub">Manage your staff account details and security.</div>
+        </div>
+        <div class="page-hero-date">
+            <span class="badge badge-primary">{{ user.get_role_display }} &middot; {{ user.barangay.name|default:"Staff" }}</span>
+        </div>
+    </div>
+
+    <!-- Personal Information Card -->
+    <div class="card">
+        <div class="card-header" style="border-bottom: 1px solid var(--border-light);">
+            <h3 style="margin:0; font-size:16px; font-weight:600;">
+                <i class="fa-solid fa-user text-primary mr-2"></i> Personal Information
+            </h3>
+        </div>
+        <div class="card-body" style="padding: 24px;">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="info">
+
+                {% if info_form.errors %}
+                <div class="form-error-list" style="margin-bottom: 20px;">
+                    {% for field in info_form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="form-row" style="display:flex; gap:16px; margin-bottom:16px;">
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label" for="id_first_name">First Name</label>
+                        {{ info_form.first_name }}
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label" for="id_last_name">Last Name</label>
+                        {{ info_form.last_name }}
+                    </div>
+                </div>
+
+                <div class="form-row" style="display:flex; gap:16px; margin-bottom:16px;">
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label" for="id_email">Email</label>
+                        {{ info_form.email }}
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label" for="id_phone_number">Phone Number</label>
+                        {{ info_form.phone_number }}
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" value="@{{ user.username }}" disabled style="opacity:0.7;cursor:not-allowed;background:var(--bg);">
+                </div>
+
+                <div class="form-group" style="margin-bottom:24px;">
+                    <label class="form-label">Profile Picture</label>
+                    <input type="file" name="profile_picture" accept="image/*" class="form-input">
+                </div>
+
+                <div style="display:flex; gap:12px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Card -->
+    <div class="card" style="margin-top: 24px;">
+        <div class="card-header" style="border-bottom: 1px solid var(--border-light);">
+            <h3 style="margin:0; font-size:16px; font-weight:600;">
+                <i class="fa-solid fa-shield-halved text-primary mr-2"></i> Change Password
+            </h3>
+        </div>
+        <div class="card-body" style="padding: 24px;">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="password">
+
+                {% if password_form.errors %}
+                <div class="form-error-list" style="margin-bottom: 20px;">
+                    {% for field in password_form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="form-label" for="id_current_password">Current Password</label>
+                    {{ password_form.current_password }}
+                </div>
+
+                <div class="form-row" style="display:flex; gap:16px; margin-bottom:16px;">
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label" for="id_new_password">New Password</label>
+                        {{ password_form.new_password }}
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label" for="id_confirm_password">Confirm New Password</label>
+                        {{ password_form.confirm_password }}
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px;">
+                    <button type="submit" class="btn btn-accent">
+                        <i class="fa-solid fa-key"></i> Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

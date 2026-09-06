@@ -1,0 +1,14 @@
+/* ═══════════════════════════════════════════════════════════════
+   Barangay Document Request System - Master Stylesheet
+   All styles are organized in separate files.
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('base.css');
+@import url('sidebar.css');
+@import url('topbar.css');
+@import url('components.css');
+@import url('dashboard.css');
+@import url('auth.css');
+@import url('modal.css');
+@import url('toast.css');
+@import url('motion.css');

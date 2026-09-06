@@ -1,117 +1,9 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
 
-{% block nav_res_request %}active{% endblock %}
 
 {% block extra_css %}
-<style>
-    .doc-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
-    }
-    .doc-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 28px 24px;
-        text-align: center;
-        transition: all 0.25s ease;
-        cursor: pointer;
-        text-decoration: none;
-        color: inherit;
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 200px;
-    }
-    .doc-card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 3px;
-        background: var(--primary);
-        transform: scaleX(0);
-        transition: transform 0.3s ease;
-    }
-    .doc-card:hover {
-        border-color: var(--primary-200);
-        box-shadow: var(--shadow-lg);
-        transform: translateY(-4px);
-    }
-    .doc-card:hover::before { transform: scaleX(1); }
-    .doc-card-icon {
-        width: 56px; height: 56px; border-radius: 14px;
-        background: var(--primary-50); color: var(--primary);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 22px; margin-bottom: 16px;
-        transition: all 0.25s ease;
-    }
-    .doc-card:hover .doc-card-icon {
-        background: var(--primary); color: #fff;
-    }
-    .doc-card h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-    .doc-card p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; }
-    .doc-card .doc-badge {
-        display: inline-flex; align-items: center; gap: 5px;
-        padding: 4px 12px; border-radius: 20px;
-        font-size: 11px; font-weight: 600;
-        background: var(--success-bg); color: var(--success);
-    }
-    .doc-card .doc-badge::before {
-        content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
-    }
-    .doc-card-fee { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
-
-    /* MODAL STYLES */
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-        display: none; align-items: center; justify-content: center;
-        z-index: 1050; padding: 20px;
-    }
-    .modal-overlay.active { display: flex; }
-    .modal-box {
-        background: var(--card); border-radius: var(--radius);
-        width: 100%; max-width: 480px; padding: 32px;
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-        animation: slideUp 0.3s ease;
-        max-height: 90vh; overflow-y: auto;
-    }
-    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    
-    .modal-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 20px; text-align: center; }
-    .modal-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; text-align: center;}
-    
-    .req-item-list {
-        margin-top: 15px; margin-bottom: 15px; max-height: 150px;
-        overflow-y: auto; padding-right: 5px;
-    }
-    .req-item-row {
-        display: flex; justify-content: space-between; align-items: center;
-        background: var(--bg-body); padding: 10px 12px; border-radius: 8px;
-        margin-bottom: 8px; font-size: 13px;
-    }
-    .req-item-row .remove-btn {
-        background: #fee2e2; color: #ef4444; border: none; border-radius: 6px;
-        width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    }
-    .qty-btn {
-        width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border-light);
-        background: #fff; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 14px;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .qty-input {
-        width: 40px; text-align: center; border: 1px solid var(--border-light);
-        border-radius: 6px; font-weight: 700; font-size: 13px; padding: 2px;
-        background: #fff; color: var(--text);
-    }
-
-    @media (max-width: 1024px) { .doc-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 640px) { .doc-grid { grid-template-columns: 1fr; } }
-</style>
+<link rel="stylesheet" href="{% static 'css/resident/request_document.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -130,7 +22,7 @@
 {% if doc_types %}
 <div class="doc-grid">
     {% for dt in doc_types %}
-    <div class="doc-card" onclick="openModal('{{ dt.id }}', '{{ dt.name }}')">
+    <div class="doc-card" onclick="openModal('{{ dt.id }}', '{{ dt.name|escapejs }}')">
         <div class="doc-card-icon">
             <i class="fa-solid fa-file-lines"></i>
         </div>
@@ -139,6 +31,11 @@
         <span class="doc-badge">Available</span>
         {% if dt.fee %}
         <div class="doc-card-fee">Fee: &#8369;{{ dt.fee|floatformat:2 }}</div>
+        {% endif %}
+        {% if dt.has_tpl %}
+        <button type="button" class="doc-preview-btn" onclick="event.stopPropagation(); openPreview('{{ dt.id }}', '{{ dt.name|escapejs }}')" title="Preview document">
+            <i class="fa-solid fa-eye"></i> Preview
+        </button>
         {% endif %}
     </div>
     {% endfor %}
@@ -152,10 +49,10 @@
 {% endif %}
 
 <!-- REQUEST DOCUMENT MODAL -->
-<div class="modal-overlay" id="reqModal">
+<div class="req-modal-overlay" id="reqModal" role="dialog" aria-modal="true" aria-labelledby="reqModalTitle" aria-hidden="true">
     <div class="modal-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h3 style="margin:0; font-weight:700; font-size:18px;">REQUEST DOCUMENT</h3>
+            <h3 id="reqModalTitle" style="margin:0; font-weight:700; font-size:18px;">REQUEST DOCUMENT</h3>
             <button type="button" onclick="closeModal()" style="background:none; border:none; font-size:20px; color:var(--text-muted); cursor:pointer;">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -165,24 +62,30 @@
         <form method="post" action="{% url 'submit_bulk_request' %}" id="bulkRequestForm">
             {% csrf_token %}
             
-            <div class="form-group">
-                <label class="form-label">Resident Name</label>
-                <input type="text" class="form-input" value="{{ request.user.display_name }}" readonly>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-lock" style="font-size:11px; margin-right:4px;" title="Automatically filled from your profile"></i> Resident Name</label>
+                    <input type="text" class="form-input req-readonly" value="{{ request.user.display_name }}" readonly aria-label="Resident Name">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contact Number <span class="text-danger">*</span></label>
+                    <input type="text" name="contact_number" class="form-input" value="{{ request.user.phone_number }}"
+                           placeholder="09XX XXX XXXX" inputmode="tel" maxlength="15" required>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Purpose of Request <span class="text-danger">*</span></label>
-                <input type="text" name="purpose" class="form-input" placeholder="e.g. Employment requirement" required>
-            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Purpose of Request <span class="text-danger">*</span></label>
+                    <textarea name="purpose" class="form-input" rows="3" maxlength="500"
+                              placeholder="e.g. Employment requirement" required></textarea>
+                </div>
 
-            <div class="form-group">
-                <label class="form-label">Contact Number <span class="text-danger">*</span></label>
-                <input type="text" name="contact_number" class="form-input" value="{{ request.user.phone_number }}" required>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Preferred Pickup Date</label>
-                <input type="date" name="pickup_date" class="form-input" min="{{ today }}">
+                <div class="form-group">
+                    <label class="form-label">Preferred Pickup Date</label>
+                    <input type="date" name="pickup_date" class="form-input" min="{{ today }}" max="{{ max_pickup }}">
+                </div>
             </div>
             
             <div class="form-group">
@@ -219,148 +122,30 @@
     </div>
 </div>
 
-<script>
-    const hiddenInputs = document.getElementById('hiddenInputs');
-    const feeSummary = document.getElementById('feeSummary');
-    const feeTotalEl = document.getElementById('feeTotal');
-
-    function openModal(docId = null, docName = null) {
-        document.getElementById('reqModal').classList.add('active');
-        if (docId && docName) {
-            // If clicked from a card, pre-select that document
-            const select = document.getElementById('docTypeSelect');
-            for (let i = 0; i < select.options.length; i++) {
-                if (select.options[i].value === docId) {
-                    select.selectedIndex = i;
-                    break;
-                }
-            }
-        }
-    }
-
-    function closeModal() {
-        document.getElementById('reqModal').classList.remove('active');
-    }
-
-    function getDocFee(docId) {
-        const select = document.getElementById('docTypeSelect');
-        for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].value === docId) {
-                return parseFloat(select.options[i].dataset.fee || '0') || 0;
-            }
-        }
-        return 0;
-    }
-
-    function formatPeso(amount) {
-        return '\u20B1' + amount.toFixed(2);
-    }
-
-    function updateFeeTotal() {
-        let total = 0;
-        const rows = document.querySelectorAll('#documentList .req-item-row');
-        rows.forEach(row => {
-            total += (parseFloat(row.dataset.fee) || 0) * (parseInt(row.dataset.qty) || 0);
-        });
-        feeTotalEl.textContent = formatPeso(total);
-        feeSummary.style.display = rows.length ? 'flex' : 'none';
-    }
-
-    function addDocumentToList() {
-        const select = document.getElementById('docTypeSelect');
-        const docId = select.value;
-        const docName = select.options[select.selectedIndex].text;
-
-        if (!docId) {
-            alert('Please select a document type.');
-            return;
-        }
-
-        // Prevent duplicate entries
-        const existing = document.querySelectorAll('#hiddenInputs input[name="document_type[]"]');
-        for (let i = 0; i < existing.length; i++) {
-            if (existing[i].value === docId) {
-                alert('This document is already in your request.');
-                return;
-            }
-        }
-
-        const fee = getDocFee(docId);
-        const listDiv = document.getElementById('documentList');
-        const rowId = 'row_' + Date.now();
-        const row = document.createElement('div');
-        row.className = 'req-item-row';
-        row.id = rowId;
-        row.dataset.fee = fee;
-        row.dataset.qty = '1';
-        row.innerHTML = `
-            <div style="flex:1;">
-                <strong style="color:var(--text); display:block;">${docName}</strong>
-                <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
-                    <button type="button" class="qty-btn" onclick="changeQty('${rowId}', -1)">&minus;</button>
-                    <input type="number" class="qty-input" value="1" min="1" max="20" readonly>
-                    <button type="button" class="qty-btn" onclick="changeQty('${rowId}', 1)">+</button>
-                    <span style="font-size:12px; color:var(--text-muted); margin-left:6px;" id="${rowId}_fee">${fee ? 'Fee: ' + formatPeso(fee) : 'Free'}</span>
-                </div>
-            </div>
-            <button type="button" class="remove-btn" onclick="removeDocument('${rowId}', '${docId}')">
-                <i class="fa-solid fa-times"></i>
+<!-- DOCUMENT PREVIEW MODAL -->
+<div class="preview-overlay" id="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle" aria-hidden="true">
+    <div class="preview-box">
+        <div class="preview-header">
+            <h3 id="previewModalTitle">Document Preview</h3>
+            <button type="button" class="preview-close" onclick="closePreview()" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
             </button>
-        `;
-        listDiv.appendChild(row);
+        </div>
+        <div class="preview-body" id="previewBody">
+            <div class="preview-loading" id="previewLoading">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <p>Rendering preview...</p>
+            </div>
+            <div class="preview-content" id="previewContent" hidden></div>
+        </div>
+        <div class="preview-footer">
+            <button type="button" class="btn btn-ghost" onclick="closePreview()">Close</button>
+            <button type="button" class="btn btn-primary" id="previewRequestBtn" onclick="requestFromPreview()">
+                <i class="fa-solid fa-paper-plane"></i> Request This Document
+            </button>
+        </div>
+    </div>
+</div>
 
-        // Hidden inputs for form submission (kept in sync by row order)
-        const hiddenDoc = document.createElement('input');
-        hiddenDoc.type = 'hidden';
-        hiddenDoc.name = 'document_type[]';
-        hiddenDoc.value = docId;
-        hiddenInputs.appendChild(hiddenDoc);
-
-        const hiddenQty = document.createElement('input');
-        hiddenQty.type = 'hidden';
-        hiddenQty.name = 'quantity[]';
-        hiddenQty.value = '1';
-        hiddenQty.dataset.rowId = rowId;
-        hiddenInputs.appendChild(hiddenQty);
-
-        updateFeeTotal();
-    }
-
-    function changeQty(rowId, change) {
-        const row = document.getElementById(rowId);
-        const qtyInput = row.querySelector('.qty-input');
-        let qty = parseInt(qtyInput.value) + change;
-        if (qty < 1) qty = 1;
-        if (qty > 20) qty = 20;
-        qtyInput.value = qty;
-        row.dataset.qty = qty;
-
-        const feeSpan = document.getElementById(rowId + '_fee');
-        const fee = parseFloat(row.dataset.fee) || 0;
-        feeSpan.textContent = fee ? 'Fee: ' + formatPeso(fee * qty) : 'Free';
-
-        const qtyInputs = document.querySelectorAll('#hiddenInputs input[name="quantity[]"]');
-        qtyInputs.forEach(inp => {
-            if (inp.dataset.rowId === rowId) inp.value = qty;
-        });
-
-        updateFeeTotal();
-    }
-
-    function removeDocument(rowId, docId) {
-        document.getElementById(rowId).remove();
-
-        const docInputs = hiddenInputs.querySelectorAll('input[name="document_type[]"]');
-        const qtyInputs = hiddenInputs.querySelectorAll('input[name="quantity[]"]');
-        for (let i = 0; i < docInputs.length; i++) {
-            if (docInputs[i].value === docId) {
-                hiddenInputs.removeChild(docInputs[i]);
-                if (qtyInputs[i]) hiddenInputs.removeChild(qtyInputs[i]);
-                break;
-            }
-        }
-
-        updateFeeTotal();
-    }
-</script>
+<script src="{% static 'js/resident/request_document.js' %}"></script>
 {% endblock %}

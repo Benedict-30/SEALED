@@ -1,5 +1,4 @@
 {% extends 'brgy/base.html' %}
-{% block nav_admin_dashboard %}active{% endblock %}
 
 {% block content %}
 <div class="page-hero">
@@ -10,70 +9,46 @@
         </div>
         <div class="page-hero-sub">Welcome back, {{ user.first_name|default:user.username }}! Here's the system-wide overview.</div>
     </div>
-    <div class="page-hero-date"><i class="fa-regular fa-calendar"></i>{% now "l, F j, Y" %}</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{% url 'admin_reports' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-chart-pie"></i> View Reports
+        </a>
+        <div class="page-hero-date"><i class="fa-regular fa-calendar"></i>{% now "l, F j, Y" %}</div>
+    </div>
 </div>
 
-<div class="stats-strip">
-    <div class="stat-cell">
-        <div class="stat-cell-icon primary"><i class="fa-solid fa-users"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ total_residents }}</span>
-            <span class="stat-cell-label">Total Residents</span>
+<div class="stat-cards">
+    <div class="stat-card">
+        <div class="stat-card-icon primary"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ total_residents }}</span>
+            <span class="stat-card-label">Total Residents</span>
         </div>
     </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon success"><i class="fa-solid fa-user-check"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ verified_residents }}</span>
-            <span class="stat-cell-label">Verified</span>
+    <div class="stat-card">
+        <div class="stat-card-icon warning"><i class="fa-solid fa-user-clock"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ pending_verifications }}</span>
+            <span class="stat-card-label">Pending Verifications</span>
         </div>
     </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon accent"><i class="fa-solid fa-user-shield"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ active_staff }}</span>
-            <span class="stat-cell-label">Active Staff</span>
+    <div class="stat-card">
+        <div class="stat-card-icon info"><i class="fa-solid fa-file-lines"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ total_requests }}</span>
+            <span class="stat-card-label">Total Requests</span>
         </div>
     </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon info"><i class="fa-solid fa-building"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ total_barangays }}</span>
-            <span class="stat-cell-label">Barangays</span>
-        </div>
-    </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon warning"><i class="fa-solid fa-user-clock"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ pending_verifications }}</span>
-            <span class="stat-cell-label">Pending Verifications</span>
-        </div>
-    </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon primary"><i class="fa-solid fa-file-lines"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ total_requests }}</span>
-            <span class="stat-cell-label">Total Requests</span>
-        </div>
-    </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon success"><i class="fa-solid fa-flag-checkered"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ completed_requests }}</span>
-            <span class="stat-cell-label">Completed</span>
-        </div>
-    </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon danger"><i class="fa-solid fa-clock"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ pending_requests }}</span>
-            <span class="stat-cell-label">Pending Requests</span>
+    <div class="stat-card">
+        <div class="stat-card-icon danger"><i class="fa-solid fa-clock"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ pending_requests }}</span>
+            <span class="stat-card-label">Pending Requests</span>
         </div>
     </div>
 </div>
 
 <div class="dash-grid dash-grid-2">
-    <!-- Barangay Performance -->
     <div class="card">
         <div class="card-header">
             <h3>Barangay Performance</h3>
@@ -89,9 +64,7 @@
                         <tr>
                             <td class="fw-600 text-sm">{{ brgy.name }}</td>
                             <td class="text-sm">{{ brgy.total_residents }}</td>
-                            <td>
-                                <span class="badge badge-primary">{{ brgy.total_requests }}</span>
-                            </td>
+                            <td><span class="badge badge-primary">{{ brgy.total_requests }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -106,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Recent Activity -->
     <div class="card">
         <div class="card-header">
             <h3>Recent Activity</h3>
@@ -138,7 +110,6 @@
     </div>
 </div>
 
-<!-- Monthly Trend -->
 {% if monthly_trend %}
 <div class="card mt-4">
     <div class="card-header">

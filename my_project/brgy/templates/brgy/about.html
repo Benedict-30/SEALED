@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - SEALED</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/global/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/public/pages.css' %}">
+</head>
+<body>
+    {% include 'brgy/partials/topbar.html' with topbar_title=page_title %}
+
+    <main class="page-main">
+        <!-- Hero -->
+        <section class="page-hero">
+            <div class="page-hero-inner" data-reveal>
+                <span class="page-hero-eyebrow"><i class="fa-solid fa-circle-info"></i> About Us</span>
+                <h1>What is <span>SEALED</span>?</h1>
+                <p>
+                    SEALED is a barangay document request and management system that connects
+                    residents, staff, and administrators in one secure platform &mdash; making
+                    public service faster, transparent, and accessible from anywhere.
+                </p>
+            </div>
+        </section>
+
+        <!-- Pillars -->
+        <section class="page-section">
+            <div class="page-section-header">
+                <h2>Why SEALED Exists</h2>
+                <p>Built around three commitments to the community it serves.</p>
+            </div>
+            <div class="about-grid">
+                <div class="about-card" data-reveal>
+                    <div class="about-icon green"><i class="fa-solid fa-shield-halved"></i></div>
+                    <h3>Secure by Design</h3>
+                    <p>Every resident account is verified by barangay staff before access is granted, and every issued document carries a verification code anyone can validate.</p>
+                </div>
+                <div class="about-card" data-reveal>
+                    <div class="about-icon teal"><i class="fa-solid fa-clock"></i></div>
+                    <h3>Faster Service</h3>
+                    <p>Request and track documents online instead of falling in line. Real-time status updates mean you know exactly when your document is ready for pickup.</p>
+                </div>
+                <div class="about-card" data-reveal>
+                    <div class="about-icon amber"><i class="fa-solid fa-building"></i></div>
+                    <h3>Serving Every Barangay</h3>
+                    <p>Administrators manage multiple barangays on one platform, each with its own records, document types, staff, and identity.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="page-section" style="padding-top: 0;">
+            <div class="page-section-header">
+                <h2>How It Works</h2>
+                <p>Four simple steps from registration to document collection.</p>
+            </div>
+            <div class="steps-list">
+                <div class="step-row" data-reveal>
+                    <div class="step-badge">1</div>
+                    <div>
+                        <h4>Register</h4>
+                        <p>Create your account with your personal information and select your barangay.</p>
+                    </div>
+                </div>
+                <div class="step-row" data-reveal>
+                    <div class="step-badge">2</div>
+                    <div>
+                        <h4>Get Verified</h4>
+                        <p>Barangay staff reviews and approves your account. You'll be notified once verified.</p>
+                    </div>
+                </div>
+                <div class="step-row" data-reveal>
+                    <div class="step-badge">3</div>
+                    <div>
+                        <h4>Request Document</h4>
+                        <p>Choose the document type, state your purpose, and submit your request online.</p>
+                    </div>
+                </div>
+                <div class="step-row" data-reveal>
+                    <div class="step-badge">4</div>
+                    <div>
+                        <h4>Collect</h4>
+                        <p>Track your request status and pick up your document when it's ready.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="page-cta">
+            <div class="page-cta-inner" data-reveal>
+                <h2>Ready to Get Started?</h2>
+                <p>Join your barangay's digital document system today.</p>
+                {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="btn-page-primary"><i class="fa-solid fa-gauge-high"></i> Go to Dashboard</a>
+                {% else %}
+                <a href="{% url 'register' %}" class="btn-page-primary"><i class="fa-solid fa-user-plus"></i> Create Your Account Now</a>
+                <a href="{% url 'verify_document' %}" class="btn-page-primary ghost"><i class="fa-solid fa-magnifying-glass"></i> Verify a Document</a>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+
+    <footer class="pages-footer">
+        <span>&copy; {% now "Y" %} SEALED &mdash; Barangay Document Request &amp; Management System</span>
+        <nav>
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'services' %}">Services</a>
+            <a href="{% url 'verify_document' %}">Verify Document</a>
+        </nav>
+    </footer>
+    <script src="{% static 'js/global/script.js' %}"></script>
+</body>
+</html>

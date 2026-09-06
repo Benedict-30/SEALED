@@ -1,138 +1,9 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
 
-{% block nav_staff_doctypes %}active{% endblock %}
 
 {% block extra_css %}
-<style>
-    .top-actions {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-    .top-actions h2 {
-        font-size: 20px; font-weight: 800; color: var(--text); margin: 0;
-    }
-    .search-input-wrapper {
-        position: relative; display: flex; align-items: center;
-    }
-    .search-input-wrapper i {
-        position: absolute; left: 12px; color: var(--text-muted); font-size: 14px;
-    }
-    .search-input-wrapper .form-input {
-        padding-left: 36px; min-width: 220px; border-radius: 8px; border: 1px solid var(--border);
-        background: var(--card);
-    }
-
-    .doc-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
-    }
-    
-    /* Add New Card */
-    .doc-card-add {
-        background: var(--bg);
-        border: 2px dashed var(--border);
-        border-radius: var(--radius);
-        padding: 28px 24px;
-        text-align: center;
-        cursor: pointer;
-        text-decoration: none;
-        color: var(--text-muted);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 200px;
-        transition: all 0.25s ease;
-    }
-    .doc-card-add:hover {
-        border-color: var(--primary);
-        color: var(--primary);
-        background: var(--primary-50);
-    }
-    .doc-card-add i { font-size: 28px; margin-bottom: 12px; }
-    .doc-card-add span { font-weight: 600; font-size: 14px; }
-
-    /* Document Cards (Exact same style as resident side) */
-    .doc-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 28px 24px;
-        text-align: center;
-        color: inherit;
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 200px;
-        transition: all 0.25s ease;
-    }
-    .doc-card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 3px;
-        background: var(--primary);
-        transform: scaleX(0);
-        transition: transform 0.3s ease;
-    }
-    .doc-card:hover {
-        border-color: var(--primary-200);
-        box-shadow: var(--shadow-lg);
-        transform: translateY(-4px);
-    }
-    .doc-card:hover::before { transform: scaleX(1); }
-    
-    .doc-card-icon {
-        width: 56px; height: 56px; border-radius: 14px;
-        background: var(--primary-50); color: var(--primary);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 22px; margin-bottom: 16px;
-        transition: all 0.25s ease;
-    }
-    .doc-card:hover .doc-card-icon {
-        background: var(--primary); color: #fff;
-    }
-    
-    .doc-card h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-    .doc-card p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; }
-    
-    .doc-badge {
-        display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px;
-        border-radius: 20px; font-size: 11px; font-weight: 600;
-        background: var(--success-bg); color: var(--success);
-    }
-    .doc-badge.unavailable { background: var(--danger-bg); color: var(--danger); }
-    .doc-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-    
-    .doc-card-fee { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
-
-    /* Staff Edit Button (appears on hover) */
-    .doc-card-actions {
-        position: absolute; top: 12px; right: 12px;
-        opacity: 0; transition: opacity 0.2s ease;
-    }
-    .doc-card:hover .doc-card-actions { opacity: 1; }
-    
-    .btn-edit-card {
-        background: #fff; border: 1px solid var(--border);
-        padding: 6px 10px; border-radius: 6px; font-size: 12px;
-        color: var(--text); text-decoration: none; font-weight: 600;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        display: inline-flex; align-items: center; gap: 4px;
-    }
-    .btn-edit-card:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-
-    @media (max-width: 1024px) { .doc-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 640px) { .doc-grid { grid-template-columns: 1fr; } }
-</style>
+<link rel="stylesheet" href="{% static 'css/staff/document_types.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -150,48 +21,92 @@
 {% if page_obj %}
 <div class="doc-grid">
     <!-- Add New Document Card -->
-    <a href="#" class="doc-card-add" onclick="document.getElementById('inlineAddForm').style.display = 'grid'; return false;">
+    <a href="#" class="doc-card-add" id="openAddModal" aria-haspopup="dialog">
         <i class="fa-solid fa-plus"></i>
         <span>Add New Document</span>
     </a>
 
     {% for dt in page_obj %}
-    <div class="doc-card">
-        <!-- Edit Button on hover -->
-        <div class="doc-card-actions">
-            <a href="{% url 'staff_edit_document_type' dt.pk %}" class="btn-edit-card">
-                <i class="fa-solid fa-pen"></i> Edit
-            </a>
-            <form method="post" action="{% url 'staff_delete_document_type' dt.pk %}" style="display:inline;" onsubmit="return confirm('Delete {{ dt.name }}? This cannot be undone.');">
-                {% csrf_token %}
-                <button type="submit" class="btn-edit-card" style="color:var(--danger);" title="Delete">
-                    <i class="fa-solid fa-trash"></i> Delete
-                </button>
-            </form>
+    <div class="doc-card-wrap">
+        <div class="doc-card {% if dt.is_global %}doc-card-global{% endif %}">
+            {% if dt.is_global %}
+            <a href="{% url 'staff_edit_global_type' dt.pk %}" class="doc-card-hitarea" aria-label="Configure {{ dt.name }}" title="Configure {{ dt.name }}"></a>
+            {% else %}
+            <a href="{% url 'staff_edit_document_type' dt.pk %}" class="doc-card-hitarea" aria-label="Edit {{ dt.name }}" title="Edit {{ dt.name }}"></a>
+            {% endif %}
+            <!-- Edit Button on hover -->
+            <div class="doc-card-actions">
+                {% if dt.is_global %}
+                <a href="{% url 'staff_edit_global_type' dt.pk %}" class="btn-edit-card">
+                    <i class="fa-solid fa-gear"></i>
+                    {% if dt.override %}Manage{% else %}Configure{% endif %}
+                </a>
+                {% else %}
+                <a href="{% url 'staff_edit_document_type' dt.pk %}" class="btn-edit-card">
+                    <i class="fa-solid fa-pen"></i> Edit
+                </a>
+                <form method="post" action="{% url 'staff_delete_document_type' dt.pk %}" class="doc-card-delete-form" onsubmit="return confirm('Delete {{ dt.name }}? This cannot be undone.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-edit-card danger" title="Delete">
+                        <i class="fa-solid fa-trash"></i> Delete
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            <div class="doc-card-icon">
+                <i class="fa-solid fa-file-lines"></i>
+            </div>
+            <h3>{{ dt.name }}</h3>
+            <p>{{ dt.description|truncatechars:50|default:"Click to request document" }}</p>
+
+            {% if dt.is_global %}
+            <span class="doc-badge doc-badge-global">
+                <i class="fa-solid fa-globe"></i> Global
+            </span>
+            {% else %}
+            <span class="doc-badge {% if not dt.is_active %}unavailable{% endif %}">
+                {% if dt.is_active %}Available{% else %}Unavailable{% endif %}
+            </span>
+            {% endif %}
+
+            {% if dt.is_global %}
+                {% if dt.override %}
+                <div class="doc-card-fee">
+                    {% if dt.effective_fee %}Fee: &#8369;{{ dt.effective_fee|floatformat:2 }}{% else %}No Fee{% endif %}
+                    {% if not dt.override.has_template %}
+                    <span class="doc-card-notice">No template uploaded</span>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="doc-card-fee">
+                    Not configured for {{ brgy.name }}
+                    <span class="doc-card-notice">
+                        {% if dt.has_template %}Global template available{% else %}Upload a template to configure{% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            {% else %}
+                {% if dt.fee %}
+                <div class="doc-card-fee">Fee: &#8369;{{ dt.fee|floatformat:2 }}</div>
+                {% else %}
+                <div class="doc-card-fee">No Fee</div>
+                {% endif %}
+            {% endif %}
+
+            {% if dt.requirements_list %}
+            <div class="doc-card-req" title="{{ dt.requirements_list|join:', ' }}">
+                <i class="fa-solid fa-list-check"></i> {{ dt.requirements_list|length }} requirement{{ dt.requirements_list|length|pluralize }}
+            </div>
+            {% endif %}
         </div>
-        
-        <div class="doc-card-icon">
-            <i class="fa-solid fa-file-lines"></i>
-        </div>
-        <h3>{{ dt.name }}</h3>
-        <p>{{ dt.description|truncatechars:50|default:"Click to request document" }}</p>
-        
-        <span class="doc-badge {% if not dt.is_active %}unavailable{% endif %}">
-            {% if dt.is_active %}Available{% else %}Unavailable{% endif %}
-        </span>
-        
-        {% if dt.fee %}
-        <div class="doc-card-fee">Fee: &#8369;{{ dt.fee|floatformat:2 }}</div>
-        {% else %}
-        <div class="doc-card-fee">No Fee</div>
-        {% endif %}
     </div>
     {% endfor %}
 </div>
 
 <!-- Pagination -->
 {% if page_obj.has_other_pages %}
-<div style="display:flex; justify-content:center; margin-top:30px;">
+<div class="doc-pagination">
     <div class="pagination">
         {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&search={{ search }}">&laquo;</a>{% endif %}
         {% for num in page_obj.paginator.page_range %}
@@ -212,48 +127,81 @@
 </div>
 {% endif %}
 
-<!-- Hidden Inline Add Form (Replaces the old table header form) -->
-<div id="inlineAddForm" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-    <div style="background:var(--card); border-radius:var(--radius); width:100%; max-width:600px; max-height:90vh; overflow-y:auto; padding:32px; position:relative;">
-        <button onclick="document.getElementById('inlineAddForm').style.display = 'none'" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-muted);">&times;</button>
-        <h3 style="margin-top:0; margin-bottom:24px; font-weight:800;">Add New Document Type</h3>
-        
-        {% if form.errors %}
-        <div class="form-error-list" style="margin-bottom:16px;">
-            {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
-        </div>
-        {% endif %}
+<!-- Hidden Inline Add Form -->
+<div id="inlineAddForm" class="doc-modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="addDocTitle">
+    <div class="doc-modal">
+        <button type="button" class="doc-modal-close" id="closeAddModal" aria-label="Close">&times;</button>
+        <h3 id="addDocTitle" class="doc-modal-title">Add New Document Type</h3>
 
-        <form method="post">
+        <div id="addFormErrors" class="form-error-list doc-modal-errors" hidden></div>
+
+        <form method="post" enctype="multipart/form-data" class="doc-modal-form" id="addDocForm">
             {% csrf_token %}
-            <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
-                <div class="form-group">
-                    <label class="form-label">Document Name</label>
-                    {{ form.name }}
+            <div class="doc-modal-body">
+                <div class="doc-modal-fields">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="id_name">Document Name</label>
+                            {{ form.name }}
+                            <span class="doc-modal-field-error" data-field="name"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="id_fee">Fee (&#8369;)</label>
+                            {{ form.fee }}
+                            <span class="doc-modal-field-error" data-field="fee"></span>
+                        </div>
+                    </div>
+                    <div class="form-group form-group-block">
+                        <label class="form-label" for="id_description">Description</label>
+                        {{ form.description }}
+                    </div>
+                    <div class="form-group form-group-block">
+                        <label class="form-label" for="id_requirements">Requirements (one per line)</label>
+                        {{ form.requirements }}
+                    </div>
+                    <div class="form-group form-group-block">
+                        <label class="form-label" for="id_template_file">Document Template (.docx)</label>
+                        <div class="file-upload-area" id="modalFileUploadArea">
+                            <input type="file" name="template_file" id="id_template_file" accept=".docx,.doc,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <p>Drag & drop your template here or <strong>browse</strong></p>
+                            <small class="doc-modal-helptext">Optional &middot; .docx only &middot; Max 5 MB</small>
+                        </div>
+                        <div id="modalFileInfo" class="doc-modal-file-info" hidden>
+                            <i class="fa-solid fa-file-word"></i>
+                            <span id="modalFileName"></span>
+                            <span id="modalFileSize"></span>
+                            <button type="button" class="doc-modal-file-remove" id="modalFileRemove" aria-label="Remove file">&times;</button>
+                        </div>
+                    </div>
+                    <div class="form-group doc-modal-active">
+                        {{ form.is_active }}
+                        <label for="id_is_active">Active</label>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Fee (&#8369;)</label>
-                    {{ form.fee }}
+
+                <div class="doc-modal-preview">
+                    <h4><i class="fa-solid fa-eye"></i> Preview</h4>
+                    <div class="doc-card doc-card-preview" id="addPreview">
+                        <div class="doc-card-icon"><i class="fa-solid fa-file-lines"></i></div>
+                        <h3 id="previewName">Document Name</h3>
+                        <p id="previewDesc">Click to request document</p>
+                        <span class="doc-badge" id="previewStatus">Available</span>
+                        <div class="doc-card-fee" id="previewFee">No Fee</div>
+                    </div>
                 </div>
             </div>
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label">Description</label>
-                {{ form.description }}
-            </div>
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label">Requirements (one per line)</label>
-                {{ form.requirements }}
-            </div>
-            <div class="form-group" style="margin-bottom:20px; display:flex; align-items:center; gap:8px;">
-                {{ form.is_active }}
-                <label for="id_is_active" style="margin-bottom:0; cursor:pointer;">Active</label>
-            </div>
+
             <input type="hidden" name="barangay" value="{{ brgy.pk }}">
-            <div style="display:flex; gap:12px;">
-                <button type="submit" class="btn btn-primary" style="flex:1;"><i class="fa-solid fa-plus"></i> Add Document</button>
-                <button type="button" class="btn btn-ghost" onclick="document.getElementById('inlineAddForm').style.display = 'none'">Cancel</button>
+            <div class="doc-modal-actions">
+                <button type="submit" class="btn btn-primary" id="addDocSubmit"><i class="fa-solid fa-plus"></i> Add Document</button>
+                <button type="button" class="btn btn-ghost" id="cancelAddModal">Cancel</button>
             </div>
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/staff/document_types_modal.js' %}"></script>
 {% endblock %}

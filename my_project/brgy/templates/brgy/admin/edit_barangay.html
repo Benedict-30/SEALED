@@ -1,9 +1,8 @@
 {% extends 'brgy/base.html' %}
 {% load static %}
-{% block nav_admin_barangays %}active{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/theme_picker.css' %}">
+<link rel="stylesheet" href="{% static 'css/global/theme_picker.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -123,5 +122,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/theme_picker.js' %}"></script>
+<script src="{% static 'js/global/theme_picker.js' %}"></script>
 {% endblock %}

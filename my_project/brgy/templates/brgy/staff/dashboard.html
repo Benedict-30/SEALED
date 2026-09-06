@@ -1,7 +1,7 @@
 {% extends 'brgy/base.html' %}
-{% block nav_staff_dashboard %}active{% endblock %}
 
 {% block content %}
+{# ─── Page Header ──────────────────────────────────────────────── #}
 <div class="page-hero">
     <div>
         <div class="page-hero-title">
@@ -13,144 +13,226 @@
     <div class="page-hero-date"><i class="fa-regular fa-calendar"></i>{% now "l, F j, Y" %}</div>
 </div>
 
-<div class="stats-strip">
-    <div class="stat-cell">
-        <div class="stat-cell-icon accent"><i class="fa-solid fa-user-clock"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ pending_verifications }}</span>
-            <span class="stat-cell-label">Pending Verifications</span>
+{# ─── Stat Cards ───────────────────────────────────────────────── #}
+<div class="stat-cards stat-cards-4">
+    <div class="stat-card">
+        <div class="stat-card-icon warning"><i class="fa-solid fa-user-clock"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ pending_verifications }}</span>
+            <span class="stat-card-label">Pending Verifications</span>
         </div>
     </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon primary"><i class="fa-solid fa-users"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ verified_residents }}</span>
-            <span class="stat-cell-label">Verified Residents</span>
+    <div class="stat-card">
+        <div class="stat-card-icon danger"><i class="fa-solid fa-file-circle-exclamation"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ pending_requests }}</span>
+            <span class="stat-card-label">Pending Requests</span>
         </div>
     </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon warning"><i class="fa-solid fa-file-circle-exclamation"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ pending_requests }}</span>
-            <span class="stat-cell-label">Pending Requests</span>
+    <div class="stat-card">
+        <div class="stat-card-icon accent"><i class="fa-solid fa-box-open"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ ready_requests }}</span>
+            <span class="stat-card-label">Ready for Pickup</span>
         </div>
     </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon info"><i class="fa-solid fa-circle-check"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ approved_requests }}</span>
-            <span class="stat-cell-label">Approved</span>
-        </div>
-    </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon success"><i class="fa-solid fa-hand-holding"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ ready_requests }}</span>
-            <span class="stat-cell-label">Ready for Pickup</span>
-        </div>
-    </div>
-    <div class="stat-cell">
-        <div class="stat-cell-icon accent"><i class="fa-solid fa-flag-checkered"></i></div>
-        <div class="stat-cell-text">
-            <span class="stat-cell-value">{{ completed_requests }}</span>
-            <span class="stat-cell-label">Completed</span>
+    <div class="stat-card">
+        <div class="stat-card-icon success"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ verified_residents }}</span>
+            <span class="stat-card-label">Verified Residents</span>
         </div>
     </div>
 </div>
 
-<!-- Daily Stats -->
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="daily-stats">
-            <div class="daily-stat">
-                <div class="stat-kicker">Today's Requests</div>
-                <div class="stat-number primary">{{ today_requests }}</div>
-            </div>
-            <div class="daily-divider"></div>
-            <div class="daily-stat">
-                <div class="stat-kicker">Today's Completed</div>
-                <div class="stat-number success">{{ today_completed }}</div>
-            </div>
-            <div class="daily-divider"></div>
-            <div class="daily-stat">
-                <div class="stat-kicker">Total Requests</div>
-                <div class="stat-number">{{ total_requests }}</div>
-            </div>
-        </div>
-    </div>
-</div>
+{# ─── Main Dashboard Grid ──────────────────────────────────────── #}
+<div class="dash-grid dash-grid-main">
 
-<div class="dash-grid dash-grid-2">
-    <!-- Pending Verifications -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Pending Verifications</h3>
-            <a href="{% url 'verify_residents' %}" class="btn btn-ghost btn-sm">View All</a>
-        </div>
-        <div class="card-body-flush">
-            {% if pending_residents %}
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead><tr><th>Name</th><th>Date</th><th>Action</th></tr></thead>
-                    <tbody>
-                        {% for res in pending_residents %}
-                        <tr>
-                            <td>
-                                <div class="fw-600">{{ res.display_name }}</div>
-                                <div class="text-xs text-muted">{{ res.email }}</div>
-                            </td>
-                            <td class="text-sm text-muted">{{ res.date_joined|date:"M d" }}</td>
-                            <td>
-                                <a href="{% url 'approve_resident' res.pk %}" class="btn btn-success btn-xs" data-confirm="Approve {{ res.display_name }}?">Approve</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    {# ── Left Column (Main) ─────────────────────────────────────── #}
+    <div class="dash-grid-stack">
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Request Pipeline</h3>
+                <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm">View All</a>
             </div>
-            {% else %}
-            <div class="empty-state" style="padding:32px;">
-                <i class="fa-solid fa-check-circle" style="font-size:32px;color:var(--success);"></i>
-                <h4>All Caught Up</h4>
-                <p>No pending verifications.</p>
+            <div class="card-body">
+                <div class="bar-chart">
+                    <div class="bar-row">
+                        <span class="bar-label">Pending</span>
+                        <div class="bar-track">
+                            <div class="bar-fill warning" style="width:{% widthratio pending_requests total_requests 100 %}%">{{ pending_requests }}</div>
+                        </div>
+                        <span class="bar-value">{{ pending_requests }}</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-label">Approved</span>
+                        <div class="bar-track">
+                            <div class="bar-fill success" style="width:{% widthratio approved_requests total_requests 100 %}%">{{ approved_requests }}</div>
+                        </div>
+                        <span class="bar-value">{{ approved_requests }}</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-label">Ready</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:{% widthratio ready_requests total_requests 100 %}%">{{ ready_requests }}</div>
+                        </div>
+                        <span class="bar-value">{{ ready_requests }}</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-label">Completed</span>
+                        <div class="bar-track">
+                            <div class="bar-fill success" style="width:{% widthratio completed_requests total_requests 100 %}%">{{ completed_requests }}</div>
+                        </div>
+                        <span class="bar-value">{{ completed_requests }}</span>
+                    </div>
+                </div>
             </div>
-            {% endif %}
         </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Pending Verifications</h3>
+                <a href="{% url 'verify_residents' %}" class="btn btn-ghost btn-sm">View All</a>
+            </div>
+            <div class="card-body-flush">
+                {% if pending_residents %}
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead><tr><th>Name</th><th>Date</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {% for res in pending_residents %}
+                            <tr>
+                                <td>
+                                    <div class="fw-600">{{ res.display_name }}</div>
+                                    <div class="text-xs text-muted">{{ res.email }}</div>
+                                </td>
+                                <td class="text-sm text-muted">{{ res.date_joined|date:"M d" }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'approve_resident' res.pk %}" onsubmit="return confirm('Approve {{ res.display_name }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success btn-xs">Approve</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state" style="padding:32px;">
+                    <div class="empty-state-icon"><i class="fa-solid fa-user-check"></i></div>
+                    <h4>All Caught Up</h4>
+                    <p>No residents waiting for verification.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Pending Document Requests</h3>
+                <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm">View All</a>
+            </div>
+            <div class="card-body-flush">
+                {% if pending_doc_requests %}
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead><tr><th>Request #</th><th>Resident</th><th>Document</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {% for req in pending_doc_requests %}
+                            <tr>
+                                <td class="fw-600 text-sm">{{ req.request_number }}</td>
+                                <td class="text-sm">{{ req.resident_name }}</td>
+                                <td class="text-sm">{{ req.items_preview }}</td>
+                                <td><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
+                                <td>
+                                    <a href="{% url 'update_request_status' req.pk %}" class="btn btn-primary btn-xs">Process</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state" style="padding:32px;">
+                    <div class="empty-state-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+                    <h4>All Processed</h4>
+                    <p>No requests waiting for action.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
     </div>
 
-    <!-- Pending Requests -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Pending Document Requests</h3>
-            <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm">View All</a>
-        </div>
-        <div class="card-body-flush">
-            {% if pending_doc_requests %}
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead><tr><th>Request #</th><th>Resident</th><th>Document</th><th>Action</th></tr></thead>
-                    <tbody>
-                        {% for req in pending_doc_requests %}
-                        <tr>
-                            <td class="fw-600 text-sm">{{ req.request_number }}</td>
-                            <td class="text-sm">{{ req.resident.display_name }}</td>
-                            <td class="text-sm">{{ req.document_type.name }}</td>
-                            <td>
-                                <a href="{% url 'update_request_status' req.pk %}" class="btn btn-primary btn-xs">Process</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    {# ── Right Column (Sidebar) ─────────────────────────────────── #}
+    <div class="dash-grid-stack">
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Quick Actions</h3>
             </div>
-            {% else %}
-            <div class="empty-state" style="padding:32px;">
-                <i class="fa-solid fa-check-circle" style="font-size:32px;color:var(--success);"></i>
-                <h4>All Processed</h4>
-                <p>No pending document requests.</p>
+            <div class="card-body">
+                <div class="quick-actions">
+                    <a href="{% url 'verify_residents' %}" class="quick-action-link info">
+                        <div class="quick-action-icon"><i class="fa-solid fa-user-check"></i></div>
+                        <div class="quick-action-text">
+                            <span class="quick-action-title">Verify Residents</span>
+                            <span class="quick-action-desc">Review pending accounts</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right quick-action-arrow"></i>
+                    </a>
+                    <a href="{% url 'manage_requests' %}" class="quick-action-link warning">
+                        <div class="quick-action-icon"><i class="fa-solid fa-file-pen"></i></div>
+                        <div class="quick-action-text">
+                            <span class="quick-action-title">Manage Requests</span>
+                            <span class="quick-action-desc">Process document requests</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right quick-action-arrow"></i>
+                    </a>
+                    <a href="{% url 'staff_manage_document_types' %}" class="quick-action-link primary">
+                        <div class="quick-action-icon"><i class="fa-solid fa-file-invoice"></i></div>
+                        <div class="quick-action-text">
+                            <span class="quick-action-title">Document Types</span>
+                            <span class="quick-action-desc">Manage available documents</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right quick-action-arrow"></i>
+                    </a>
+                    <a href="{% url 'staff_reports' %}" class="quick-action-link info">
+                        <div class="quick-action-icon"><i class="fa-solid fa-chart-column"></i></div>
+                        <div class="quick-action-text">
+                            <span class="quick-action-title">View Reports</span>
+                            <span class="quick-action-desc">Generate activity reports</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right quick-action-arrow"></i>
+                    </a>
+                </div>
             </div>
-            {% endif %}
         </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Today's Snapshot</h3>
+            </div>
+            <div class="card-body-flush">
+                <div class="daily-snapshot">
+                    <div class="daily-snapshot-item">
+                        <div class="daily-snapshot-label">New Requests</div>
+                        <div class="daily-snapshot-value primary">{{ today_requests }}</div>
+                    </div>
+                    <div class="daily-snapshot-item">
+                        <div class="daily-snapshot-label">Completed</div>
+                        <div class="daily-snapshot-value success">{{ today_completed }}</div>
+                    </div>
+                    <div class="daily-snapshot-item">
+                        <div class="daily-snapshot-label">Total Requests</div>
+                        <div class="daily-snapshot-value">{{ total_requests }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 {% endblock %}

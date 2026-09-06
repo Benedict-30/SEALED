@@ -193,6 +193,14 @@ class CustomUser(Base):
         return self.get_full_name() or self.username
 
     @property
+    def initials(self):
+        first = (self.first_name or '').strip()
+        last = (self.last_name or '').strip()
+        if first or last:
+            return (first[:1] + last[:1]).upper() or self.get_short_name()[:1].upper()
+        return self.get_short_name()[:1].upper()
+
+    @property
     def is_verified_resident(self):
         return self.role == 'resident' and self.verification_status == 'approved'
 
@@ -229,6 +237,56 @@ class CustomUser(Base):
             if value == status:
                 return label
         return status or ''
+
+    class Gender:
+        choices = [
+            ('Male', 'Male'),
+            ('Female', 'Female'),
+            ('Other', 'Prefer not to say'),
+        ]
+
+    class CivilStatus:
+        choices = [
+            ('Single', 'Single'),
+            ('Married', 'Married'),
+            ('Widowed', 'Widowed'),
+            ('Separated', 'Separated'),
+        ]
+
+    class IdType:
+        choices = [
+            ('National ID', 'National ID'),
+            ("Driver's License", "Driver's License"),
+            ('PhilHealth ID', 'PhilHealth ID'),
+            ("Voter's ID", "Voter's ID"),
+            ('Passport', 'Passport'),
+            ('SSS/GSIS ID', 'SSS/GSIS ID'),
+            ('Postal ID', 'Postal ID'),
+            ('Senior Citizen ID', 'Senior Citizen ID'),
+            ('PWD ID', 'PWD ID'),
+            ('Other', 'Other'),
+        ]
+
+    def get_gender_display(self):
+        gender = self._data.get('gender')
+        for value, label in self.Gender.choices:
+            if value == gender:
+                return label
+        return gender or ''
+
+    def get_civil_status_display(self):
+        status = self._data.get('civil_status')
+        for value, label in self.CivilStatus.choices:
+            if value == status:
+                return label
+        return status or ''
+
+    def get_id_type_display(self):
+        id_type = self._data.get('id_type')
+        for value, label in self.IdType.choices:
+            if value == id_type:
+                return label
+        return id_type or ''
 
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
@@ -267,6 +325,10 @@ CustomUser.objects = _CustomUserQuerySet()
 class DocumentType(Base):
     _collection_key = 'document_type'
     _file_fields = ('template_file',)
+
+    @property
+    def is_global(self):
+        return self._data.get('scope') == 'global'
 
     @property
     def barangay(self):
@@ -316,6 +378,31 @@ class DocumentType(Base):
     objects = _DocumentTypeQuerySet()
 
 
+class DocumentTypeOverride(Base):
+    """Per-barangay fee/template config for a global document type."""
+
+    _collection_key = 'document_type_override'
+    _file_fields = ('template_file',)
+
+    @property
+    def document_type(self):
+        document_type_id = self._data.get('document_type_id')
+        if not document_type_id:
+            return None
+        return self._cached('document_type', lambda: get_document_type(document_type_id))
+
+    @property
+    def barangay(self):
+        barangay_id = self._data.get('barangay_id')
+        if not barangay_id:
+            return None
+        return self._cached('barangay', lambda: get_barangay(barangay_id))
+
+    @property
+    def has_template(self):
+        return bool(getattr(self.template_file, 'name', ''))
+
+
 class DocumentRequestItem(Base):
     _collection_key = 'document_request_item'
 
@@ -327,7 +414,22 @@ class DocumentRequestItem(Base):
         return self._cached('document_type', lambda: get_document_type(document_type_id))
 
     @property
+    def printed_at(self):
+        value = self._data.get('printed_at')
+        if isinstance(value, datetime):
+            from django.utils import timezone
+            return timezone.localtime(value) if timezone.is_aware(value) else value
+        return value
+
+    @property
+    def is_printed(self):
+        return bool(self.printed_at)
+
+    @property
     def total_fee(self):
+        fee_per_unit = self._data.get('fee_per_unit')
+        if fee_per_unit is not None:
+            return float(fee_per_unit) * int(self.quantity or 0)
         doc_type = self.document_type
         if not doc_type:
             return 0
@@ -345,9 +447,24 @@ class DocumentRequest(Base):
         choices = [
             ('pending', 'Pending'),
             ('approved', 'Approved'),
+            ('printed', 'Printed'),
             ('ready_for_pickup', 'Ready for Pickup'),
             ('completed', 'Completed'),
             ('rejected', 'Rejected'),
+        ]
+
+    class PaymentStatus:
+        choices = [
+            ('paid', 'Paid'),
+            ('unpaid', 'Unpaid'),
+        ]
+
+    class PickupSlot:
+        choices = [
+            ('morning', 'Morning (8:00 AM - 12:00 NN)'),
+            ('afternoon', 'Afternoon (12:00 NN - 5:00 PM)'),
+            ('evening', 'Evening (5:00 PM - 8:00 PM)'),
+            ('any', 'Any Time'),
         ]
 
     @property
@@ -376,6 +493,50 @@ class DocumentRequest(Base):
         return value
 
     @property
+    def pickup_slot(self):
+        return self._data.get('pickup_slot') or 'morning'
+
+    def get_pickup_slot_display(self):
+        for value, label in self.PickupSlot.choices:
+            if value == self.pickup_slot:
+                return label
+        return self.pickup_slot
+
+    @property
+    def payment_status(self):
+        return self._data.get('payment_status') or 'unpaid'
+
+    @property
+    def is_paid(self):
+        return self.payment_status == 'paid'
+
+    @property
+    def payment_method(self):
+        return self._data.get('payment_method') or ''
+
+    @property
+    def or_number(self):
+        return self._data.get('or_number') or ''
+
+    @property
+    def paid_at(self):
+        value = self._data.get('paid_at')
+        if isinstance(value, datetime):
+            from django.utils import timezone
+            return timezone.localtime(value) if timezone.is_aware(value) else value
+        return value
+
+    def get_payment_status_display(self):
+        for value, label in self.PaymentStatus.choices:
+            if value == self.payment_status:
+                return label
+        return 'Unpaid'
+
+    @property
+    def total_fee(self):
+        return sum(item.total_fee for item in self.items.all())
+
+    @property
     def items(self):
         class ItemsManager:
             def __init__(self, request_obj):
@@ -391,6 +552,7 @@ class DocumentRequest(Base):
         colors = {
             'pending': 'warning',
             'approved': 'info',
+            'printed': 'info',
             'ready_for_pickup': 'success',
             'completed': 'primary',
             'rejected': 'danger',
@@ -425,6 +587,42 @@ class ActivityLog(Base):
             return None
         return self._cached('user', lambda: get_user(user_id))
 
+    @property
+    def barangay(self):
+        barangay_id = self._data.get('barangay_id')
+        if not barangay_id:
+            return None
+        return self._cached('barangay', lambda: get_barangay(barangay_id))
+
+
+class Announcement(Base):
+    _collection_key = 'announcement'
+
+    @property
+    def author(self):
+        user_id = self._data.get('author_id')
+        if not user_id:
+            return None
+        return self._cached('author', lambda: get_user(user_id))
+
+    @property
+    def barangay(self):
+        barangay_id = self._data.get('barangay_id')
+        if not barangay_id:
+            return None
+        return self._cached('barangay', lambda: get_barangay(barangay_id))
+
+    @property
+    def is_published(self):
+        return bool(self._data.get('is_published'))
+
+    @property
+    def is_global(self):
+        return not self._data.get('barangay_id')
+
+    def get_status_display(self):
+        return 'Published' if self.is_published else 'Draft'
+
 
 # ──────────────────────── Conversion helpers ────────────────────────
 
@@ -443,9 +641,31 @@ def get_document_type(document_type_id):
     return DocumentType(data) if data else None
 
 
+def get_document_type_override(override_id):
+    data = firestore_db.get_document_type_override(override_id)
+    return DocumentTypeOverride(data) if data else None
+
+
+def get_override_for(doc_type_id, barangay_id):
+    """Return the DocumentTypeOverride for a global type + barangay, or None."""
+    if not doc_type_id or not barangay_id:
+        return None
+    docs = firestore_db.list_document_type_overrides(
+        filters=[('document_type_id', '==', doc_type_id), ('barangay_id', '==', barangay_id)]
+    )
+    if not docs:
+        return None
+    return DocumentTypeOverride(docs[0])
+
+
 def get_document_request(request_id):
     data = firestore_db.get_document_request(request_id)
     return DocumentRequest(data) if data else None
+
+
+def get_announcement(announcement_id):
+    data = firestore_db.get_announcement(announcement_id)
+    return Announcement(data) if data else None
 
 
 def get_request_items(request_id):

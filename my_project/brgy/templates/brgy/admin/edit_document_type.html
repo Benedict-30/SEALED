@@ -1,45 +1,8 @@
 {% extends 'brgy/base.html' %}
-{% block nav_admin_doctypes %}active{% endblock %}
+{% load static %}
 
 {% block extra_css %}
-<style>
-    .file-upload-area {
-        border: 2px dashed var(--border);
-        border-radius: 12px;
-        padding: 24px 20px;
-        text-align: center;
-        background: var(--bg);
-        transition: all 0.2s;
-        position: relative;
-    }
-    .file-upload-area:hover {
-        border-color: var(--primary);
-        background: var(--primary-bg, #f0fdf4);
-    }
-    .file-upload-area input[type="file"] {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-    }
-    .file-upload-area i {
-        font-size: 26px;
-        color: var(--primary);
-        margin-bottom: 8px;
-    }
-    .file-upload-area p {
-        color: var(--text-muted);
-        font-size: 14px;
-        margin: 0;
-    }
-    .file-upload-area p strong { color: var(--primary); }
-    .current-file-actions {
-        margin-top: 12px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/admin/document_types.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -55,55 +18,37 @@
                 {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
             </div>
             {% endif %}
-            <form method="post" enctype="multipart/form-data">
+            <form method="post">
                 {% csrf_token %}
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Document Name</label>
                         {{ form.name }}
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Barangay</label>
-                        {{ form.barangay }}
+                    <div class="form-group" style="min-width:180px;">
+                        <label class="form-label">Scope</label>
+                        {{ form.scope }}
                     </div>
+                </div>
+                <div class="form-group" id="barangayGroup">
+                    <label class="form-label">Barangay</label>
+                    {{ form.barangay }}
                 </div>
                 <div class="form-group">
                     <label class="form-label">Description</label>
                     {{ form.description }}
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Requirements (one per line)</label>
-                        {{ form.requirements }}
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Fee (&#8369;)</label>
-                        {{ form.fee }}
-                    </div>
-                </div>
                 <div class="form-group">
-                    <label class="form-label">Document Template (.docx)</label>
-                    {% if doc_type.has_template %}
-                    <div class="current-file-actions" style="margin-bottom:12px;justify-content:flex-start;">
-                        <i class="fa-solid fa-file-word" style="color:#2b579a;font-size:20px;"></i>
-                        <span style="font-size:14px;font-weight:600;">{{ doc_type.template_file.name }}</span>
-                        <a href="{{ doc_type.template_file.url }}" target="_blank" class="btn btn-ghost btn-xs">
-                            <i class="fa-solid fa-eye"></i> View Current
-                        </a>
-                    </div>
-                    {% else %}
-                    <p class="text-xs text-muted" style="margin-bottom:8px;">No template uploaded yet. Add one to generate documents.</p>
-                    {% endif %}
-                    <div class="file-upload-area">
-                        {{ form.template_file }}
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <p>Drag &amp; drop your template here or <strong>browse</strong></p>
-                        <p style="font-size:12px;margin-top:6px;opacity:0.7;">Uploading a new file replaces the current template.</p>
-                    </div>
+                    <label class="form-label">Requirements (one per line)</label>
+                    {{ form.requirements }}
                 </div>
                 <div class="form-group" style="display:flex;align-items:center;gap:8px;">
                     {{ form.is_active }}
                     <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+                </div>
+                <div class="form-info" style="padding:12px 14px;border-radius:10px;background:var(--bg,#f8fafc);border:1px dashed var(--border,#e9ecef);margin-bottom:16px;">
+                    <i class="fa-solid fa-circle-info" style="color:var(--info);margin-right:6px;"></i>
+                    <span style="font-size:13px;color:var(--text-muted);">Price and template are managed by each barangay&apos;s staff. They are not editable here.</span>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:20px;">
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Changes</button>
@@ -116,17 +61,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const templateInput = document.getElementById('id_template_file');
-    if (!templateInput) return;
-    const area = templateInput.closest('.file-upload-area');
-    const fileText = area ? area.querySelector('p') : null;
-    templateInput.addEventListener('change', function() {
-        const name = templateInput.files && templateInput.files[0]
-            ? templateInput.files[0].name : '';
-        if (fileText && name) fileText.textContent = 'Selected: ' + name;
-    });
-});
-</script>
+<script src="{% static 'js/admin/edit_document_type.js' %}"></script>
 {% endblock %}

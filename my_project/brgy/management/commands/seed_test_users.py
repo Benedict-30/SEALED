@@ -141,6 +141,7 @@ def _seed_document_types(barangay_id):
             'requirements': spec['requirements'],
             'fee': spec['fee'],
             'is_active': True,
+            'scope': 'local',
             'barangay_id': barangay_id,
             'template_file': '',
         })

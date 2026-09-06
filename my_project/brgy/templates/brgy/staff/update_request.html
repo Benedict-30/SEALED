@@ -1,76 +1,14 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
 
-{% block nav_staff_requests %}active{% endblock %}
 
 {% block extra_css %}
-<style>
-    .summary-card {
-        background: #fff;
-        border: 1px solid var(--border-light);
-        border-radius: var(--radius);
-        margin-bottom: 24px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-    }
-    .summary-header {
-        background: linear-gradient(135deg, var(--primary-50) 0%, #ffffff 100%);
-        padding: 20px 24px;
-        border-bottom: 1px solid var(--border-light);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 15px;
-    }
-    .summary-header h3 {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .summary-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        padding: 24px;
-    }
-    @media (max-width: 768px) {
-        .summary-grid { grid-template-columns: 1fr; }
-    }
-    .summary-item label {
-        display: block;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--text-muted);
-        margin-bottom: 6px;
-        font-weight: 600;
-    }
-    .summary-item .value {
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--text);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .purpose-box {
-        background: var(--bg-body);
-        border: 1px solid var(--border-light);
-        border-radius: 8px;
-        padding: 12px 16px;
-        font-size: 14px;
-        color: var(--text);
-        line-height: 1.5;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/staff/update_request.css' %}">
 {% endblock %}
 
 {% block content %}
-<div style="max-width: 800px; margin: 0 auto;">
-    <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm mb-4" style="display:inline-flex;">
+<div class="update-request-page">
+    <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm back-link">
         <i class="fa-solid fa-arrow-left"></i> Back to Requests
     </a>
 
@@ -78,7 +16,7 @@
     <div class="summary-card">
         <div class="summary-header">
             <h3><i class="fa-solid fa-file-circle-check text-primary"></i> {{ doc_request.request_number }}</h3>
-            <span class="badge badge-{{ doc_request.status_color }}" style="font-size: 14px; padding: 8px 16px;">
+            <span class="badge badge-{{ doc_request.status_color }} status-badge-lg">
                 {{ doc_request.get_status_display }}
             </span>
         </div>
@@ -97,27 +35,73 @@
                     {{ doc_request.created_at|date:"M d, Y g:i A" }}
                 </div>
             </div>
-            <div class="summary-item" style="grid-column: 1 / -1;">
+            <div class="summary-item">
+                <label>Contact Number</label>
+                <div class="value">
+                    <i class="fa-solid fa-phone text-muted"></i> 
+                    {{ doc_request.contact_number|default:"—" }}
+                </div>
+            </div>
+            <div class="summary-item">
+                <label>Pickup Date</label>
+                <div class="value">
+                    <i class="fa-solid fa-truck-fast text-muted"></i> 
+                    {{ doc_request.pickup_date|date:"M d, Y"|default:"—" }}
+                </div>
+            </div>
+            <div class="summary-item span-full">
+                <label>Requested Documents</label>
+                <div class="doc-items">
+                    {% for item in doc_request.items.all %}
+                    <div class="doc-item">
+                        <span class="doc-item-name">
+                            <i class="fa-solid fa-file-lines text-muted"></i> 
+                            {{ item.document_type.name }}
+                            {% if item.quantity and item.quantity > 1 %}<span class="doc-item-qty">×{{ item.quantity }}</span>{% endif %}
+                        </span>
+                        <span class="doc-item-fee">
+                            {% if item.total_fee %}&#8369;{{ item.total_fee|floatformat:2 }}{% else %}Free{% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                    {% if doc_request.items %}
+                    <div class="doc-total">
+                        <span>Total Fee</span>
+                        <span>&#8369;{{ total_fee|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="summary-item span-full">
                 <label>Purpose of Request</label>
                 <div class="purpose-box">
                     {{ doc_request.purpose|default:"No purpose provided." }}
                 </div>
             </div>
+            {% if doc_request.staff_notes %}
+            <div class="summary-item span-full">
+                <label>Staff Notes</label>
+                <div class="notes-box">
+                    <i class="fa-solid fa-note-sticky text-muted"></i> 
+                    {{ doc_request.staff_notes }}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <!-- Update Status Form Card -->
     <div class="card">
-        <div class="card-header" style="border-bottom: 1px solid var(--border-light);">
-            <h3 style="margin:0; font-size: 16px; font-weight: 600;">
+        <div class="card-header status-card-header">
+            <h3 class="status-card-title">
                 <i class="fa-solid fa-pen-to-square text-primary mr-2"></i> Update Status
             </h3>
         </div>
-        <div class="card-body" style="padding: 24px;">
+        <div class="card-body status-card-body">
             <form method="post">
                 {% csrf_token %}
                 
-                <div class="form-group">
+                <div class="form-group status-form-group">
                     <label class="form-label">New Status <span class="text-danger">*</span></label>
                     <select name="status" id="statusSelect" class="form-input" required onchange="toggleRejectionField()">
                         {% for choice in form.status.field.choices %}
@@ -129,9 +113,10 @@
                 </div>
 
                 <!-- Hidden field that only shows if 'Rejected' is selected -->
-                <div class="form-group" id="rejectionField" style="display: none;">
+                <div class="form-group" id="rejectionField" hidden>
                     <label class="form-label">Rejection Reason <span class="text-danger">*</span></label>
-                    <textarea name="rejection_reason" class="form-input" rows="3" placeholder="Please provide a clear reason for rejecting this request...">{{ form.rejection_reason.value|default:'' }}</textarea>
+                    <textarea name="rejection_reason" id="rejectionReason" class="form-input" rows="3" placeholder="Please provide a clear reason for rejecting this request...">{{ form.rejection_reason.value|default:'' }}</textarea>
+                    <div class="form-helptext">A reason is required when rejecting a request so the resident knows why.</div>
                 </div>
 
                 <div class="form-group">
@@ -140,8 +125,8 @@
                     <div class="form-helptext">This is optional but helps keep track of communications.</div>
                 </div>
 
-                <div style="display:flex; gap:12px; margin-top:24px;">
-                    <button type="submit" class="btn btn-primary" style="flex:1; justify-content:center;">
+                <div class="form-actions-bar">
+                    <button type="submit" class="btn btn-primary btn-submit-fill">
                         <i class="fa-solid fa-check"></i> Save Update
                     </button>
                     <a href="{% url 'manage_requests' %}" class="btn btn-ghost">Cancel</a>
@@ -149,21 +134,63 @@
             </form>
         </div>
     </div>
+
+    <!-- Payment Card -->
+    <div class="card">
+        <div class="card-header status-card-header">
+            <h3 class="status-card-title">
+                <i class="fa-solid fa-money-bill-wave text-primary mr-2"></i> Payment
+            </h3>
+            <span class="badge {% if doc_request.is_paid %}badge-success{% else %}badge-muted{% endif %} status-badge-lg">
+                {{ doc_request.get_payment_status_display }}
+            </span>
+        </div>
+        <div class="card-body status-card-body">
+            {% if doc_request.is_paid %}
+            <div class="payment-info">
+                <div class="payment-info-row">
+                    <span>Amount Collected</span>
+                    <span class="fw-600">&#8369;{{ total_fee|floatformat:2 }}</span>
+                </div>
+                <div class="payment-info-row">
+                    <span>Method</span>
+                    <span>{{ doc_request.payment_method|default:"—" }}</span>
+                </div>
+                <div class="payment-info-row">
+                    <span>OR / Reference</span>
+                    <span>{{ doc_request.or_number|default:"—" }}</span>
+                </div>
+                <div class="payment-info-row">
+                    <span>Collected On</span>
+                    <span>{{ doc_request.paid_at|date:"M d, Y g:i A"|default:"—" }}</span>
+                </div>
+            </div>
+            {% elif can_pay %}
+            <form method="post" action="{% url 'mark_paid' doc_request.pk %}">
+                {% csrf_token %}
+                <p class="form-helptext mb-3">Mark this request as paid and record the collection method.</p>
+                <div class="form-row" style="display:flex;gap:14px;flex-wrap:wrap;">
+                    <div class="form-group" style="flex:1;min-width:180px;">
+                        <label class="form-label">Payment Method</label>
+                        {{ payment_form.payment_method }}
+                    </div>
+                    <div class="form-group" style="flex:1;min-width:180px;">
+                        <label class="form-label">OR / Reference Number</label>
+                        {{ payment_form.or_number }}
+                    </div>
+                </div>
+                <div class="form-actions-bar">
+                    <button type="submit" class="btn btn-success btn-submit-fill">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> Confirm Payment
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <p class="form-helptext">Payment can only be collected once the request has been approved.</p>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
-<script>
-    function toggleRejectionField() {
-        const status = document.getElementById('statusSelect').value;
-        const rejectionField = document.getElementById('rejectionField');
-        
-        if (status === 'rejected') {
-            rejectionField.style.display = 'block';
-        } else {
-            rejectionField.style.display = 'none';
-        }
-    }
-    
-    // Run on page load to handle form errors
-    window.onload = toggleRejectionField;
-</script>
+<script src="{% static 'js/staff/update_request.js' %}"></script>
 {% endblock %}

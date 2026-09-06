@@ -1,57 +1,119 @@
 <header class="topbar">
     <div class="topbar-left">
         {% if user.is_authenticated %}
-        <button class="topbar-toggle" id="sidebarToggle">
+        <button class="topbar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
             <i class="fa-solid fa-bars"></i>
         </button>
-        <a href="{% url 'dashboard' %}" class="topbar-btn" title="Go to Dashboard" aria-label="Dashboard">
-            <i class="fa-solid fa-house"></i>
+        <a href="{% url 'dashboard' %}" class="topbar-btn {% if sidebar_active %}active{% endif %}" title="Go to Dashboard" aria-label="Dashboard">
+            <i class="fa-solid fa-gauge-high"></i>
         </a>
         {% endif %}
-        <h1 class="topbar-title">{{ topbar_title|default:"Dashboard" }}</h1>
+        <h1 class="topbar-title"><span class="topbar-title-text">{{ topbar_title|default:"Dashboard" }}</span></h1>
     </div>
+
+    {% if user.is_authenticated %}
+    <span class="topbar-clock" id="topbarClock" data-tz="Asia/Manila"></span>
+    {% endif %}
+
+    <nav class="topbar-nav" aria-label="Main navigation">
+        <a href="{% url 'home' %}" class="topbar-nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+            <i class="fa-solid fa-house"></i> Home
+        </a>
+        <a href="{% url 'services' %}" class="topbar-nav-link {% if request.resolver_match.url_name == 'services' %}active{% endif %}">
+            <i class="fa-solid fa-file-lines"></i> Services
+        </a>
+        <a href="{% url 'about' %}" class="topbar-nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+            <i class="fa-solid fa-circle-info"></i> About
+        </a>
+    </nav>
+
     <div class="topbar-right">
+        <div class="topbar-pages" id="topbarPages">
+            <button class="topbar-btn" id="pagesBtn" aria-label="Pages menu" aria-haspopup="true" aria-expanded="false" aria-controls="pagesDropdown">
+                <i class="fa-solid fa-compass"></i>
+            </button>
+            <div class="pages-dropdown" id="pagesDropdown">
+                <div class="pages-dropdown-header">Navigation</div>
+                <a href="{% url 'home' %}" class="pages-dropdown-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                    <i class="fa-solid fa-house"></i> Home
+                </a>
+                <a href="{% url 'services' %}" class="pages-dropdown-item {% if request.resolver_match.url_name == 'services' %}active{% endif %}">
+                    <i class="fa-solid fa-file-lines"></i> Services
+                </a>
+                <a href="{% url 'about' %}" class="pages-dropdown-item {% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+                    <i class="fa-solid fa-circle-info"></i> About
+                </a>
+                {% if not user.is_authenticated %}
+                <div class="pages-dropdown-divider"></div>
+                <a href="{% url 'verify_document' %}" class="pages-dropdown-item {% if request.resolver_match.url_name == 'verify_document' %}active{% endif %}">
+                    <i class="fa-solid fa-shield-halved"></i> Verify Document
+                </a>
+                <a href="{% url 'login' %}" class="pages-dropdown-item {% if request.resolver_match.url_name == 'login' %}active{% endif %}">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </a>
+                <a href="{% url 'register' %}" class="pages-dropdown-item {% if request.resolver_match.url_name == 'register' %}active{% endif %}">
+                    <i class="fa-solid fa-user-plus"></i> Create Account
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <button type="button" class="topbar-btn topbar-theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" title="Toggle dark mode">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+
         {% if user.is_authenticated %}
-        <div style="position:relative">
-            <button class="topbar-btn" id="notifBtn" aria-label="Notifications">
+        <div class="topbar-notif-wrap" id="topbarNotif" data-poll-url="{% url 'unread_notification_count' %}">
+            <button class="topbar-btn" id="notifBtn" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
                 <i class="fa-solid fa-bell"></i>
                 {% if unread_notification_count > 0 %}
-                <span class="topbar-badge">{{ unread_notification_count }}</span>
+                <span class="topbar-badge">{% if unread_notification_count > 99 %}+99{% else %}{{ unread_notification_count }}{% endif %}</span>
                 {% endif %}
             </button>
             <div class="notification-dropdown" id="notifDropdown">
                 <div class="notif-dropdown-header">
                     <h4><i class="fa-solid fa-bell" style="color:var(--accent);"></i> Notifications</h4>
                     {% if unread_notification_count > 0 %}
-                    <a href="{% url 'mark_all_notifications_read' %}" style="font-size:12px;font-weight:600;">Mark all read</a>
+                    <form method="post" action="{% url 'mark_all_notifications_read' %}" class="topbar-form">
+                        {% csrf_token %}
+                        <button type="submit" class="notif-mark-all" aria-label="Mark all notifications as read">Mark all read</button>
+                    </form>
                     {% endif %}
                 </div>
                 <div class="notif-dropdown-body">
                     {% if recent_notifications %}
                         {% for notif in recent_notifications %}
-                        <a href="{% url 'mark_notification_read' notif.pk %}" class="notif-dropdown-item {% if not notif.is_read %}unread{% endif %}">
-                            <div class="notif-title">{{ notif.title }}</div>
-                            <div class="notif-msg">{{ notif.message|truncatechars:80 }}</div>
-                            <div class="notif-time">{{ notif.created_at|timesince }} ago</div>
-                        </a>
+                        <form method="post" action="{% url 'mark_notification_read' notif.pk %}" class="topbar-form">
+                            {% csrf_token %}
+                            <button type="submit" class="notif-dropdown-item {% if not notif.is_read %}unread{% endif %}" aria-label="{% if not notif.is_read %}Mark as read: {% endif %}{{ notif.title|truncatechars:60 }}">
+                                <span class="notif-icon {% if "request" in notif.title|lower %}info{% elif "account" in notif.title|lower or "verified" in notif.title|lower or "register" in notif.title|lower %}success{% elif "rejected" in notif.title|lower %}danger{% else %}default{% endif %}">
+                                    <i class="fa-solid {% if "request" in notif.title|lower %}fa-file-lines{% elif "verified" in notif.title|lower or "register" in notif.title|lower %}fa-user-check{% else %}fa-bell{% endif %}"></i>
+                                </span>
+                                <div class="notif-text">
+                                    <div class="notif-title">{{ notif.title }}</div>
+                                    <div class="notif-msg">{{ notif.message|truncatechars:80 }}</div>
+                                    <div class="notif-time">{{ notif.created_at|timesince }} ago</div>
+                                </div>
+                            </button>
+                        </form>
                         {% endfor %}
                     {% else %}
-                    <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">
-                        <i class="fa-regular fa-bell" style="font-size:26px;display:block;margin-bottom:8px;opacity:0.5;"></i>
+                    <div class="notif-empty">
+                        <i class="fa-regular fa-bell"></i>
                         No notifications
                     </div>
                     {% endif %}
                 </div>
                 <div class="notif-dropdown-footer">
-                    <a href="{% url 'notifications' %}">View All Notifications</a>
+                    <a href="{% if user.role == 'admin' %}{% url 'admin_notifications' %}{% elif user.role == 'staff' %}{% url 'staff_notifications' %}{% else %}{% url 'notifications' %}{% endif %}">View All Notifications</a>
                 </div>
             </div>
         </div>
 
         <!-- User Menu -->
         <div class="user-menu" id="userMenu">
-            <button class="user-menu-btn" id="userMenuBtn" aria-label="Account menu">
-                <span class="user-menu-avatar">{{ user.first_name.0 }}{{ user.last_name.0 }}</span>
+            <button class="user-menu-btn" id="userMenuBtn" aria-label="Account menu" aria-haspopup="true" aria-expanded="false" aria-controls="userDropdown">
+                <span class="user-menu-avatar">{{ user.initials }}</span>
                 <span class="user-menu-info">
                     <span class="user-menu-name">{{ user.display_name }}</span>
                     <span class="user-menu-role">{{ user.get_role_display }}</span>
@@ -60,33 +122,44 @@
             </button>
             <div class="user-dropdown" id="userDropdown">
                 <div class="user-dropdown-header">
-                    <span class="user-menu-avatar">{{ user.first_name.0 }}{{ user.last_name.0 }}</span>
+                    <span class="user-menu-avatar">{{ user.initials }}</span>
                     <div>
                         <div class="user-dropdown-name">{{ user.display_name }}</div>
                         <div class="user-dropdown-email">{{ user.email|default:"Account" }}</div>
                     </div>
                 </div>
+                {% if user.role == 'resident' %}
                 <a href="{% url 'profile' %}" class="user-dropdown-item">
                     <i class="fa-solid fa-user"></i> My Profile
                 </a>
+                {% endif %}
+                {% if user.role == 'staff' %}
+                <a href="{% url 'staff_profile' %}" class="user-dropdown-item">
+                    <i class="fa-solid fa-user"></i> My Profile
+                </a>
+                {% endif %}
                 <a href="{% url 'dashboard' %}" class="user-dropdown-item">
                     <i class="fa-solid fa-gauge-high"></i> Dashboard
                 </a>
                 <div class="user-dropdown-divider"></div>
-                <a href="{% url 'logout' %}" class="user-dropdown-item danger" data-confirm="Are you sure you want to logout?">
-                    <i class="fa-solid fa-right-from-bracket"></i> Logout
-                </a>
+                <form method="post" action="{% url 'logout' %}" class="topbar-form">
+                    {% csrf_token %}
+                    <button type="submit" class="user-dropdown-item danger user-dropdown-logout"
+                            onclick="return confirm('Are you sure you want to logout?');">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                </form>
             </div>
         </div>
         {% else %}
-        <a href="{% url 'verify_document' %}" class="topbar-btn" title="Verify Document" aria-label="Verify Document" style="width:auto;padding:0 16px;gap:8px;">
-            <i class="fa-solid fa-shield-halved"></i> <span style="font-size:13px;font-weight:700;">Verify</span>
+        <a href="{% url 'verify_document' %}" class="topbar-btn topbar-cta topbar-cta-verify" title="Verify Document" aria-label="Verify Document">
+            <i class="fa-solid fa-shield-halved"></i> <span>Verify</span>
         </a>
-        <a href="{% url 'login' %}" class="topbar-btn" title="Sign In" aria-label="Sign In" style="width:auto;padding:0 16px;gap:8px;">
-            <i class="fa-solid fa-right-to-bracket"></i> <span style="font-size:13px;font-weight:700;">Sign In</span>
+        <a href="{% url 'login' %}" class="topbar-btn topbar-cta" title="Sign In" aria-label="Sign In">
+            <i class="fa-solid fa-right-to-bracket"></i> <span>Sign In</span>
         </a>
-        <a href="{% url 'register' %}" class="topbar-btn" title="Create Account" aria-label="Create Account" style="width:auto;padding:0 16px;gap:8px;">
-            <i class="fa-solid fa-user-plus"></i> <span style="font-size:13px;font-weight:700;">Create Account</span>
+        <a href="{% url 'register' %}" class="topbar-btn topbar-cta topbar-cta-register" title="Create Account" aria-label="Create Account">
+            <i class="fa-solid fa-user-plus"></i> <span>Create Account</span>
         </a>
         {% endif %}
     </div>

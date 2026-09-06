@@ -14,7 +14,6 @@ db.sqlite3
 # Secrets (never commit)
 .env
 .env.*
-!.env
 firebase_credentials.json
 firebase-service-account.json
 serviceAccountKey.json
@@ -25,6 +24,9 @@ serviceAccountKey.json
 # Media uploads - user data / PII (never commit)
 media/resident_ids/
 media/profile_pictures/
+
+# Stray redirect artifacts (e.g. accidental `curl -L` output)
+-L
 
 # OS
 .DS_Store

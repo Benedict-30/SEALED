@@ -23,6 +23,9 @@ class FirestoreBackend(BaseBackend):
         if not data:
             return None
         user = CustomUser(data)
+        # Refuse to authenticate deactivated accounts.
+        if not user.is_active:
+            return None
         if not check_password(password or '', user.password or ''):
             return None
         user.backend = BACKEND_PATH
@@ -40,6 +43,10 @@ class FirestoreBackend(BaseBackend):
 
 def login_user(request, user):
     """Log a Firestore-backed user into the current session."""
+    # Rotate the session key on login to prevent session fixation: ensure any
+    # cookie set by an attacker before login cannot be used to hijack the
+    # newly-authenticated session.
+    request.session.cycle_key()
     user.backend = BACKEND_PATH
     request.session[SESSION_KEY] = str(user.pk)
     request.session[BACKEND_SESSION_KEY] = BACKEND_PATH

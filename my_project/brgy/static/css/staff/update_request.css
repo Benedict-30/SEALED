@@ -1,0 +1,178 @@
+    .summary-card {
+        background: #fff;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius);
+        margin-bottom: 24px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .summary-header {
+        background: linear-gradient(135deg, var(--primary-50) 0%, #ffffff 100%);
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+    }
+    .summary-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        padding: 24px;
+    }
+    @media (max-width: 768px) {
+        .summary-grid { grid-template-columns: 1fr; }
+    }
+    .summary-item label {
+        display: block;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+    .summary-item .value {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .purpose-box {
+        background: var(--bg-body);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.5;
+    }
+    .doc-items {
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--bg-body);
+    }
+    .doc-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border-light);
+        font-size: 14px;
+    }
+    .doc-item:last-of-type { border-bottom: none; }
+    .doc-item-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: var(--text);
+    }
+    .doc-item-qty {
+        background: var(--primary-100);
+        color: var(--primary);
+        border-radius: 6px;
+        padding: 1px 7px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .doc-item-fee {
+        font-weight: 600;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+    .doc-total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        background: var(--primary-50);
+        border-top: 1px solid var(--border-light);
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--primary);
+    }
+    .notes-box {
+        background: var(--bg-body);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.5;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    .form-helptext {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 6px;
+    }
+    .update-request-page {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .back-link {
+        display: inline-flex;
+        margin-bottom: 16px;
+    }
+    .status-badge-lg {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+    .summary-item.span-full {
+        grid-column: 1 / -1;
+    }
+    .status-card-header {
+        border-bottom: 1px solid var(--border-light);
+    }
+    .status-card-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    .status-card-body {
+        padding: 24px;
+    }
+    .form-actions-bar {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+    .btn-submit-fill {
+        flex: 1;
+        justify-content: center;
+    }
+    .payment-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .payment-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 2px;
+        border-bottom: 1px solid var(--border-light);
+        font-size: 13.5px;
+    }
+    .payment-info-row:last-child {
+        border-bottom: none;
+    }
+    .payment-info-row span:first-child {
+        color: var(--text-muted);
+    }
