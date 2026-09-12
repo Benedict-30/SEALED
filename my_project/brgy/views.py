@@ -585,6 +585,10 @@ def staff_manage_document_types(request):
             dt = form.save(commit=False)
             dt.barangay = brgy
             dt.save()
+            
+            # ---> ADDED ACTIVITY LOG HERE <---
+            log_activity(request.user, 'Document Type Created', f'Created new document type: {dt.name} for {brgy.name}.', request)
+            
             messages.success(request, f'{dt.name} added successfully.')
             return redirect('staff_manage_document_types')
         else:
@@ -611,6 +615,10 @@ def staff_create_document_type(request):
             dt = form.save(commit=False)
             dt.barangay = brgy
             dt.save()
+            
+            # ---> ADDED ACTIVITY LOG HERE <---
+            log_activity(request.user, 'Document Type Created', f'Created new document type: {dt.name} for {brgy.name}.', request)
+            
             messages.success(request, f'{dt.name} added successfully.')
             return redirect('staff_manage_document_types')
         else:
@@ -673,6 +681,14 @@ def print_document(request, req_pk, item_pk):
     file_stream.seek(0)
     
     filename = f"{doc_type.name}_{doc_req.resident.last_name}_{doc_req.request_number}.docx"
+    
+    # ---> ADDED ACTIVITY LOG HERE <---
+    log_activity(
+        request.user, 
+        'Document Printed', 
+        f'Printed {doc_type.name} for {doc_req.resident.display_name} (Request #: {doc_req.request_number}).', 
+        request
+    )
     
     response = FileResponse(
         file_stream,
@@ -837,7 +853,11 @@ def manage_document_types(request):
     if request.method == 'POST':
         form = DocumentTypeForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            dt = form.save()
+            
+            # ---> ADDED ACTIVITY LOG HERE <---
+            log_activity(request.user, 'Document Type Created', f'Admin created new document type: {dt.name}.', request)
+            
             messages.success(request, 'Document type added successfully.')
             return redirect('manage_document_types')
         else:

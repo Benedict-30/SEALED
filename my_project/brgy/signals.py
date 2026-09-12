@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, post_init
+from django.db.models.signals import post_save, post_init, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from .models import CustomUser, DocumentRequest, Notification, ActivityLog
@@ -101,3 +101,16 @@ def on_request_created(sender, instance, created, **kwargs):
                 action=f'Request Status Updated: {instance.get_status_display()}',
                 details=f'{instance.request_number} changed from {old_status} to {instance.status}.'
             )
+
+
+# ADDED: Log when a request is deleted (e.g., cancelled by resident or rejected by staff)
+@receiver(pre_delete, sender=DocumentRequest)
+def on_request_deleted(sender, instance, **kwargs):
+    # Get the user who performed the action, or default to the resident if system-initiated
+    actor = instance.processed_by if instance.processed_by else instance.resident
+    
+    ActivityLog.objects.create(
+        user=actor,
+        action='Request Deleted/Cancelled',
+        details=f'Request {instance.request_number} for {instance.resident.display_name} was deleted from the system.'
+    )
