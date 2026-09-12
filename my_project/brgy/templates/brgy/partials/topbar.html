@@ -138,6 +138,11 @@
                     <i class="fa-solid fa-user"></i> My Profile
                 </a>
                 {% endif %}
+                {% if user.role == 'admin' %}
+                <a href="{% url 'admin_profile' %}" class="user-dropdown-item">
+                    <i class="fa-solid fa-user"></i> My Profile
+                </a>
+                {% endif %}
                 <a href="{% url 'dashboard' %}" class="user-dropdown-item">
                     <i class="fa-solid fa-gauge-high"></i> Dashboard
                 </a>

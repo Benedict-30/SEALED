@@ -13,7 +13,7 @@
     </a>
 
     {# ─── Hero Card ──────────────────────────────────────────────── #}
-    <div class="track-hero {% if display_status == 'rejected' %}track-hero-rejected{% endif %}">
+    <div class="track-hero {% if display_status == 'rejected' or display_status == 'cancelled' %}track-hero-rejected{% endif %}">
         <div class="track-hero-main">
             <div class="track-hero-icon">
                 <i class="fa-solid fa-truck-fast"></i>
@@ -34,7 +34,7 @@
                     <circle class="progress-ring__bg" stroke="var(--bg-alt, #f1f5f9)" stroke-width="10"
                             fill="transparent" r="52" cx="60" cy="60"/>
                     <circle class="progress-ring__circle {% if display_status in 'pending,approved,printed,ready_for_pickup' %}active{% endif %}"
-                            stroke="{% if display_status == 'rejected' %}var(--danger){% else %}var(--primary){% endif %}"
+                            stroke="{% if display_status == 'rejected' %}var(--danger){% elif display_status == 'cancelled' %}var(--text-muted){% else %}var(--primary){% endif %}"
                             stroke-width="10" fill="transparent" r="52" cx="60" cy="60"
                             stroke-dasharray="326.73"
                             stroke-dashoffset="{{ progress.offset }}"
@@ -48,7 +48,7 @@
         </div>
     </div>
 
-    {% if display_status != 'rejected' %}
+    {% if display_status != 'rejected' and display_status != 'cancelled' %}
     {# ─── Horizontal Stepper ─────────────────────────────────────── #}
     <div class="track-steps card">
         <div class="card-body">
@@ -75,11 +75,17 @@
         </div>
     </div>
     {% else %}
-    {# ─── Rejected State ─────────────────────────────────────────── #}
+    {# ─── Rejected / Cancelled State ─────────────────────────────── #}
     <div class="track-rejected">
+        {% if display_status == 'cancelled' %}
+        <div class="track-rejected-icon"><i class="fa-solid fa-ban"></i></div>
+        <h4>Request Cancelled</h4>
+        <p>This request was cancelled by the resident. No documents were processed for this request.</p>
+        {% else %}
         <div class="track-rejected-icon"><i class="fa-solid fa-circle-xmark"></i></div>
         <h4>Request Rejected</h4>
         <p>{% if req.rejection_reason %}{{ req.rejection_reason }}{% else %}Your request was rejected by the barangay staff. Please contact the barangay hall for more details.{% endif %}</p>
+        {% endif %}
         {% if req.updated_at %}
         <span class="text-xs text-muted">Decision made on {{ req.updated_at|date:"M d, Y g:i A" }}</span>
         {% endif %}

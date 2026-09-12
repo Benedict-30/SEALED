@@ -70,7 +70,7 @@
                         <td>
                             {% if req.is_paid %}
                             <span class="badge badge-success text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Paid</span>
-                            {% elif req.status == 'rejected' or req.status == 'pending' %}
+                            {% elif req.status == 'rejected' or req.status == 'pending' or req.status == 'cancelled' %}
                             <span class="text-xs text-muted">&#8369; {{ req.total_fee|floatformat:2 }}</span>
                             {% else %}
                             <span class="badge badge-muted text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Unpaid</span>

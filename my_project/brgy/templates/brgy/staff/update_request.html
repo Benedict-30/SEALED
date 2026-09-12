@@ -58,6 +58,11 @@
                             <i class="fa-solid fa-file-lines text-muted"></i> 
                             {{ item.document_type.name }}
                             {% if item.quantity and item.quantity > 1 %}<span class="doc-item-qty">×{{ item.quantity }}</span>{% endif %}
+                            {% if item.requirement_files %}
+                            <a class="req-files-link" href="{% url 'requirement_file' req_pk=doc_request.pk item_pk=item.pk index=0 %}" title="View attached requirement files">
+                                <i class="fa-solid fa-paperclip"></i> Files ({{ item.requirement_files|length }})
+                            </a>
+                            {% endif %}
                         </span>
                         <span class="doc-item-fee">
                             {% if item.total_fee %}&#8369;{{ item.total_fee|floatformat:2 }}{% else %}Free{% endif %}

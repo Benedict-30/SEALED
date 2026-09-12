@@ -32,8 +32,8 @@
         {% if dt.fee %}
         <div class="doc-card-fee">Fee: &#8369;{{ dt.fee|floatformat:2 }}</div>
         {% endif %}
-        {% if dt.has_tpl %}
-        <button type="button" class="doc-preview-btn" onclick="event.stopPropagation(); openPreview('{{ dt.id }}', '{{ dt.name|escapejs }}')" title="Preview document">
+        {% if dt.has_template_effective %}
+        <button type="button" class="doc-preview-btn" onclick="event.stopPropagation(); openPreview('{{ dt.id }}', '{{ dt.name|escapejs }}', '{% url 'document_preview' dt.id %}')" title="Preview document">
             <i class="fa-solid fa-eye"></i> Preview
         </button>
         {% endif %}
@@ -59,7 +59,7 @@
         </div>
         
         <!-- This form will hold the dynamic list of documents -->
-        <form method="post" action="{% url 'submit_bulk_request' %}" id="bulkRequestForm">
+        <form method="post" action="{% url 'submit_bulk_request' %}" id="bulkRequestForm" enctype="multipart/form-data">
             {% csrf_token %}
             
             <div class="form-row">

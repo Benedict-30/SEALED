@@ -239,3 +239,5 @@ MEDIA_ROOT = BASE_DIR / 'media'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','192.168.74.191']  # Allow all hosts for development; restrict in production

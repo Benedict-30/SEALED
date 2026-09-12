@@ -39,7 +39,10 @@ from .models import (
     get_announcement, get_barangay, get_document_request, get_document_type, get_document_type_override,
     get_override_for, get_request_items, get_user,
 )
-from .forms import IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, TEMPLATE_EXTENSIONS, MAX_TEMPLATE_SIZE, _save_uploaded_file
+from .forms import (
+    IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, TEMPLATE_EXTENSIONS, MAX_TEMPLATE_SIZE,
+    REQUIREMENT_EXTENSIONS, MAX_REQUIREMENT_FILE_SIZE, _save_uploaded_file,
+)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -289,6 +292,7 @@ def _apply_status_transition(doc_request, new_status, user, request=None, notes=
         'ready_for_pickup': f'Your document(s) [{doc_names}] is/are ready for pickup.',
         'completed': f'Your request for {doc_names} has been completed.',
         'rejected': f'Your request for {doc_names} has been rejected.',
+        'cancelled': f'Your request for {doc_names} has been cancelled.',
     }
     new_display = dict(DocumentRequest.Status.choices).get(new_status, new_status)
     status_message = status_messages.get(
@@ -308,7 +312,7 @@ def _apply_status_transition(doc_request, new_status, user, request=None, notes=
         doc_request.resident_id,
         f'Request {new_display}',
         status_message,
-        link='/resident/history/',
+        link=reverse('request_history'),
     )
     resident = doc_request.resident
     if resident is not None:
@@ -494,7 +498,7 @@ def password_reset_confirm(request, token):
             login_user(request, refreshed)
             log_activity(refreshed, 'Password Reset', 'Password reset via email link.', request)
             notify(refreshed.pk, 'Password Reset',
-                   'Your password has been reset successfully.', link='/resident/')
+                   'Your password has been reset successfully.', link=reverse('resident_dashboard'))
             messages.success(request, 'Your password has been reset. Welcome back!')
             return redirect('dashboard')
         return render(request, 'brgy/password_reset_confirm.html', {
@@ -582,13 +586,13 @@ def register_view(request):
                         staff['id'],
                         'New Resident Registration',
                         f'{user.display_name} has registered and awaits verification.',
-                        link='/staff/verify-residents/',
+                        link=reverse('verify_residents'),
                     )
             # Notify admins of the new registration
             notify_admins(
                 'New Resident Registration',
                 f'{user.display_name} has registered and awaits verification.',
-                link='/admin-dashboard/',
+                link=reverse('admin_dashboard'),
             )
             log_activity(user, 'Resident Registration', 'Resident registered an account.', request,
                      subject_user_id=user.pk)
@@ -842,12 +846,12 @@ def request_document(request):
             if override is None:
                 continue
             dt._data['fee'] = float(override.fee or 0)
-            object.__setattr__(dt, 'has_tpl', bool(override.has_template))
+            dt._data['has_template_effective'] = bool(override.has_template)
         elif dt.barangay_id != user.barangay_id:
             continue
         else:
             dt._data['fee'] = float(dt.fee if dt.fee is not None else 0)
-            object.__setattr__(dt, 'has_tpl', dt.has_template)
+            dt._data['has_template_effective'] = dt.has_template
         doc_types.append(dt)
     today = timezone.localdate()
     return render(request, 'brgy/resident/request_document.html', {
@@ -985,6 +989,21 @@ def submit_bulk_request(request):
                 'fee_per_unit': fee_per_unit,
             }
 
+        requirement_files = {}
+        for doc_id, item in items.items():
+            files = []
+            for uploaded in request.FILES.getlist(f'requirements_{doc_id}'):
+                try:
+                    files.append(_save_uploaded_file(
+                        uploaded, 'requirement_files',
+                        REQUIREMENT_EXTENSIONS, MAX_REQUIREMENT_FILE_SIZE,
+                        'requirement file',
+                    ))
+                except ValidationError as e:
+                    messages.error(request, ' '.join(e.messages))
+                    return redirect('request_document')
+            requirement_files[doc_id] = files
+
         request_data = {
             'resident_id': user.pk,
             'request_number': firestore_db.next_request_number(),
@@ -1012,6 +1031,7 @@ def submit_bulk_request(request):
                 'document_type_id': item['doc_type'].pk,
                 'quantity': item['qty'],
                 'fee_per_unit': item['fee_per_unit'],
+                'requirement_files': requirement_files.get(doc_id, []),
             })
 
         request_data['id'] = request_id
@@ -1031,7 +1051,7 @@ def submit_bulk_request(request):
             user.pk,
             'Request Submitted',
             f'Your document request has been submitted. Request #: {doc_req.request_number}',
-            link='/resident/history/',
+            link=reverse('request_history'),
         )
         log_activity(user, 'Document Request Submitted',
                      f'Submitted document request {doc_req.request_number}.', request)
@@ -1153,24 +1173,28 @@ def cancel_request(request, pk):
         raise Http404
 
     if doc_req.status == 'pending':
-        if doc_req.resident.barangay_id:
+        if doc_req.resident and doc_req.resident.barangay_id:
             for staff in staff_of_barangay(doc_req.resident.barangay_id):
                 notify(
                     staff['id'],
                     'Request Cancelled',
                     f'{doc_req.resident.display_name} cancelled their document request '
                     f'({doc_req.request_number}).',
-                    link='/staff/requests/',
+                    link=reverse('staff_requests'),
                 )
+        new_display = _apply_status_transition(
+            doc_req, 'cancelled', request.user, request=request,
+        )
         log_activity(request.user, 'Request Cancelled',
-                     f'Cancelled request {doc_req.request_number}.', request)
-        req_num = doc_req.request_number
-        for item in firestore_db.list_document_request_items(
-            filters=[('request_id', '==', doc_req.pk)]
-        ):
-            firestore_db.delete_document_request_item(item['id'])
-        firestore_db.delete_document_request(doc_req.pk)
-        messages.success(request, f'Request {req_num} has been successfully cancelled.')
+                     f'Cancelled request {doc_req.request_number}.', request,
+                     subject_user_id=doc_req.resident_id)
+        if new_display:
+            messages.success(
+                request,
+                f'Request {doc_req.request_number} has been successfully cancelled.'
+            )
+        else:
+            messages.info(request, 'That request is already cancelled.')
     else:
         messages.error(request, 'You can only cancel pending requests.')
 
@@ -1218,6 +1242,8 @@ def track_request(request, pk, item_pk=None):
 
     if doc_req.status == 'rejected':
         display_status = 'rejected'
+    elif doc_req.status == 'cancelled':
+        display_status = 'cancelled'
     elif selected_item:
         display_status = _item_status(selected_item, doc_req)
     else:
@@ -1225,6 +1251,7 @@ def track_request(request, pk, item_pk=None):
 
     progress_map = {
         'rejected': (100, 'danger'),
+        'cancelled': (100, 'muted'),
         'pending': (25, 'warning'),
         'approved': (50, 'info'),
         'printed': (60, 'info'),
@@ -1433,6 +1460,71 @@ def staff_profile(request):
 
 
 @login_required
+@role_required('admin')
+def admin_profile(request):
+    user = request.user
+    info_form = StaffProfileForm(instance=user)
+    password_form = ChangePasswordForm()
+
+    if request.method == 'POST':
+        form_type = request.POST.get('form_type', 'info')
+
+        if form_type == 'password':
+            password_form = ChangePasswordForm(request.POST)
+            if password_form.is_valid():
+                if not user.check_password(password_form.cleaned_data['current_password']):
+                    messages.error(request, 'Your current password is incorrect.')
+                else:
+                    new_password = password_form.cleaned_data['new_password']
+                    firestore_db.update_user(user.pk, {
+                        'password': make_password(new_password),
+                    })
+                    data = firestore_db.get_user(user.pk)
+                    request.user = CustomUser(data)
+                    from django.contrib.auth import HASH_SESSION_KEY
+                    request.session[HASH_SESSION_KEY] = request.user.get_session_auth_hash()
+                    log_activity(request.user, 'Password Changed', 'Password changed.', request)
+                    messages.success(request, 'Your password has been updated successfully.')
+                    return redirect('admin_profile')
+            return render(request, 'brgy/admin/profile.html', {
+                'info_form': info_form,
+                'password_form': password_form,
+                'page_title': 'My Profile',
+            })
+
+        info_form = StaffProfileForm(request.POST, instance=user)
+        if info_form.is_valid():
+            updates = {
+                'first_name': info_form.cleaned_data['first_name'],
+                'last_name': info_form.cleaned_data['last_name'],
+                'email': info_form.cleaned_data['email'],
+                'phone_number': info_form.cleaned_data.get('phone_number', ''),
+            }
+            try:
+                if 'profile_picture' in request.FILES:
+                    updates['profile_picture'] = _save_uploaded_file(
+                        request.FILES['profile_picture'], 'profile_pictures',
+                        IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, 'profile picture',
+                    )
+            except ValidationError as e:
+                messages.error(request, ' '.join(e.messages))
+                return redirect('admin_profile')
+            firestore_db.update_user(user.pk, updates)
+            data = firestore_db.get_user(user.pk)
+            request.user = CustomUser(data)
+            log_activity(request.user, 'Profile Updated', 'Profile updated.', request)
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('admin_profile')
+        password_form = ChangePasswordForm()
+
+    return render(request, 'brgy/admin/profile.html', {
+        'info_form': info_form,
+        'password_form': password_form,
+        'page_title': 'My Profile',
+    })
+
+
+@login_required
 @role_required('staff')
 def verify_residents(request):
     user = request.user
@@ -1493,7 +1585,7 @@ def approve_resident(request, pk):
         resident.pk,
         'Account Verified',
         'Your account has been verified. You can now request barangay documents.',
-        link='/resident/',
+        link=reverse('resident_dashboard'),
     )
     send_user_email(
         resident,
@@ -1526,7 +1618,7 @@ def reject_resident(request, pk):
                 resident.pk,
                 'Account Rejected',
                 f'Your account verification was rejected. Reason: {reason}',
-                link='/resident/',
+                link=reverse('resident_dashboard'),
             )
             send_user_email(
                 resident,
@@ -1563,7 +1655,7 @@ def toggle_resident_active(request, pk):
             resident.pk,
             'Account Reactivated',
             'Your account has been reactivated. You can log in and request barangay documents again.',
-            link='/resident/',
+            link=reverse('resident_dashboard'),
         )
         log_activity(request.user, 'Resident Reactivated', 'Reactivated resident account.', request,
                      subject_user_id=resident.pk)
@@ -1573,12 +1665,15 @@ def toggle_resident_active(request, pk):
             resident.pk,
             'Account Deactivated',
             'Your account has been deactivated. Please contact your barangay office for assistance.',
-            link='/login/',
+            link=reverse('login'),
         )
         log_activity(request.user, 'Resident Deactivated', 'Deactivated resident account.', request,
                      subject_user_id=resident.pk)
         messages.success(request, f'{resident.display_name} has been deactivated.')
-    return redirect(request.GET.get('next') or 'verify_residents')
+    next_url = request.GET.get('next') or ''
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        return redirect(next_url)
+    return redirect('verify_residents')
 
 
 @login_required
@@ -1732,6 +1827,8 @@ def update_request_status(request, pk):
     if not doc_request.barangay or doc_request.barangay.pk != request.user.barangay_id:
         raise Http404
     choices = _status_choices_for(doc_request.status)
+    if not doc_request.is_paid:
+        choices = [c for c in choices if c[0] != 'completed']
     if not choices:
         messages.info(
             request,
@@ -1744,6 +1841,12 @@ def update_request_status(request, pk):
             new_status = form.cleaned_data['status']
             notes = form.cleaned_data.get('staff_notes', '')
             rejection_reason = form.cleaned_data.get('rejection_reason', '')
+            if new_status == 'completed' and not doc_request.is_paid:
+                messages.error(
+                    request,
+                    'Payment must be recorded before this request can be completed.'
+                )
+                return redirect('update_request_status', pk=doc_request.pk)
             if new_status not in [c for c, _ in choices]:
                 messages.error(request, 'That status transition is not allowed.')
                 return redirect('update_request_status', pk=doc_request.pk)
@@ -1798,6 +1901,9 @@ def mark_ready_for_pickup(request, pk):
                 return redirect('manage_requests')
             if parsed_pickup < timezone.localdate():
                 messages.error(request, 'Pickup date cannot be in the past.')
+                return redirect('manage_requests')
+            if parsed_pickup > timezone.localdate() + timedelta(days=60):
+                messages.error(request, 'Pickup date cannot be more than 60 days from today.')
                 return redirect('manage_requests')
         if pickup_slot not in dict(DocumentRequest.PickupSlot.choices):
             pickup_slot = 'morning'
@@ -1855,7 +1961,7 @@ def mark_paid(request, pk):
         'Payment Confirmed',
         f'Your payment of \u20b1{total_fee:,.2f} for request '
         f'{doc_request.request_number} has been received.',
-        link='/resident/history/',
+        link=reverse('request_history'),
     )
     resident = doc_request.resident
     if resident is not None:
@@ -1879,6 +1985,12 @@ def reject_request(request, pk):
     if not doc_request.barangay or doc_request.barangay.pk != request.user.barangay_id:
         raise Http404
     if request.method == 'POST':
+        if 'rejected' not in [c for c, _ in _status_choices_for(doc_request.status)]:
+            messages.error(
+                request,
+                f'Request {doc_request.request_number} cannot be rejected in its current state.'
+            )
+            return redirect('manage_requests')
         reason = request.POST.get('rejection_reason', '').strip()
         if not reason:
             messages.error(request, 'A rejection reason is required.')
@@ -2060,7 +2172,7 @@ def staff_manage_document_types(request):
                         'fee': float(doc.fee) if doc.fee else None,
                         'is_active': doc.is_active,
                         'requirements_count': len(doc.requirements_list) if doc.requirements_list else 0,
-                        'edit_url': f'/staff/document-types/{doc.pk}/edit/',
+                        'edit_url': reverse('staff_edit_document_type', args=[str(doc.pk)]),
                     },
                 })
             messages.success(request, f'{form.cleaned_data["name"]} added successfully.')
@@ -2258,6 +2370,33 @@ def print_document(request, req_pk, item_pk):
     return response
 
 
+@login_required
+@role_required('staff')
+def requirement_file(request, req_pk, item_pk, index):
+    """Download a resident's attached requirement file for a request item."""
+    doc_req = _request_or_404(req_pk)
+    if not doc_req.barangay or doc_req.barangay.pk != request.user.barangay_id:
+        raise Http404
+    item = _item_or_404(item_pk)
+    if item.request_id != doc_req.pk:
+        raise Http404
+    files = getattr(item, 'requirement_files') or []
+    if index < 0 or index >= len(files):
+        raise Http404
+    rel_path = files[index]
+    file_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+    if not os.path.isfile(file_path):
+        raise Http404
+    log_activity(
+        request.user,
+        'Requirement File Viewed',
+        f'Viewed a requirement file for request {doc_req.request_number}.',
+        request,
+        subject_user_id=doc_req.resident_id,
+    )
+    return FileResponse(open(file_path, 'rb'), as_attachment=True)
+
+
 # ═══════════════════════════════════════════════════════════════
 # ADMIN VIEWS
 # ═══════════════════════════════════════════════════════════════
@@ -2327,6 +2466,13 @@ def admin_dashboard(request):
         key = (y, m)
         monthly_trend.append({'month': date(y, m, 1), 'count': monthly_counts.get(key, 0)})
 
+    trend_counts = [m['count'] for m in monthly_trend]
+    trend_max_count = max(trend_counts) or 1
+    trend_total = sum(trend_counts)
+    trend_avg = round(trend_total / len(trend_counts)) if trend_counts else 0
+    trend_delta = trend_counts[0] - trend_counts[1] if len(trend_counts) >= 2 else 0
+    trend_best = max(monthly_trend, key=lambda m: m['count']) if trend_counts else None
+
     return render(request, 'brgy/admin/dashboard.html', {
         'page_title': 'Admin Dashboard',
         'total_residents': total_residents,
@@ -2341,6 +2487,11 @@ def admin_dashboard(request):
         'recent_logs': recent_logs,
         'barangay_stats': barangay_stats,
         'monthly_trend': monthly_trend,
+        'trend_max_count': trend_max_count,
+        'trend_total': trend_total,
+        'trend_avg': trend_avg,
+        'trend_delta': trend_delta,
+        'trend_best': trend_best,
     })
 
 
@@ -2396,6 +2547,7 @@ def admin_reports(request):
     filtered, filters = _admin_reports_scope(request)
     barangays = [Barangay(b) for b in firestore_db.list_barangays(order_by='name')]
 
+    total_requests = len(filtered)
     status_counts = {}
     total_fees = 0.0
     paid_count = 0
@@ -2410,7 +2562,29 @@ def admin_reports(request):
         if r.is_paid:
             paid_count += 1
             total_fees += r.total_fee
-    status_breakdown = [{'status': s, 'count': c} for s, c in status_counts.items()]
+
+    status_labels = dict(DocumentRequest.Status.choices)
+    status_pill_classes = {
+        'ready_for_pickup': 'ready',
+        'cancelled': 'cancelled',
+        'approved': 'approved',
+        'printed': 'printed',
+        'completed': 'completed',
+        'rejected': 'rejected',
+        'pending': 'pending',
+    }
+    status_breakdown = []
+    for s, c in sorted(status_counts.items(), key=lambda kv: kv[1], reverse=True):
+        status_breakdown.append({
+            'status': s,
+            'count': c,
+            'label': status_labels.get(s, s.title()),
+            'pill_class': status_pill_classes.get(s, s),
+            'pct': round(c * 100 / total_requests, 1) if total_requests else 0,
+        })
+
+    total_fees_fmt = f'{total_fees:,.2f}'
+    completion_rate = round(completed * 100 / total_requests) if total_requests else 0
 
     per_barangay = []
     for b in barangays:
@@ -2425,6 +2599,8 @@ def admin_reports(request):
             'completed': sum(1 for r in brgy_requests if r.status == 'completed'),
             'paid': sum(1 for r in brgy_requests if r.is_paid),
             'fees': fees,
+            'pct': round(len(brgy_requests) * 100 / total_requests, 1) if total_requests else 0,
+            'fees_fmt': f'{fees:,.2f}',
         })
     per_barangay.sort(key=lambda x: x['count'], reverse=True)
 
@@ -2452,13 +2628,31 @@ def admin_reports(request):
             'month': month_start,
             'count': monthly_counts.get((month_start.year, month_start.month), 0),
         })
+    monthly_counts_list = [m['count'] for m in monthly_stats]
+    monthly_max = max(monthly_counts_list) or 1
+    monthly_total = sum(monthly_counts_list)
+    monthly_avg = round(monthly_total / len(monthly_counts_list)) if monthly_counts_list else 0
+    monthly_peak_index = monthly_counts_list.index(max(monthly_counts_list)) if monthly_counts_list else 0
+
+    barangay_by_pk = {b.pk: b.name for b in barangays}
+    filter_summary = []
+    if filters['barangay']:
+        filter_summary.append(barangay_by_pk.get(filters['barangay'], 'Selected barangay'))
+    if filters['status']:
+        filter_summary.append(status_labels.get(filters['status'], filters['status'].title()))
+    if filters['date_from']:
+        filter_summary.append(f'From {filters["date_from"]}')
+    if filters['date_to']:
+        filter_summary.append(f'To {filters["date_to"]}')
 
     return render(request, 'brgy/admin/reports.html', {
         'page_title': 'System Reports',
         'filters': filters,
         'barangays': barangays,
-        'total_requests': len(filtered),
+        'total_requests': total_requests,
         'total_fees': total_fees,
+        'total_fees_fmt': total_fees_fmt,
+        'completion_rate': completion_rate,
         'paid_count': paid_count,
         'pending': pending,
         'completed': completed,
@@ -2467,6 +2661,13 @@ def admin_reports(request):
         'per_barangay': per_barangay,
         'doc_type_breakdown': doc_type_breakdown,
         'monthly_stats': monthly_stats,
+        'monthly_max': monthly_max,
+        'monthly_total': monthly_total,
+        'monthly_avg': monthly_avg,
+        'monthly_peak_index': monthly_peak_index,
+        'monthly_peak_month': monthly_stats[monthly_peak_index]['month'],
+        'monthly_peak_count': monthly_stats[monthly_peak_index]['count'],
+        'filter_summary': filter_summary,
     })
 
 

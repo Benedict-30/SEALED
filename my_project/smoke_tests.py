@@ -127,9 +127,23 @@ class AppHealthTests(unittest.TestCase):
         self.assertEqual(_next_statuses('ready_for_pickup'), ['completed', 'rejected'])
         self.assertEqual(_next_statuses('completed'), [])
         self.assertEqual(_next_statuses('rejected'), [])
+        self.assertEqual(_next_statuses('cancelled'), [])
         choices = _status_choices_for('pending')
         self.assertEqual([c for c, _ in choices], ['approved', 'rejected'])
         self.assertEqual(dict(choices)['approved'], 'Approved')
+
+    def test_cancelled_status_surface(self):
+        from brgy.models import DocumentRequest
+        choices = dict(DocumentRequest.Status.choices)
+        self.assertEqual(choices.get('cancelled'), 'Cancelled')
+        req = DocumentRequest({'status': 'cancelled', 'payment_status': 'unpaid'})
+        self.assertEqual(req.get_status_display(), 'Cancelled')
+        self.assertEqual(req.status_color, 'muted')
+
+    def test_hardening_views_exist(self):
+        from brgy import views
+        for name in ('admin_profile', 'requirement_file'):
+            self.assertTrue(hasattr(views, name), f'views.{name} missing')
 
     def test_cancel_reject_views_exist(self):
         from brgy import views
@@ -219,6 +233,8 @@ class AppHealthTests(unittest.TestCase):
             ('password_reset_confirm', {'token': 'sometoken'}),
             ('print_document', {'req_pk': uid, 'item_pk': uid}),
             ('mark_printed', {'req_pk': uid, 'item_pk': uid}),
+            ('requirement_file', {'req_pk': uid, 'item_pk': uid, 'index': 0}),
+            ('admin_profile', None),
         ]
         for entry in names:
             name, kwargs = entry if isinstance(entry, tuple) else (entry, None)

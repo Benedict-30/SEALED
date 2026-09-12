@@ -318,7 +318,6 @@ class _CustomUserQuerySet:
                     firestore_db.delete_doc('user', doc['id'])
         return Dummy()
 
-print("Creating CustomUser objects")
 CustomUser.objects = _CustomUserQuerySet()
 
 
@@ -451,6 +450,7 @@ class DocumentRequest(Base):
             ('ready_for_pickup', 'Ready for Pickup'),
             ('completed', 'Completed'),
             ('rejected', 'Rejected'),
+            ('cancelled', 'Cancelled'),
         ]
 
     class PaymentStatus:
@@ -556,6 +556,7 @@ class DocumentRequest(Base):
             'ready_for_pickup': 'success',
             'completed': 'primary',
             'rejected': 'danger',
+            'cancelled': 'muted',
         }
         return colors.get(self.status, 'muted')
 

@@ -63,9 +63,11 @@ urlpatterns = [
     path('staff/document-types/<uuid:pk>/delete/', views.staff_delete_document_type, name='staff_delete_document_type'),
     path('staff/requests/print/<uuid:req_pk>/<uuid:item_pk>/', views.print_document, name='print_document'),
     path('staff/requests/print/<uuid:req_pk>/<uuid:item_pk>/mark-printed/', views.mark_printed, name='mark_printed'),
+    path('staff/requests/<uuid:req_pk>/files/<uuid:item_pk>/<int:index>/', views.requirement_file, name='requirement_file'),
 
     # Admin
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('admin/profile/', views.admin_profile, name='admin_profile'),
     path('admin/staff/', views.manage_staff, name='manage_staff'),
     path('admin/staff/<uuid:pk>/edit/', views.edit_staff, name='edit_staff'),
     path('admin/staff/<uuid:pk>/toggle/', views.toggle_staff_active, name='toggle_staff_active'),

@@ -1,0 +1,303 @@
+/* ═══════════════════════════════════════════════════════════════
+   Admin System Reports — scoped styles (admin only)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Card entrance animation ────────────────────────────────── */
+.admin-reports .card {
+    animation: fadeSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+.admin-reports .card:nth-child(2) { animation-delay: 0.06s; }
+.admin-reports .card:nth-child(3) { animation-delay: 0.10s; }
+.admin-reports .card:nth-child(4) { animation-delay: 0.14s; }
+.admin-reports .reports-grid .card { animation-delay: 0.18s; }
+
+/* ─── Filters ────────────────────────────────────────────────── */
+.reports-filters {
+    margin: 0;
+}
+
+.reports-filter-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.reports-filter-label {
+    margin: 0;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.reports-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+@media (max-width: 640px) {
+    .reports-filter-actions { width: 100%; }
+    .reports-filter-actions .btn { flex: 1; }
+}
+
+/* Active filter chips */
+.active-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border, #e2e8f0);
+}
+
+.active-filters-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted, #94a3b8);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.active-filter-chip {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--primary, #059669);
+    background: var(--primary-bg, rgba(5, 150, 105, 0.08));
+    border: 1px solid var(--primary-200, #a7f3d0);
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.active-filter-clear {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted, #94a3b8);
+    margin-left: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.active-filter-clear:hover { color: var(--danger, #dc2626); }
+
+/* ─── Summary stats ──────────────────────────────────────────── */
+.admin-reports .stat-card { cursor: default; }
+
+/* ─── Per-barangay breakdown ─────────────────────────────────── */
+.reports-total-chip {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted, #94a3b8);
+    background: var(--bg-alt, #f8fafc);
+    border: 1px solid var(--border-light, #f1f5f9);
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.reports-count-pill {
+    font-weight: 800;
+    color: var(--text, #0f172a);
+    font-variant-numeric: tabular-nums;
+}
+
+.share-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 130px;
+}
+
+.share-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-alt, #f8fafc);
+    border: 1px solid var(--border-light, #f1f5f9);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.share-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--primary, #059669), var(--primary-light, #10b981));
+}
+
+.share-pct {
+    width: 42px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted, #94a3b8);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.reports-fee-badge {
+    display: inline-block;
+    font-weight: 800;
+    color: var(--success, #059669);
+    background: rgba(5, 150, 105, 0.1);
+    border: 1px solid rgba(5, 150, 105, 0.18);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* ─── Status pills (clickable) ───────────────────────────────── */
+.admin-reports .status-pill {
+    text-decoration: none !important;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-reports .status-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.admin-reports .status-pill.is-active {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+}
+
+.status-pill-count em {
+    font-style: normal;
+    font-weight: 600;
+    opacity: 0.65;
+    margin-left: 2px;
+}
+
+.pill-cancelled {
+    background: var(--bg-alt, #f8fafc);
+    color: var(--text-secondary, #64748b);
+    border-color: var(--border, #e2e8f0);
+}
+
+.pill-cancelled .status-dot { background: #94a3b8; }
+
+/* ─── Requests by document type ──────────────────────────────── */
+.doc-type-chart .dt-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.doc-type-chart .dt-row:last-child { margin-bottom: 0; }
+
+.doc-type-chart .bar-label {
+    width: 150px;
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-secondary, #64748b);
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.doc-type-chart .bar-track {
+    flex: 1;
+    height: 22px;
+    background: var(--bg-alt, #f8fafc);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.doc-type-chart .bar-fill {
+    height: 100%;
+    min-width: 38px;
+    padding-left: 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(90deg, var(--primary, #059669), var(--primary-light, #34d399));
+    display: flex;
+    align-items: center;
+}
+
+.doc-type-chart .dt-pct {
+    width: 44px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--text, #0f172a);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+/* ─── Monthly trend — compact (12 columns) ───────────────────── */
+.trend-chart-sm { gap: 4px; padding: 8px 2px 4px; }
+
+.trend-chart-sm .trend-col { gap: 5px; padding: 8px 3px 6px; }
+.trend-chart-sm .trend-bar-area { height: 130px; }
+.trend-chart-sm .trend-bar { width: 70%; max-width: none; }
+.trend-chart-sm .trend-value { font-size: 10.5px; }
+.trend-chart-sm .trend-label-month { font-size: 9.5px; }
+.trend-chart-sm .trend-label-year { font-size: 8.5px; }
+
+.trend-label-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--border, #e2e8f0);
+    margin: 6px 0;
+    flex-shrink: 0;
+}
+
+.trend-chart-sm .trend-col-current .trend-bar {
+    box-shadow: 0 4px 14px -2px var(--primary-300, rgba(5, 150, 105, 0.35));
+}
+
+.trend-chart-sm .trend-col-peak .trend-bar {
+    background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+    box-shadow: 0 4px 14px -2px rgba(217, 119, 6, 0.4);
+}
+
+.trend-chart-sm .trend-col-peak .trend-value { color: #d97706; }
+.trend-chart-sm .trend-col-peak .trend-label-month { color: #d97706; }
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 576px) {
+    .doc-type-chart .bar-label { width: 110px; }
+    .share-cell { min-width: 110px; }
+}
+
+/* ─── Dark mode ──────────────────────────────────────────────── */
+html[data-theme="dark"] .active-filters { border-top-color: var(--border, #334155); }
+html[data-theme="dark"] .active-filter-chip {
+    background: rgba(5, 150, 105, 0.14);
+    border-color: rgba(5, 150, 105, 0.3);
+    color: #6ee7b7;
+}
+html[data-theme="dark"] .status-pill-count em { opacity: 0.8; }
+html[data-theme="dark"] .reports-total-chip {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border, #334155);
+}
+html[data-theme="dark"] .reports-fee-badge {
+    background: rgba(5, 150, 105, 0.14);
+    border-color: rgba(5, 150, 105, 0.3);
+    color: #34d399;
+}
+html[data-theme="dark"] .share-track,
+html[data-theme="dark"] .doc-type-chart .bar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border, #334155);
+}
+html[data-theme="dark"] .pill-cancelled {
+    background: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+    border-color: var(--border, #334155);
+}
+html[data-theme="dark"] .trend-label-dot { background: var(--border, #334155); }

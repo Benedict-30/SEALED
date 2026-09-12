@@ -92,6 +92,13 @@
                     <button type="button" class="qty-btn" onclick="changeQty('${rowId}', 1)">+</button>
                     <span style="font-size:12px; color:var(--text-muted); margin-left:6px;" id="${rowId}_fee">${fee ? 'Fee: ' + formatPeso(fee) : 'Free'}</span>
                 </div>
+                <div style="margin-top:8px;">
+                    <input type="file" name="requirements_${escHtml(docId)}" class="req-file-input" multiple
+                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                    <small style="color:var(--text-muted); display:block; margin-top:4px;">
+                        Attach proof/requirement files (optional, up to 5 MB each)
+                    </small>
+                </div>
             </div>
             <button type="button" class="remove-btn" onclick="removeDocument('${rowId}', '${docId}')">
                 <i class="fa-solid fa-times"></i>
@@ -180,7 +187,7 @@
     // --- Document Preview ---
     var currentPreviewDocId = null;
 
-    function openPreview(docId, docName) {
+    function openPreview(docId, docName, previewUrl) {
         currentPreviewDocId = docId;
         var modal = document.getElementById('previewModal');
         var loading = document.getElementById('previewLoading');
@@ -195,7 +202,7 @@
         modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
 
-        fetch('/resident/request/preview/' + docId + '/')
+        fetch(previewUrl)
             .then(function (res) {
                 if (!res.ok) throw new Error('No template');
                 return res.json();

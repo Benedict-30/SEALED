@@ -99,7 +99,7 @@
 
     <div class="sidebar-footer">
         <!-- CHANGED: Wrapped the profile section in an anchor tag -->
-        <a href="{% if user.role == 'resident' %}{% url 'profile' %}{% elif user.role == 'staff' %}{% url 'staff_profile' %}{% else %}{% url 'dashboard' %}{% endif %}" class="sidebar-user">
+        <a href="{% if user.role == 'resident' %}{% url 'profile' %}{% elif user.role == 'staff' %}{% url 'staff_profile' %}{% elif user.role == 'admin' %}{% url 'admin_profile' %}{% else %}{% url 'dashboard' %}{% endif %}" class="sidebar-user">
             <div class="sidebar-avatar">{{ user.initials }}</div>
             <div class="sidebar-user-info">
                 <div class="sidebar-user-name">{{ user.display_name }}</div>

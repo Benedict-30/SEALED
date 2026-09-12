@@ -539,9 +539,23 @@ def list_announcements(filters=None, order_by='published_at', descending=True, l
 # ────────────────────── Login attempt / lockout ──────────────────────
 
 def get_login_attempt(key):
-    """Return the (possibly absent) login-attempt record for *key*."""
+    """Return the (possibly absent) login-attempt record for *key*.
+
+    Records whose lockout window has already elapsed are removed so stale
+    entries do not accumulate indefinitely.
+    """
     attempts = list_docs('login_attempt', filters=[('key', '==', key)])
-    return attempts[0] if attempts else None
+    if not attempts:
+        return None
+    record = attempts[0]
+    if (
+        record.get('count', 0) >= MAX_LOGIN_ATTEMPTS
+        and record.get('locked_until')
+        and record['locked_until'] <= utcnow()
+    ):
+        delete_doc('login_attempt', record['id'])
+        return None
+    return record
 
 
 def _login_lockout_time():

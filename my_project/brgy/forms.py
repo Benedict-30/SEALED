@@ -5,15 +5,17 @@ from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm
 
 from . import firestore_db
-from .models import CustomUser, DocumentRequest, DocumentType, DocumentTypeOverride, Barangay, Notification
+from .models import CustomUser, DocumentType, DocumentTypeOverride, Barangay
 
 
 # Allowed upload extensions grouped by purpose.  These are enforced
 # server-side (the browser `accept` attribute is only a hint).
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 TEMPLATE_EXTENSIONS = {'.docx'}
+REQUIREMENT_EXTENSIONS = {'.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024   # 5 MB
 MAX_TEMPLATE_SIZE = 5 * 1024 * 1024  # 5 MB
+MAX_REQUIREMENT_FILE_SIZE = 5 * 1024 * 1024  # 5 MB per file
 
 
 def validate_upload(uploaded_file, allowed_extensions, max_size, field_label='file'):
@@ -205,41 +207,6 @@ class ResidentRegistrationForm(forms.Form):
         if commit:
             user.save()
         return user
-
-
-class DocumentRequestForm(forms.Form):
-    """Form for requesting documents using Firestore-backed models."""
-    
-    document_type = forms.ChoiceField(
-        choices=[],
-        widget=forms.Select(attrs={'class': 'form-input'}),
-        label='Document Type'
-    )
-    
-    quantity = forms.IntegerField(
-        initial=1,
-        min_value=1,
-        widget=forms.NumberInput(attrs={'class': 'form-input'})
-    )
-    
-    purpose = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={'class': 'form-input', 'rows': 3})
-    )
-
-    def __init__(self, resident=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if resident and resident.barangay:
-            barangay_pk = resident.barangay.pk if hasattr(resident.barangay, 'pk') else resident.barangay.get('id')
-            doc_types = DocumentType.objects.filter(
-                barangay_id=barangay_pk, is_active=True
-            )
-        else:
-            doc_types = DocumentType.objects.filter(is_active=True)
-        self.fields['document_type'].choices = [('', 'Select Document Type')] + [
-            (dt.pk if hasattr(dt, 'pk') else dt.get('id'), dt.name if hasattr(dt, 'name') else dt.get('name')) 
-            for dt in doc_types
-        ]
 
 
 class StaffCreationForm(forms.Form):

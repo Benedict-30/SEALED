@@ -161,6 +161,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
+    width: 100%;
     min-height: 160px;
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -392,16 +393,16 @@
     animation: card-enter 0.45s cubic-bezier(0.4, 0, 0.2, 1) backwards;
 }
 
-.doc-card:nth-child(1)  { animation-delay: 0.02s; }
-.doc-card:nth-child(2)  { animation-delay: 0.06s; }
-.doc-card:nth-child(3)  { animation-delay: 0.10s; }
-.doc-card:nth-child(4)  { animation-delay: 0.14s; }
-.doc-card:nth-child(5)  { animation-delay: 0.18s; }
-.doc-card:nth-child(6)  { animation-delay: 0.22s; }
-.doc-card:nth-child(7)  { animation-delay: 0.26s; }
-.doc-card:nth-child(8)  { animation-delay: 0.30s; }
-.doc-card:nth-child(9)  { animation-delay: 0.34s; }
-.doc-card:nth-child(10) { animation-delay: 0.38s; }
+.doc-card-wrap:nth-child(1) .doc-card { animation-delay: 0.02s; }
+.doc-card-wrap:nth-child(2) .doc-card { animation-delay: 0.06s; }
+.doc-card-wrap:nth-child(3) .doc-card { animation-delay: 0.10s; }
+.doc-card-wrap:nth-child(4) .doc-card { animation-delay: 0.14s; }
+.doc-card-wrap:nth-child(5) .doc-card { animation-delay: 0.18s; }
+.doc-card-wrap:nth-child(6) .doc-card { animation-delay: 0.22s; }
+.doc-card-wrap:nth-child(7) .doc-card { animation-delay: 0.26s; }
+.doc-card-wrap:nth-child(8) .doc-card { animation-delay: 0.30s; }
+.doc-card-wrap:nth-child(9) .doc-card { animation-delay: 0.34s; }
+.doc-card-wrap:nth-child(10) .doc-card { animation-delay: 0.38s; }
 
 /* ============================================
    RESPONSIVE BREAKPOINTS
