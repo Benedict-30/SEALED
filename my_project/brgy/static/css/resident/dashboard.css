@@ -1,0 +1,222 @@
+/* ═══════════════════════════════════════════════════════════════
+   Resident Dashboard - track request card (redesigned)
+   ═══════════════════════════════════════════════════════════════ */
+
+.track-card {
+    background: linear-gradient(145deg, var(--card, #ffffff) 0%, #f8fafc 100%);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 16px;
+    padding: 24px 26px;
+    gap: 22px;
+}
+
+.track-card:hover {
+    border-color: var(--primary-200, #a7f3d0);
+    box-shadow: 0 8px 30px rgba(4, 120, 87, 0.12);
+}
+
+.track-card::before { height: 4px; }
+
+.track-card::after {
+    top: -70px;
+    right: -70px;
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(5, 150, 105, 0.06) 0%, transparent 70%);
+}
+
+/* ─── Progress ring (properly sized, no clipping) ────────────── */
+.progress-ring-wrapper {
+    width: 120px;
+    height: 120px;
+}
+
+.progress-ring {
+    display: block;
+    width: 120px;
+    height: 120px;
+    transform: rotate(-90deg);
+    flex-shrink: 0;
+}
+
+.progress-ring__bg {
+    stroke: var(--bg-alt, #f1f5f9);
+    transition: stroke 0.3s ease;
+}
+
+.progress-ring__circle {
+    transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+    stroke-linecap: round;
+}
+
+.progress-ring__circle.active {
+    animation: ringPulse 2.5s ease-in-out infinite;
+    filter: drop-shadow(0 2px 4px rgba(5, 150, 105, 0.35));
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: var(--card, #ffffff);
+    box-shadow: 0 0 0 5px var(--card, #ffffff), 0 4px 14px rgba(5, 150, 105, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.progress-text .percentage {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.8px;
+    background: linear-gradient(135deg, var(--primary-light, #059669) 0%, var(--primary-dark, #047857) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.progress-text .label {
+    font-size: 8.5px;
+    color: var(--text-muted, #94a3b8);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+/* ─── Track info ─────────────────────────────────────────────── */
+.track-info h4 { font-size: 17px; margin-bottom: 10px; }
+
+.track-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: var(--bg-alt, #f1f5f9);
+    border: 1px solid var(--border-light, #e2e8f0);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary, #475569);
+    font-variant-numeric: tabular-nums;
+}
+
+.track-ref i { font-size: 10px; color: var(--primary, #047857); }
+
+.track-status { margin-top: 12px; }
+
+.track-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    font-size: 11.5px;
+    color: var(--text-muted, #94a3b8);
+}
+
+.track-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.track-meta i { font-size: 10px; color: var(--text-muted, #94a3b8); }
+
+.track-cta {
+    margin-top: 16px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--primary, #047857);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: gap 0.25s ease;
+}
+
+.track-cta i { font-size: 10px; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.track-card:hover .track-cta { gap: 10px; }
+.track-card:hover .track-cta i { transform: translateX(3px); }
+
+@media (max-width: 480px) {
+    .progress-ring-wrapper { width: 112px; height: 112px; }
+    .progress-ring { width: 112px; height: 112px; }
+    .progress-text { width: 78px; height: 78px; }
+    .progress-text .percentage { font-size: 20px; }
+}
+
+/* ─── Mobile: keep resident stat cards in one row of 4 ────────── */
+@media (max-width: 768px) {
+    .stat-cards.stat-cards-compact,
+    .stat-cards-compact {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+    }
+
+    .stat-cards-compact .stat-card {
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        text-align: center;
+        gap: 6px;
+        padding: 10px 6px;
+    }
+
+    .stat-cards-compact .stat-card-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+        border-radius: 8px;
+    }
+
+    .stat-cards-compact .stat-card-value { font-size: 16px; letter-spacing: -0.4px; }
+    .stat-cards-compact .stat-card-label { font-size: 9px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Resident Dashboard - stat card background variants
+   ═══════════════════════════════════════════════════════════════ */
+
+.stat-card-total {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border-color: #a7f3d0;
+}
+
+.stat-card-total .stat-card-value { color: #065f46; }
+
+.stat-card-total:hover { border-color: #34d399; }
+
+.stat-card-pending {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-color: #fde68a;
+}
+
+.stat-card-pending .stat-card-value { color: #92400e; }
+
+.stat-card-pending:hover { border-color: #f59e0b; }
+
+.stat-card-approved {
+    background: linear-gradient(135deg, #f0f9ff 0%, #bae6fd 100%);
+    border-color: #7dd3fc;
+}
+
+.stat-card-approved .stat-card-value { color: #075985; }
+
+.stat-card-approved:hover { border-color: #0ea5e9; }
+
+.stat-card-ready {
+    background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+    border-color: #99f6e4;
+}
+
+.stat-card-ready .stat-card-value { color: #115e59; }
+
+.stat-card-ready:hover { border-color: #14b8a6; }

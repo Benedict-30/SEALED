@@ -15,13 +15,13 @@
                     <i class="fa-solid fa-search"></i>
                     <input type="text" name="search" class="form-input" placeholder="Search actions, details, users..." value="{{ search }}">
                 </div>
-                <select name="barangay" class="form-input" style="width:auto;min-width:160px;">
+                <select name="barangay" class="form-input" style="width:auto;">
                     <option value="">All Barangays</option>
                     {% for b in barangays %}
                     <option value="{{ b.pk }}" {% if barangay_filter == b.pk %}selected{% endif %}>{{ b.name }}</option>
                     {% endfor %}
                 </select>
-                <input type="text" name="action" class="form-input" style="width:auto;min-width:160px;" placeholder="Filter by action..." value="{{ action_filter }}">
+                <input type="text" name="action" class="form-input" style="width:auto;" placeholder="Filter by action..." value="{{ action_filter }}">
                 <input type="date" name="date_from" class="form-input" style="width:auto;" value="{{ date_from }}" title="From">
                 <input type="date" name="date_to" class="form-input" style="width:auto;" value="{{ date_to }}" title="To">
                 {% if search or action_filter or date_from or date_to or barangay_filter %}

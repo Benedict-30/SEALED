@@ -387,6 +387,20 @@
     gap: 12px;
 }
 
+/* Selfie capture row — camera next to upload */
+.selfie-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.selfie-row .custom-file-upload {
+    flex: 1;
+    min-width: 0;
+}
+.selfie-row .btn-camera {
+    flex-shrink: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .step-progress {
@@ -409,4 +423,7 @@
     .step-actions .btn-ghost-step { width: 100%; justify-content: center; }
     .step-actions .btn { width: 100%; }
     .camera-modal-content { width: 95%; }
+    .selfie-row { flex-direction: column; align-items: stretch; }
+    .selfie-row .custom-file-upload { width: 100%; }
+    .selfie-row .btn-camera { width: 100%; justify-content: center; }
 }

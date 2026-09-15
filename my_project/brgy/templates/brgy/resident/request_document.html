@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:10px;">
+<div class="req-page-header">
     <div>
         <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">Request Documents</h2>
         <p class="text-sm text-muted">Select a document to request</p>
@@ -51,9 +51,9 @@
 <!-- REQUEST DOCUMENT MODAL -->
 <div class="req-modal-overlay" id="reqModal" role="dialog" aria-modal="true" aria-labelledby="reqModalTitle" aria-hidden="true">
     <div class="modal-box">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h3 id="reqModalTitle" style="margin:0; font-weight:700; font-size:18px;">REQUEST DOCUMENT</h3>
-            <button type="button" onclick="closeModal()" style="background:none; border:none; font-size:20px; color:var(--text-muted); cursor:pointer;">
+        <div class="modal-header">
+            <h3 id="reqModalTitle">REQUEST DOCUMENT</h3>
+            <button type="button" class="modal-close" onclick="closeModal()" aria-label="Close">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -97,14 +97,14 @@
                 </select>
             </div>
             
-            <button type="button" onclick="addDocumentToList()" class="btn btn-ghost" style="width:100%; border: 1px dashed var(--primary); margin-bottom:15px;">
+            <button type="button" onclick="addDocumentToList()" class="btn btn-ghost add-doc-btn">
                 <i class="fa-solid fa-plus"></i> ADD DOCUMENT
             </button>
 
             <!-- Dynamic list of added documents goes here -->
             <div class="req-item-list" id="documentList"></div>
             
-            <div id="feeSummary" class="req-item-row" style="display:none; margin-bottom:15px;">
+            <div id="feeSummary" class="req-item-row req-fee-summary" style="display:none;">
                 <span style="font-weight:600;">Total Fee:</span>
                 <span style="font-weight:800; color:var(--primary);" id="feeTotal"></span>
             </div>
@@ -112,8 +112,8 @@
             <!-- Hidden fields to store data for submission -->
             <div id="hiddenInputs"></div>
             
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button type="submit" class="btn btn-primary" style="flex:1;">
+            <div class="box-footer">
+                <button type="submit" class="btn btn-primary box-footer-submit">
                     <i class="fa-solid fa-paper-plane"></i> SUBMIT
                 </button>
                 <button type="button" onclick="closeModal()" class="btn btn-ghost">Cancel</button>

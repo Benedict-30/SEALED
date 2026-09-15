@@ -763,32 +763,3 @@
     .mr-legend-wrap { align-items: flex-start; }
     .mr-date-group { width: 100%; }
 }
-
-/* ─── Dark mode ──────────────────────────────────────────────── */
-html[data-theme="dark"] .mr-date,
-html[data-theme="dark"] .mr-search-field .search-input-wrapper .form-input {
-    background-color: var(--card);
-    color: var(--text);
-}
-html[data-theme="dark"] .mr-field-label { color: var(--text-muted); }
-html[data-theme="dark"] .req-doc-item { background: var(--card); }
-html[data-theme="dark"] .req-doc-qty { background: var(--primary-light); }
-html[data-theme="dark"] .req-doc-print { color: #fff; background: #2563eb; border-color: #1d4ed8; }
-html[data-theme="dark"] .req-doc-print:hover { background: #60a5fa; color: #0f172a; border-color: #60a5fa; }
-html[data-theme="dark"] .req-doc-notemplate { background: rgba(217, 119, 6, 0.12); color: #fbbf24; border-color: rgba(217, 119, 6, 0.3); }
-html[data-theme="dark"] .btn-danger-ghost { background: rgba(220, 38, 38, 0.15); color: #f87171; border-color: rgba(220, 38, 38, 0.3); }
-html[data-theme="dark"] .btn-danger-ghost:hover { background: rgba(220, 38, 38, 0.25); color: #fca5a5; }
-html[data-theme="dark"] .req-avatar {
-    color: var(--primary-light);
-    background: rgba(5, 150, 105, 0.14);
-    border-color: rgba(5, 150, 105, 0.3);
-}
-html[data-theme="dark"] .mr-table thead th { background: rgba(15, 23, 42, 0.92); }
-html[data-theme="dark"] .mr-table tbody tr:hover { background: rgba(5, 150, 105, 0.06); }
-html[data-theme="dark"] .mr-active-tag { background: rgba(5, 150, 105, 0.12); border-color: rgba(5, 150, 105, 0.35); }
-html[data-theme="dark"] .mr-results-pill { background: var(--card); }
-html[data-theme="dark"] .req-number { background: var(--bg-alt); border-color: var(--border); }
-html[data-theme="dark"] .reject-modal { background: var(--card); }
-html[data-theme="dark"] .reject-modal-overlay { background: rgba(2, 6, 23, 0.7); }
-html[data-theme="dark"] .btn-danger { background: #dc2626; border-color: #dc2626; }
-html[data-theme="dark"] .btn-danger:hover { background: #b91c1c; border-color: #b91c1c; }

@@ -14,6 +14,7 @@
     function openModal(docId = null, docName = null) {
         document.getElementById('reqModal').classList.add('active');
         document.getElementById('reqModal').setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
         if (docId && docName) {
             // If clicked from a card, pre-select that document
             const select = document.getElementById('docTypeSelect');
@@ -26,9 +27,16 @@
         }
     }
 
+    function syncBodyScroll() {
+        const reqActive = document.getElementById('reqModal').classList.contains('active');
+        const previewActive = document.getElementById('previewModal').classList.contains('active');
+        document.body.style.overflow = (reqActive || previewActive) ? 'hidden' : '';
+    }
+
     function closeModal() {
         document.getElementById('reqModal').classList.remove('active');
         document.getElementById('reqModal').setAttribute('aria-hidden', 'true');
+        syncBodyScroll();
     }
 
     function getDocFee(docId) {
@@ -84,18 +92,18 @@
         row.dataset.fee = fee;
         row.dataset.qty = '1';
         row.innerHTML = `
-            <div style="flex:1;">
-                <strong style="color:var(--text); display:block;">${escHtml(docName)}</strong>
-                <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <div class="req-item-main">
+                <strong class="req-item-name">${escHtml(docName)}</strong>
+                <div class="qty-group">
                     <button type="button" class="qty-btn" onclick="changeQty('${rowId}', -1)">&minus;</button>
                     <input type="number" class="qty-input" value="1" min="1" max="20" readonly>
                     <button type="button" class="qty-btn" onclick="changeQty('${rowId}', 1)">+</button>
-                    <span style="font-size:12px; color:var(--text-muted); margin-left:6px;" id="${rowId}_fee">${fee ? 'Fee: ' + formatPeso(fee) : 'Free'}</span>
+                    <span class="req-item-fee" id="${rowId}_fee">${fee ? 'Fee: ' + formatPeso(fee) : 'Free'}</span>
                 </div>
-                <div style="margin-top:8px;">
+                <div class="req-item-files">
                     <input type="file" name="requirements_${escHtml(docId)}" class="req-file-input" multiple
                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                    <small style="color:var(--text-muted); display:block; margin-top:4px;">
+                    <small class="req-item-files-hint">
                         Attach proof/requirement files (optional, up to 5 MB each)
                     </small>
                 </div>
@@ -223,7 +231,7 @@
         var modal = document.getElementById('previewModal');
         modal.classList.remove('active');
         modal.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
+        syncBodyScroll();
         currentPreviewDocId = null;
     }
 
@@ -246,4 +254,12 @@
         if (e.key === 'Escape' && document.getElementById('previewModal').classList.contains('active')) {
             closePreview();
         }
+    });
+
+    // Close modals on backdrop tap (mobile-friendly)
+    document.getElementById('reqModal').addEventListener('click', function (e) {
+        if (e.target === this) closeModal();
+    });
+    document.getElementById('previewModal').addEventListener('click', function (e) {
+        if (e.target === this) closePreview();
     });

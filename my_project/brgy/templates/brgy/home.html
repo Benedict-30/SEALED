@@ -134,18 +134,18 @@
     </section>
 
     <!-- Verify Document Section (Changed to Button Redirect) -->
-    <section class="landing-verify" style="padding: 80px 20px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; text-align: center;">
-        <div class="reveal" style="max-width: 650px; margin: 0 auto;">
-            <div style="width: 70px; height: 70px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; font-size: 28px; box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+    <section class="landing-verify">
+        <div class="reveal">
+            <div class="landing-verify-icon">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <h2 style="font-size: 32px; font-weight: 800; margin-bottom: 12px;">Verify a Document</h2>
-            <p style="font-size: 16px; opacity: 0.8; margin-bottom: 32px;">
+            <h2>Verify a Document</h2>
+            <p>
                 Received a barangay document? Click the button below to head over to our verification page and enter the 12-character code printed at the bottom of your document to confirm its authenticity.
             </p>
-            
+
             <!-- Replaced Form with Redirect Button -->
-            <a href="{% url 'verify_document' %}" class="btn-landing-primary" style="padding: 16px 32px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 700;">
+            <a href="{% url 'verify_document' %}" class="btn-landing-primary landing-verify-btn">
                 <i class="fa-solid fa-magnifying-glass"></i> Go to Verification Page
             </a>
         </div>

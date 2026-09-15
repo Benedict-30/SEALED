@@ -645,15 +645,57 @@ img {
     box-shadow: 0 12px 40px rgba(217,119,6,0.4);
 }
 
-/* ─── Footer ────────────────────────────────────────────────── */
-.landing-footer {
-    background: var(--primary-dark);
-    padding: 28px 48px;
+/* ─── Verify Section ─────────────────────────────────────────── */
+.landing-verify {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #fff;
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.landing-verify .reveal {
+    max-width: 650px;
+    margin: 0 auto;
+}
+
+.landing-verify-icon {
+    width: 70px;
+    height: 70px;
+    background: var(--primary);
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    color: rgba(255,255,255,0.35);
-    font-size: 13px;
+    justify-content: center;
+    margin: 0 auto 24px auto;
+    font-size: 28px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.landing-verify h2 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.landing-verify p {
+    font-size: 16px;
+    opacity: 0.8;
+    margin-bottom: 32px;
+}
+
+.landing-verify-btn {
+    padding: 16px 32px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+}
+
+/* ─── Footer ────────────────────────────────────────────────── */
+
+/* ─── Footer ────────────────────────────────────────────────── */
+.landing-footer {
     border-top: 1px solid transparent;
     border-image: linear-gradient(90deg, transparent, var(--primary), var(--accent), var(--primary), transparent) 1;
 }
@@ -791,4 +833,28 @@ img {
     /* Disable heavy 3D effects on mobile for better performance */
     .landing-hero-glow { display: none; }
     .tilt-inner { transform: none; }
+}
+
+/* ─── ≤480px: small phones ───────────────────────────────────── */
+@media (max-width: 480px) {
+    .landing-hero-content h1 { font-size: 30px; letter-spacing: -1px; }
+    .landing-hero-content p { font-size: 14.5px; }
+    .landing-features,
+    .landing-steps,
+    .landing-cta,
+    .landing-verify { padding: 56px 16px; }
+    .landing-features-header h2,
+    .landing-steps-header h2,
+    .landing-cta h2,
+    .landing-verify h2 { font-size: 24px; }
+    .landing-verify p { font-size: 14.5px; }
+    .landing-verify-icon { width: 60px; height: 60px; font-size: 24px; margin-bottom: 18px; }
+    .landing-verify-btn { padding: 14px 24px; width: 100%; max-width: 320px; }
+    .feature-card { padding: 28px 22px; }
+    .feature-card .feature-icon { width: 48px; height: 48px; font-size: 20px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .steps-grid { grid-template-columns: 1fr; gap: 32px; }
+    .steps-grid::before { display: none; }
+    .step-card p { max-width: none; }
+    .landing-cta p { font-size: 14.5px; }
 }

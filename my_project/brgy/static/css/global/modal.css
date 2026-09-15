@@ -74,4 +74,8 @@
     .modal-header { padding: 15px 18px; }
     .modal-body { padding: 18px; }
     .modal-footer { padding: 13px 18px; }
+    .modal-close {
+        width: 44px;
+        height: 44px;
+    }
 }

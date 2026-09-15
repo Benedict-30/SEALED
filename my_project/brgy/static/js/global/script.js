@@ -239,53 +239,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ==========================================
-// 9. THEME TOGGLE (dark / light)
-// ==========================================
-(function() {
-    var storageKey = 'brgy-theme';
-    var root = document.documentElement;
-    var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
-
-    function applyTheme(theme) {
-        root.setAttribute('data-theme', theme);
-        var toggle = document.getElementById('themeToggle');
-        if (!toggle) return;
-        var dark = theme === 'dark';
-        toggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
-        toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
-        toggle.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
-        var icon = toggle.querySelector('i');
-        if (icon) icon.className = dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-    }
-
-    function storedTheme() {
-        try { return localStorage.getItem(storageKey); } catch (e) { return null; }
-    }
-
-    var stored = storedTheme();
-    if (stored === 'dark' || stored === 'light') {
-        applyTheme(stored);
-    } else if (darkQuery) {
-        applyTheme(darkQuery.matches ? 'dark' : 'light');
-        darkQuery.addEventListener('change', function(e) {
-            var s = storedTheme();
-            if (s === 'dark' || s === 'light') return;
-            applyTheme(e.matches ? 'dark' : 'light');
-        });
-    }
-
-    var themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', function() {
-            var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            applyTheme(next);
-            try { localStorage.setItem(storageKey, next); } catch (e) { }
-        });
-    }
-})();
-
-// ==========================================
-// 10. TOPBAR LIVE CLOCK (Asia/Manila)
+// 9. TOPBAR LIVE CLOCK (Asia/Manila)
 // ==========================================
 var clockEl = document.getElementById('topbarClock');
 if (clockEl) {

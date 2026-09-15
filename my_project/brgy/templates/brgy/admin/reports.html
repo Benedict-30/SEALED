@@ -16,7 +16,10 @@
                 <i class="fa-solid fa-chart-pie"></i>
                 System Reports
             </div>
-            <div class="page-hero-sub">System-wide activity and fee summaries across all barangays.</div>
+            <div class="page-hero-sub">
+                System-wide activity and fee summaries across all barangays.
+                {% if generated_at %}<span class="reports-generated"><i class="fa-solid fa-clock"></i> Generated {{ generated_at|date:"M d, Y g:i A" }}</span>{% endif %}
+            </div>
         </div>
         <a href="{% url 'admin_reports_export' %}?barangay={{ filters.barangay }}&status={{ filters.status }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}" class="btn btn-primary btn-sm">
             <i class="fa-solid fa-file-csv"></i> Export CSV
@@ -111,7 +114,7 @@
     <!-- Per-barangay Breakdown -->
     <div class="card">
         <div class="card-header">
-            <h3>Per-Barangay Breakdown</h3>
+            <h3><i class="fa-solid fa-building"></i> Per-Barangay Breakdown</h3>
             {% if per_barangay %}<span class="reports-total-chip">{{ per_barangay|length }} barangay{{ per_barangay|length|pluralize }}</span>{% endif %}
         </div>
         <div class="card-body">
@@ -133,8 +136,8 @@
                         {% for row in per_barangay %}
                         <tr>
                             <td class="fw-600">
-                                {% if row.barangay.logo %}<img src="{{ row.barangay.logo.url }}" alt="" style="width:22px;height:22px;border-radius:6px;margin-right:8px;vertical-align:middle;">{% endif %}
-                                {{ row.barangay.name }}
+                                {% if row.logo %}<img src="{{ row.logo.url }}" alt="" style="width:22px;height:22px;border-radius:6px;margin-right:8px;vertical-align:middle;">{% endif %}
+                                {{ row.barangay_name }}
                             </td>
                             <td><span class="reports-count-pill">{{ row.count }}</span></td>
                             <td>
@@ -153,8 +156,8 @@
                 </table>
             </div>
             {% else %}
-            <div class="empty-state" style="padding:24px;">
-                <i class="fa-solid fa-building" style="font-size:32px;"></i>
+            <div class="empty-state">
+                <i class="fa-solid fa-building"></i>
                 <p class="text-muted text-sm mt-2">No request data available for the selected filters.</p>
             </div>
             {% endif %}
@@ -165,7 +168,7 @@
     {% if status_breakdown %}
     <div class="card">
         <div class="card-header">
-            <h3>Status Breakdown</h3>
+            <h3><i class="fa-solid fa-list-check"></i> Status Breakdown</h3>
         </div>
         <div class="card-body">
             <div class="status-pills">
@@ -187,7 +190,7 @@
     <div class="reports-grid">
         <div class="card">
             <div class="card-header">
-                <h3>Requests by Document Type</h3>
+                <h3><i class="fa-solid fa-file-lines"></i> Requests &amp; Fees by Document Type</h3>
             </div>
             <div class="card-body">
                 {% if doc_type_breakdown %}
@@ -195,18 +198,21 @@
                 <div class="doc-type-chart">
                     {% for dt in doc_type_breakdown %}
                     <div class="dt-row">
-                        <div class="bar-label" title="{{ dt.document_type__name }}">{{ dt.document_type__name }}</div>
+                        <div class="bar-label" title="{{ dt.name }}">{{ dt.name }}</div>
                         <div class="bar-track">
                             <div class="bar-fill" style="width:{% widthratio dt.count max_count 100 %}%;">{{ dt.count }}</div>
                         </div>
-                        <div class="dt-pct">{% widthratio dt.count total_requests 100 %}%</div>
+                        <div class="dt-pct">{{ dt.pct }}%</div>
+                        {% if dt.fees %}
+                        <div class="dt-fee" title="Fees collected">&#8369;{{ dt.fees|floatformat:2 }}</div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
                 {% endwith %}
                 {% else %}
-                <div class="empty-state" style="padding:24px;">
-                    <i class="fa-solid fa-chart-bar" style="font-size:32px;"></i>
+                <div class="empty-state">
+                    <i class="fa-solid fa-chart-bar"></i>
                     <p class="text-muted text-sm mt-2">No data available.</p>
                 </div>
                 {% endif %}
@@ -216,7 +222,7 @@
         <!-- Monthly Trend -->
         <div class="card">
             <div class="card-header">
-                <h3>Monthly Trend (Last 12 Months)</h3>
+                <h3><i class="fa-solid fa-arrow-trend-up"></i> Monthly Trend (Last 12 Months)</h3>
                 {% if monthly_total %}<span class="reports-total-chip">{{ monthly_total }} requests</span>{% endif %}
             </div>
             <div class="card-body">
@@ -255,14 +261,64 @@
                     </div>
                 </div>
                 {% else %}
-                <div class="empty-state" style="padding:24px;">
-                    <i class="fa-solid fa-chart-line" style="font-size:32px;"></i>
+                <div class="empty-state">
+                    <i class="fa-solid fa-chart-line"></i>
                     <p class="text-muted text-sm mt-2">No monthly data available.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- Revenue / Fees -->
+    {% if paid_count %}
+    <div class="reports-grid">
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-coins"></i> Fees Collected by Month</h3>
+                <span class="reports-total-chip">&#8369;{{ total_fees_fmt }} total</span>
+            </div>
+            <div class="card-body">
+                <div class="mini-chart mini-chart-wide">
+                    {% for month in fee_monthly_stats %}
+                    <div class="mini-chart-col" title="{{ month.month|date:'F Y' }} — &#8369;{{ month.fees|floatformat:2 }}">
+                        <div class="mini-chart-bar success" style="height:{% widthratio month.fees fee_monthly_max 80 %}px;"></div>
+                        <div class="mini-chart-label">{{ month.month|date:"M Y" }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-credit-card"></i> Fees by Payment Method</h3>
+            </div>
+            <div class="card-body">
+                {% if payment_breakdown %}
+                {% with max_fees=payment_breakdown.0.fees|default:1 %}
+                <div class="doc-type-chart">
+                    {% for p in payment_breakdown %}
+                    <div class="dt-row">
+                        <div class="bar-label" title="{{ p.method }}">{{ p.method|capfirst }}</div>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:{% widthratio p.fees max_fees 100 %}%;">{{ p.count }}</div>
+                        </div>
+                        <div class="dt-fee">&#8369;{{ p.fees|floatformat:2 }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endwith %}
+                {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-credit-card"></i>
+                    <p class="text-muted text-sm mt-2">No payment data available.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
 </div>
 {% endblock %}

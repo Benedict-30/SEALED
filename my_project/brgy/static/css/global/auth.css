@@ -290,10 +290,34 @@
     text-decoration: underline;
 }
 
+@media (max-width: 380px) {
+    .auth-right [style*="left:14px"] { left: 12px !important; }
+    .auth-right [style*="padding-left:38px"] { padding-left: 34px !important; }
+    .auth-right .auth-features { gap: 10px; }
+    .auth-right .auth-footer { flex-direction: column; text-align: center; }
+    .auth-page { min-height: 100vh; padding: 12px; }
+    .auth-right { padding: 12px; }
+    .auth-form-panel { padding: 28px 16px; }
+    .auth-form-title { font-size: 22px; }
+    .auth-logo-icon { width: 56px; height: 56px; font-size: 20px; }
+}
+
 /* Password visibility toggle */
 .password-wrap { position: relative; }
-
 .password-wrap .form-input { padding-right: 46px; }
+
+/* Icon inputs on auth forms (envelope / lock / user) */
+.auth-input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 13px;
+    z-index: 1;
+    pointer-events: none;
+}
+.auth-input-icon + input { padding-left: 38px; }
 
 .password-toggle {
     position: absolute;

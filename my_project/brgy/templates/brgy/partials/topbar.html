@@ -4,9 +4,6 @@
         <button class="topbar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
             <i class="fa-solid fa-bars"></i>
         </button>
-        <a href="{% url 'dashboard' %}" class="topbar-btn {% if sidebar_active %}active{% endif %}" title="Go to Dashboard" aria-label="Dashboard">
-            <i class="fa-solid fa-gauge-high"></i>
-        </a>
         {% endif %}
         <h1 class="topbar-title"><span class="topbar-title-text">{{ topbar_title|default:"Dashboard" }}</span></h1>
     </div>
@@ -57,10 +54,6 @@
                 {% endif %}
             </div>
         </div>
-
-        <button type="button" class="topbar-btn topbar-theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" title="Toggle dark mode">
-            <i class="fa-solid fa-moon"></i>
-        </button>
 
         {% if user.is_authenticated %}
         <div class="topbar-notif-wrap" id="topbarNotif" data-poll-url="{% url 'unread_notification_count' %}">

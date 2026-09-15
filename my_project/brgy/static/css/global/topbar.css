@@ -3,7 +3,10 @@
    ═══════════════════════════════════════════════════════════════ */
 
 .topbar {
-    height: var(--topbar-height);
+    height: calc(var(--topbar-height) + env(safe-area-inset-top, 0px));
+    padding: 0 24px;
+    padding-top: env(safe-area-inset-top, 0px);
+    background-clip: padding-box;
     background: var(--glass-bg, rgba(255,255,255,0.72));
     backdrop-filter: var(--glass-blur, blur(16px));
     -webkit-backdrop-filter: var(--glass-blur, blur(16px));
@@ -353,9 +356,7 @@
     top: calc(100% + 8px);
     right: 0;
     width: 220px;
-    background: var(--glass-bg, rgba(255,255,255,0.9));
-    backdrop-filter: var(--glass-blur, blur(16px));
-    -webkit-backdrop-filter: var(--glass-blur, blur(16px));
+    background: var(--card, #ffffff);
     border: 1px solid var(--border, #e2e8f0);
     border-radius: 12px;
     box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.06));
@@ -586,7 +587,23 @@
     .topbar-title { font-size: 13px; }
     .notification-dropdown { width: 300px; right: -40px; }
     .user-menu-info { display: none; }
-    .user-menu-btn { padding: 0 4px; border-radius: 9px; }
+    .user-menu-btn { padding: 0 8px 0 4px; border-radius: 9px; }
+    /* Expand icon buttons to 44px hit areas on touch screens */
+    .topbar-toggle,
+    .topbar-btn,
+    .user-menu-btn {
+        width: 44px;
+        height: 44px;
+    }
+    .topbar-cta { width: auto; padding: 0 12px; }
+    .user-menu-btn { width: auto; padding: 0 10px 0 4px; }
+    /* Solid backgrounds for overlays on mobile (no glass blur) */
+    .pages-dropdown,
+    .notification-dropdown {
+        background: var(--card, #ffffff);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
 }
 
 @media (max-width: 640px) {
@@ -603,12 +620,6 @@
     box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.04));
     border-bottom-color: var(--border, #e2e8f0);
 }
-
-/* ─── Dark Mode ────────────────────────────────────────────── */
-html[data-theme="dark"] .topbar-btn:hover { border-color: rgba(255,255,255,0.1); }
-html[data-theme="dark"] .user-menu-btn:hover { border-color: rgba(255,255,255,0.1); }
-html[data-theme="dark"] .user-dropdown-item.danger:hover { background: rgba(220, 38, 38, 0.1); }
-html[data-theme="dark"] .topbar-badge { border-color: var(--card, #1e293b); }
 
 /* ─── Reduced Motion ───────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {

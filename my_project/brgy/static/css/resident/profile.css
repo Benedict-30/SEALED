@@ -1283,7 +1283,7 @@
 .save-bar-enhanced {
     position: fixed;
     bottom: 0;
-    left: var(--sidebar-width, 280px);
+    left: 0;
     right: 0;
     z-index: 100;
     padding: 0 36px 24px;
@@ -1436,8 +1436,8 @@
     }
 
     .save-bar-enhanced {
-        left: 0;
-        padding: 0 16px 16px;
+        padding: 0 16px;
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
     }
 
     .save-bar-info {
@@ -1500,40 +1500,6 @@
     .ring-percentage {
         font-size: 28px;
     }
-}
-
-/* ═══ DARK MODE SUPPORT ═══════════════════════════════════════ */
-html[data-theme="dark"] .profile-hero {
-    background: linear-gradient(135deg, #0c0a1d 0%, #1e1b4b 30%, #312e81 60%, #3730a3 100%);
-    box-shadow:
-        0 20px 60px -12px rgba(49, 46, 129, 0.4),
-        0 8px 24px -8px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-html[data-theme="dark"] .detail-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
-}
-
-html[data-theme="dark"] .detail-item:hover {
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(255, 255, 255, 0.14);
-}
-
-html[data-theme="dark"] .btn-hero-primary {
-    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-    color: #1e1b4b;
-}
-
-html[data-theme="dark"] .badge-verification {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-}
-
-html[data-theme="dark"] .badge-role {
-    background: rgba(167, 139, 250, 0.1);
-    border-color: rgba(167, 139, 250, 0.2);
 }
 
 /* ═══ REDUCED MOTION ══════════════════════════════════════════ */

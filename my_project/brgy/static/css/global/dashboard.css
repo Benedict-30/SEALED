@@ -1177,6 +1177,34 @@
     box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
 }
 
+.verification-banner-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    position: relative;
+    z-index: 1;
+}
+
+.verification-banner-actions .btn {
+    min-height: 44px;
+    padding: 10px 18px;
+}
+
+.verification-banner-actions .btn-contact {
+    background: var(--card, #fff);
+}
+
+@media (max-width: 480px) {
+    .verification-banner-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .verification-banner-actions .btn { width: 100%; justify-content: center; }
+}
+
 /* ─── Empty State ─────────────────────────────────────────────── */
 .empty-state {
     text-align: center;
@@ -1248,6 +1276,23 @@
 }
 
 @media (max-width: 480px) {
+    .page-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .page-hero-date { width: 100%; justify-content: center; }
+    .progress-ring-wrapper { width: 104px; height: 104px; }
+    .progress-ring {
+        display: block;
+        width: 104px;
+        height: 104px;
+    }
+    .progress-text {
+        width: 72px;
+        height: 72px;
+    }
+    .progress-text .percentage { font-size: 22px; }
     .stat-cards, .stat-cards-2, .stat-cards-3, .stat-cards-4 { grid-template-columns: 1fr; }
     .verification-banner { padding: 26px 18px 22px; margin: 22px auto; border-radius: 12px; }
     .bar-label { width: 68px; font-size: 11px; }
@@ -1257,57 +1302,6 @@
     .page-hero { margin-bottom: 22px; }
     .stat-cards { gap: 10px; margin-bottom: 16px; }
 }
-
-/* ─── Dark Mode ──────────────────────────────────────────────── */
-html[data-theme="dark"] .page-hero-title i {
-    background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%);
-    color: var(--text-secondary, #94a3b8);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-html[data-theme="dark"] .stat-card-icon.primary { background: linear-gradient(135deg, rgba(5, 150, 105, 0.15) 0%, rgba(5, 150, 105, 0.08) 100%); }
-html[data-theme="dark"] .stat-card-icon.success { background: linear-gradient(135deg, rgba(5, 150, 105, 0.15) 0%, rgba(5, 150, 105, 0.08) 100%); }
-html[data-theme="dark"] .stat-card-icon.warning { background: linear-gradient(135deg, rgba(217, 119, 6, 0.15) 0%, rgba(217, 119, 6, 0.08) 100%); }
-html[data-theme="dark"] .stat-card-icon.danger  { background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(220, 38, 38, 0.08) 100%); }
-html[data-theme="dark"] .stat-card-icon.info    { background: linear-gradient(135deg, rgba(8, 145, 178, 0.15) 0%, rgba(8, 145, 178, 0.08) 100%); }
-html[data-theme="dark"] .stat-card-icon.accent  { background: linear-gradient(135deg, rgba(8, 145, 178, 0.15) 0%, rgba(8, 145, 178, 0.08) 100%); }
-
-html[data-theme="dark"] .activity-icon { background: rgba(99, 102, 241, 0.12); }
-html[data-theme="dark"] .activity-icon.success { background: rgba(5, 150, 105, 0.12); }
-html[data-theme="dark"] .activity-icon.warning { background: rgba(217, 119, 6, 0.12); }
-html[data-theme="dark"] .activity-icon.danger  { background: rgba(220, 38, 38, 0.12); }
-
-html[data-theme="dark"] .track-status-badge { background: rgba(99, 102, 241, 0.12); }
-html[data-theme="dark"] .track-status-badge.pending { background: rgba(217, 119, 6, 0.12); }
-
-html[data-theme="dark"] .verification-banner.rejected {
-    background: linear-gradient(180deg, var(--card, #1e293b) 0%, rgba(220, 38, 38, 0.05) 100%);
-    border-color: rgba(220, 38, 38, 0.2);
-}
-
-html[data-theme="dark"] .daily-snapshot { background: rgba(255, 255, 255, 0.03); }
-html[data-theme="dark"] .bar-track { background: rgba(255, 255, 255, 0.04); }
-
-html[data-theme="dark"] .trend-bar-area {
-    background:
-        repeating-linear-gradient(to bottom,
-            transparent 0,
-            transparent calc(25% - 1px),
-            rgba(255, 255, 255, 0.06) calc(25% - 1px),
-            rgba(255, 255, 255, 0.06) 25%),
-        rgba(255, 255, 255, 0.04);
-    border-color: var(--border, #334155);
-}
-html[data-theme="dark"] .trend-col:hover { background: rgba(255, 255, 255, 0.03); }
-html[data-theme="dark"] .trend-footer { border-top-color: var(--border, #334155); }
-html[data-theme="dark"] .trend-delta { border-color: var(--border, #334155); }
-html[data-theme="dark"] .progress-ring__bg { stroke: rgba(255, 255, 255, 0.06); }
-html[data-theme="dark"] .progress-text { background: var(--card, #1e293b); }
-
-html[data-theme="dark"] .verification-banner::before,
-html[data-theme="dark"] .verification-banner::after { background: rgba(255, 255, 255, 0.02); }
-
-html[data-theme="dark"] .empty-state-icon { background: rgba(255, 255, 255, 0.04); }
 
 /* ─── Reduced Motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {

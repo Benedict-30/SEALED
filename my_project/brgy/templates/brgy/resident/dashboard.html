@@ -1,4 +1,9 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/resident/dashboard.css' %}">
+{% endblock %}
 
 {% block content %}
 
@@ -25,7 +30,17 @@
             <strong>Reason:</strong> {{ rejection_reason }}
         </p>
         {% endif %}
-        <p class="text-muted">Please contact your barangay office for assistance.</p>
+        <p class="text-muted">You can fix your details and re-submit your ID for review, or contact your barangay office for assistance.</p>
+        <div class="verification-banner-actions">
+            <a href="{% url 'profile' %}" class="btn btn-primary">
+                <i class="fa-solid fa-rotate"></i> Update Profile &amp; Re-submit
+            </a>
+            {% if user.barangay.contact_number %}
+            <a href="tel:{{ user.barangay.contact_number }}" class="btn btn-ghost btn-contact">
+                <i class="fa-solid fa-phone"></i> Contact Barangay
+            </a>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
 
@@ -47,7 +62,7 @@
 
 {# ─── Stat Cards ───────────────────────────────────────────────── #}
 <div class="stat-cards stat-cards-compact">
-    <div class="stat-card">
+    <div class="stat-card stat-card-total">
         <div class="stat-card-icon primary">
             <i class="fa-solid fa-file-lines"></i>
         </div>
@@ -57,7 +72,7 @@
         </div>
     </div>
 
-    <div class="stat-card">
+    <div class="stat-card stat-card-pending">
         <div class="stat-card-icon warning">
             <i class="fa-solid fa-clock"></i>
         </div>
@@ -67,7 +82,7 @@
         </div>
     </div>
 
-    <div class="stat-card">
+    <div class="stat-card stat-card-approved">
         <div class="stat-card-icon info">
             <i class="fa-solid fa-circle-check"></i>
         </div>
@@ -77,7 +92,7 @@
         </div>
     </div>
 
-    <div class="stat-card">
+    <div class="stat-card stat-card-ready">
         <div class="stat-card-icon success">
             <i class="fa-solid fa-hand-holding"></i>
         </div>
@@ -98,20 +113,21 @@
         {% with latest_req=recent_requests|first %}
         <a href="{% url 'track_request' latest_req.pk %}" class="track-card">
             <div class="progress-ring-wrapper">
-                <svg class="progress-ring" width="140" height="140">
-                    <circle
-                        class="progress-ring__circle"
-                        stroke="var(--border, #e2e8f0)"
-                        stroke-width="12"
-                        fill="transparent"
-                        r="60" cx="70" cy="70"
-                    />
+                <svg class="progress-ring" viewBox="0 0 140 140" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="var(--primary-light, #059669)"/>
+                            <stop offset="100%" stop-color="var(--primary-dark, #047857)"/>
+                        </linearGradient>
+                    </defs>
+                    <circle class="progress-ring__bg" cx="70" cy="70" r="60" stroke-width="12" fill="none"/>
                     <circle
                         class="progress-ring__circle {% if latest_req.status in 'pending,approved,printed,ready_for_pickup' %}active{% endif %}"
-                        stroke="var(--primary)"
+                        cx="70" cy="70" r="60"
+                        stroke="url(#ringGrad)"
                         stroke-width="12"
-                        fill="transparent"
-                        r="60" cx="70" cy="70"
+                        fill="none"
+                        stroke-linecap="round"
                         stroke-dasharray="376.99"
                         stroke-dashoffset="{% if latest_req.status == 'completed' %}0{% elif latest_req.status == 'ready_for_pickup' %}94.25{% elif latest_req.status in 'approved,printed' %}188.5{% elif latest_req.status == 'pending' %}282.74{% else %}376.99{% endif %}"
                     />
@@ -130,12 +146,15 @@
 
             <div class="track-info">
                 <h4>Track Latest Request</h4>
-                <p>
-                    <strong>{{ latest_req.request_number }}</strong> &middot;
-                    Submitted {{ latest_req.created_at|date:"M d" }}
-                </p>
-                <div class="track-status-badge {% if latest_req.status == 'pending' %}pending{% endif %}">
-                    {{ latest_req.get_status_display }}
+                <span class="track-ref"><i class="fa-solid fa-hashtag"></i>{{ latest_req.request_number }}</span>
+                <div class="track-status">
+                    <span class="badge badge-{{ latest_req.status_color }}">
+                        {{ latest_req.get_status_display }}
+                    </span>
+                </div>
+                <div class="track-meta">
+                    <span><i class="fa-regular fa-calendar"></i> Submitted {{ latest_req.created_at|date:"M d, Y" }}</span>
+                    <span><i class="fa-regular fa-clock"></i> Updated {{ latest_req.updated_at|date:"M d" }}</span>
                 </div>
                 <div class="track-cta">
                     Click to view full timeline <i class="fa-solid fa-arrow-right"></i>
@@ -153,7 +172,7 @@
             <div class="card-body-flush">
                 {% if recent_requests %}
                 <div class="table-wrapper">
-                    <table class="table">
+                    <table class="table table-cards">
                         <thead>
                             <tr>
                                 <th>Request #</th>
@@ -165,22 +184,24 @@
                         <tbody>
                             {% for req in recent_requests %}
                             <tr>
-                                <td class="fw-600">
+                                <td class="fw-600" data-label="Request #">
                                     <a href="{% url 'track_request' req.pk %}" class="table-link">
                                         {{ req.request_number }}
                                     </a>
                                 </td>
-                                <td>
-                                    {% for item in req.items.all %}
-                                    <span class="table-doc-name">{{ item.document_type.name }}</span><br>
-                                    {% endfor %}
+                                <td class="docs-cell" data-label="Documents">
+                                    <div class="td-doc-list">
+                                        {% for item in req.items.all %}
+                                        <span class="table-doc-name">{{ item.document_type.name }}</span><br>
+                                        {% endfor %}
+                                    </div>
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <span class="badge badge-{{ req.status_color }}">
                                         {{ req.get_status_display }}
                                     </span>
                                 </td>
-                                <td class="table-date">{{ req.created_at|date:"M d, Y" }}</td>
+                                <td data-label="Date"><span class="table-date">{{ req.created_at|date:"M d, Y" }}</span></td>
                             </tr>
                             {% endfor %}
                         </tbody>

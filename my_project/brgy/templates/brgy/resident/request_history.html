@@ -1,4 +1,9 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/resident/request_history.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="card">
@@ -11,17 +16,20 @@
     <div class="card-body">
         <!-- Filters -->
         <div class="filter-bar mb-4">
-            <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;">
+            <form method="get" class="filter-bar-form">
                 <div class="search-input-wrapper">
                     <i class="fa-solid fa-search"></i>
                     <input type="text" name="search" class="form-input" placeholder="Search requests..." value="{{ search }}">
                 </div>
-                <select name="status" class="form-input" style="width:auto;min-width:160px;" onchange="this.form.submit()">
-                    <option value="">All Statuses</option>
-                    {% for value, label in status_choices %}
-                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
+                <div class="search-input-wrapper filter-bar-select status-filter-wrap">
+                    <i class="fa-solid fa-filter"></i>
+                    <select name="status" class="form-input" onchange="this.form.submit()">
+                        <option value="">All Statuses</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 {% if status_filter %}
                 <a href="{% url 'request_history' %}" class="btn btn-ghost btn-sm">
                     <i class="fa-solid fa-xmark"></i> Clear
@@ -32,7 +40,7 @@
 
         {% if page_obj %}
         <div class="table-wrapper">
-            <table class="table">
+            <table class="table table-cards table-history">
                 <thead>
                     <tr>
                         <th>Request #</th>
@@ -48,26 +56,28 @@
                 <tbody>
                     {% for req in page_obj %}
                     <tr>
-                        <td class="fw-600">
-    <a href="{% url 'track_request' req.pk %}" style="color: var(--primary); text-decoration: none;">
-        {{ req.request_number }} <i class="fa-solid fa-arrow-right fa-xs"></i>
-    </a>
-</td>
-                        <!-- FIXED: Now loops through the items to show all documents requested -->
-                        <td>
-                            {% for item in req.items.all %}
-                                <a href="{% url 'track_request_item' req.pk item.pk %}" style="color: var(--primary); text-decoration: none;" title="Track this document">
-                                    <span class="text-sm">{{ item.document_type.name }}</span> <i class="fa-solid fa-arrow-right fa-xs"></i>
-                                </a>
-                                {% if item.is_printed %}
-                                <span class="badge badge-info text-xs">Printed</span>
-                                {% endif %}
-                                <br>
-                            {% endfor %}
+                        <td class="fw-600" data-label="Request #">
+                            <a href="{% url 'track_request' req.pk %}" style="color: var(--primary); text-decoration: none;">
+                                {{ req.request_number }} <i class="fa-solid fa-arrow-right fa-xs"></i>
+                            </a>
                         </td>
-                        <td style="max-width:200px;"><span class="text-sm">{{ req.purpose|truncatechars:50 }}</span></td>
-                        <td><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
-                        <td>
+                        <!-- FIXED: Now loops through the items to show all documents requested -->
+                        <td class="docs-cell" data-label="Documents">
+                            <div class="td-doc-list">
+                                {% for item in req.items.all %}
+                                    <a href="{% url 'track_request_item' req.pk item.pk %}" style="color: var(--primary); text-decoration: none;" title="Track this document">
+                                        <span class="text-sm">{{ item.document_type.name }}</span> <i class="fa-solid fa-arrow-right fa-xs"></i>
+                                    </a>
+                                    {% if item.is_printed %}
+                                    <span class="badge badge-info text-xs">Printed</span>
+                                    {% endif %}
+                                    {% if not forloop.last %}<br>{% endif %}
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="td-truncate" data-label="Purpose"><span class="text-sm">{{ req.purpose|truncatechars:50 }}</span></td>
+                        <td class="status-cell" data-label="Status"><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
+                        <td data-label="Fee">
                             {% if req.is_paid %}
                             <span class="badge badge-success text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Paid</span>
                             {% elif req.status == 'rejected' or req.status == 'pending' or req.status == 'cancelled' %}
@@ -76,8 +86,8 @@
                             <span class="badge badge-muted text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Unpaid</span>
                             {% endif %}
                         </td>
-                        <td class="text-sm text-muted">{{ req.created_at|date:"M d, Y" }}</td>
-                        <td style="max-width:150px;">
+                        <td data-label="Submitted"><span class="text-sm text-muted">{{ req.created_at|date:"M d, Y" }}</span></td>
+                        <td class="td-truncate" data-label="Notes">
                             {% if req.staff_notes %}
                             <span class="text-xs text-muted" title="{{ req.staff_notes }}">{{ req.staff_notes|truncatechars:40 }}</span>
                             {% elif req.rejection_reason %}
@@ -87,11 +97,11 @@
                             {% endif %}
                         </td>
                         <!-- NEW: Actions Column with Cancel Button -->
-                        <td>
+                        <td data-label="Actions">
                             {% if req.status == 'pending' %}
                                 <form method="post" action="{% url 'cancel_request' req.pk %}" onsubmit="return confirm('Are you sure you want to cancel this request?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-xs" style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;" title="Cancel Request">
+                                    <button type="submit" class="btn btn-xs btn-ghost-danger" title="Cancel Request">
                                         <i class="fa-solid fa-times"></i> Cancel
                                     </button>
                                 </form>

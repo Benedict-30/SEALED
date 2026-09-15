@@ -120,12 +120,3 @@
     .ann-item { flex-direction: column; }
     .ann-actions { flex-direction: row; }
 }
-
-html[data-theme="dark"] .ann-badge-global {
-    background: rgba(129, 140, 248, 0.15); color: #a5b4fc; border-color: rgba(129, 140, 248, 0.35);
-}
-html[data-theme="dark"] .ann-badge-barangay,
-html[data-theme="dark"] .ann-status.published {
-    background: rgba(52, 211, 153, 0.12); color: #6ee7b7; border-color: rgba(52, 211, 153, 0.3);
-}
-html[data-theme="dark"] .ann-status.draft { background: rgba(148, 163, 184, 0.12); color: #94a3b8; border-color: rgba(148, 163, 184, 0.3); }

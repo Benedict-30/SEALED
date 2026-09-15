@@ -37,7 +37,7 @@
                 </div>
                 {% endif %}
 
-                <div class="form-row" style="display:flex; gap:16px; margin-bottom:16px;">
+                <div class="form-row" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
                     <div class="form-group" style="flex:1;">
                         <label class="form-label" for="id_first_name">First Name</label>
                         {{ info_form.first_name }}
@@ -48,7 +48,7 @@
                     </div>
                 </div>
 
-                <div class="form-row" style="display:flex; gap:16px; margin-bottom:16px;">
+                <div class="form-row" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
                     <div class="form-group" style="flex:1;">
                         <label class="form-label" for="id_email">Email</label>
                         {{ info_form.email }}
@@ -101,7 +101,7 @@
                     {{ password_form.current_password }}
                 </div>
 
-                <div class="form-row" style="display:flex; gap:16px; margin-bottom:16px;">
+                <div class="form-row" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
                     <div class="form-group" style="flex:1;">
                         <label class="form-label" for="id_new_password">New Password</label>
                         {{ password_form.new_password }}

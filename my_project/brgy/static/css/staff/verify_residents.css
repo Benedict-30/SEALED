@@ -603,28 +603,6 @@
     .vr-legend-wrap { align-items: flex-start; }
 }
 
-/* ─── Dark mode ──────────────────────────────────────────────── */
-html[data-theme="dark"] .vr-search-field .search-input-wrapper .form-input {
-    background-color: var(--card);
-    color: var(--text);
-}
-html[data-theme="dark"] .vr-field-label { color: var(--text-muted); }
-html[data-theme="dark"] .vr-table thead th { background: rgba(28, 25, 23, 0.92); }
-html[data-theme="dark"] .vr-table tbody tr:hover { background: rgba(5, 150, 105, 0.06); }
-html[data-theme="dark"] .vr-avatar {
-    color: var(--primary-light);
-    background: rgba(5, 150, 105, 0.14);
-    border-color: rgba(5, 150, 105, 0.3);
-}
-html[data-theme="dark"] .vr-reason { background: rgba(217, 119, 6, 0.12); color: #fbbf24; border-color: rgba(217, 119, 6, 0.3); }
-html[data-theme="dark"] .vr-btn-reject { background: rgba(220, 38, 38, 0.15); color: #f87171; border-color: rgba(220, 38, 38, 0.3); }
-html[data-theme="dark"] .vr-btn-reject:hover { background: rgba(220, 38, 38, 0.25); color: #fca5a5; }
-html[data-theme="dark"] .vr-active-tag { background: rgba(5, 150, 105, 0.12); border-color: rgba(5, 150, 105, 0.35); }
-html[data-theme="dark"] .id-thumb { border-color: var(--border); }
-html[data-theme="dark"] .vr-status.status-pending { color: #fbbf24; }
-html[data-theme="dark"] .vr-status.status-approved { color: #6ee7b7; }
-html[data-theme="dark"] .vr-status.status-rejected { color: #f87171; }
-
 .vr-inactive-tag {
     display: inline-block;
     margin-left: 6px;
@@ -637,9 +615,4 @@ html[data-theme="dark"] .vr-status.status-rejected { color: #f87171; }
     color: #dc2626;
     border: 1px solid rgba(220, 38, 38, 0.25);
     vertical-align: middle;
-}
-html[data-theme="dark"] .vr-inactive-tag {
-    background: rgba(248, 113, 113, 0.12);
-    color: #f87171;
-    border-color: rgba(248, 113, 113, 0.3);
 }

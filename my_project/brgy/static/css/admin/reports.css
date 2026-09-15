@@ -272,32 +272,3 @@
     .doc-type-chart .bar-label { width: 110px; }
     .share-cell { min-width: 110px; }
 }
-
-/* ─── Dark mode ──────────────────────────────────────────────── */
-html[data-theme="dark"] .active-filters { border-top-color: var(--border, #334155); }
-html[data-theme="dark"] .active-filter-chip {
-    background: rgba(5, 150, 105, 0.14);
-    border-color: rgba(5, 150, 105, 0.3);
-    color: #6ee7b7;
-}
-html[data-theme="dark"] .status-pill-count em { opacity: 0.8; }
-html[data-theme="dark"] .reports-total-chip {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--border, #334155);
-}
-html[data-theme="dark"] .reports-fee-badge {
-    background: rgba(5, 150, 105, 0.14);
-    border-color: rgba(5, 150, 105, 0.3);
-    color: #34d399;
-}
-html[data-theme="dark"] .share-track,
-html[data-theme="dark"] .doc-type-chart .bar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--border, #334155);
-}
-html[data-theme="dark"] .pill-cancelled {
-    background: rgba(255, 255, 255, 0.05);
-    color: #94a3b8;
-    border-color: var(--border, #334155);
-}
-html[data-theme="dark"] .trend-label-dot { background: var(--border, #334155); }

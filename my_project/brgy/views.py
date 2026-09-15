@@ -24,7 +24,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from docxtpl import DocxTemplate
 import mammoth
 
-from . import firestore_db
+from . import firestore_db, report_exports
 from .auth import login_user, logout_user
 from .security import hash_sensitive
 from .forms import (
@@ -2008,73 +2008,67 @@ def reject_request(request, pk):
 @role_required('staff')
 def staff_reports(request):
     brgy = request.user.barangay
-    doc_requests = requests_for_barangay(brgy.pk)
-
-    # Daily stats for last 30 days
-    today = timezone.localdate()
-    day_counts = {}
-    for req in doc_requests:
-        if req.created_at is None:
-            continue
-        day = req.created_at.date()
-        entry = day_counts.setdefault(day, {'count': 0, 'completed': 0})
-        entry['count'] += 1
-        if req.status == 'completed':
-            entry['completed'] += 1
-    daily_stats = [
-        {'date': today - timedelta(days=i), 'count': day_counts.get(today - timedelta(days=i), {}).get('count', 0),
-         'completed': day_counts.get(today - timedelta(days=i), {}).get('completed', 0)}
-        for i in range(30)
+    filters, from_date, to_date = _parse_report_filters(request)
+    doc_requests = [
+        r for r in requests_for_barangay(brgy.pk)
+        if _matches_report_filter(r, filters, from_date, to_date)
     ]
+
+    daily_stats = report_exports.daily_stats(doc_requests, days=30)
+    daily_max = max((d['count'] for d in daily_stats), default=0) or 1
 
     # Status breakdown
-    status_counts = {}
-    for req in doc_requests:
-        status_counts[req.status] = status_counts.get(req.status, 0) + 1
-    status_breakdown = [{'status': s, 'count': c} for s, c in status_counts.items()]
+    status_breakdown = report_exports.status_aggregate(doc_requests)
 
-    # Document type breakdown
-    doc_type_counts = {}
-    for req in doc_requests:
-        for item in req.items.all():
-            name = item.document_type.name if item.document_type else 'Unknown'
-            doc_type_counts[name] = doc_type_counts.get(name, 0) + 1
-    doc_type_breakdown = [
-        {'document_type__name': name, 'count': count}
-        for name, count in sorted(doc_type_counts.items(), key=lambda kv: kv[1], reverse=True)
-    ]
+    # Document type breakdown (counts + fees from paid requests)
+    doc_type_breakdown = report_exports.doc_type_aggregate(doc_requests)
 
-    # Total fees actually collected (from paid requests)
-    total_fees = 0
-    paid_count = 0
-    for req in doc_requests:
-        if req.is_paid:
-            for item in req.items.all():
-                total_fees += item.total_fee
-            paid_count += 1
+    # Fees + payment method
+    total_fees, paid_count = report_exports.fee_totals(doc_requests)
+    payment_breakdown = report_exports.payment_aggregate(doc_requests)
 
-    # Monthly stats for last 12 months
-    monthly_counts = {}
-    for req in doc_requests:
-        if req.created_at is None:
-            continue
-        key = (req.created_at.year, req.created_at.month)
-        monthly_counts[key] = monthly_counts.get(key, 0) + 1
-    monthly_stats = []
-    for i in range(12):
-        first = today.replace(day=1) - timedelta(days=28 * i)
-        key = (first.year, first.month)
-        monthly_stats.append({'month': first.replace(day=1), 'count': monthly_counts.get(key, 0)})
+    # Monthly counts + fee series (last 12 months)
+    monthly_stats = report_exports.monthly_counts(doc_requests, months=12)
+    monthly_max = max((m['count'] for m in monthly_stats), default=0) or 1
+    fee_monthly_stats = report_exports.monthly_fees(doc_requests, months=12)
+    fee_monthly_max = max((m['fees'] for m in fee_monthly_stats), default=0) or 1
+
+    total_requests = len(doc_requests)
+    completed = sum(1 for r in doc_requests if r.status == 'completed')
+    pending = sum(1 for r in doc_requests if r.status == 'pending')
+    completion_rate = report_exports.completion_rate(doc_requests, completed=completed, total=total_requests)
+
+    status_labels = dict(DocumentRequest.Status.choices)
+    filter_summary = []
+    if filters['status']:
+        filter_summary.append(status_labels.get(filters['status'], filters['status'].title()))
+    if filters['date_from']:
+        filter_summary.append(f'From {filters["date_from"]}')
+    if filters['date_to']:
+        filter_summary.append(f'To {filters["date_to"]}')
 
     return render(request, 'brgy/staff/reports.html', {
         'page_title': 'Reports',
         'brgy': brgy,
+        'filters': filters,
+        'status_choices': DocumentRequest.Status.choices,
+        'filter_summary': filter_summary,
         'daily_stats': daily_stats,
+        'daily_max': daily_max,
         'status_breakdown': status_breakdown,
         'doc_type_breakdown': doc_type_breakdown,
+        'payment_breakdown': payment_breakdown,
         'total_fees': total_fees,
+        'total_requests': total_requests,
         'paid_count': paid_count,
+        'pending': pending,
+        'completed': completed,
+        'completion_rate': completion_rate,
         'monthly_stats': monthly_stats,
+        'monthly_max': monthly_max,
+        'fee_monthly_stats': fee_monthly_stats,
+        'fee_monthly_max': fee_monthly_max,
+        'generated_at': timezone.localtime(),
     })
 
 
@@ -2082,50 +2076,94 @@ def staff_reports(request):
 @role_required('staff')
 def staff_reports_export(request):
     brgy = request.user.barangay
-    doc_requests = requests_for_barangay(brgy.pk)
-
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = (
-        f'attachment; filename="barangay_reports_{brgy.pk[:8] if brgy.pk else "brgy"}.csv"'
-    )
-    writer = csv.writer(response)
-    writer.writerow([
-        'Request Number', 'Date Submitted', 'Resident', 'Email', 'Documents',
-        'Purpose', 'Contact Number', 'Pickup Date', 'Pickup Slot', 'Status', 'Total Fee',
-        'Payment', 'Payment Method', 'OR Number', 'Processed By', 'Staff Notes',
-    ])
-    total_fees = 0
-    paid_count = 0
+    filters, from_date, to_date = _parse_report_filters(request)
+    doc_requests = [
+        r for r in requests_for_barangay(brgy.pk)
+        if _matches_report_filter(r, filters, from_date, to_date)
+    ]
     for req in doc_requests:
-        documents = '; '.join(
-            f'{item.document_type.name}{" x" + str(item.quantity) if item.quantity and item.quantity > 1 else ""}'
-            for item in req.items.all() if item.document_type
-        )
-        fee = sum(item.total_fee for item in req.items.all())
-        if req.is_paid:
-            total_fees += fee
-            paid_count += 1
-        writer.writerow([
-            req.request_number,
-            req.created_at.strftime('%Y-%m-%d %H:%M') if req.created_at else '',
-            req.resident.display_name if req.resident else '',
-            req.resident.email if req.resident else '',
-            documents,
-            req.purpose or '',
-            req.contact_number or '',
-            req.pickup_date.strftime('%Y-%m-%d') if req.pickup_date else '',
-            req.get_pickup_slot_display() if req.pickup_date else '',
-            req.get_status_display(),
-            f'{fee:.2f}',
-            req.get_payment_status_display(),
-            req.payment_method or '',
-            req.or_number or '',
-            req.processed_by.display_name if req.processed_by else '',
-            req.staff_notes or '',
-        ])
-    writer.writerow([])
-    writer.writerow(['TOTAL FEES (paid requests)', f'{total_fees:.2f}'])
-    writer.writerow(['PAID REQUESTS COUNT', f'{paid_count}'])
+        object.__setattr__(req, '_resident_brgy_id', brgy.pk)
+
+    total_fees, paid_count = report_exports.fee_totals(doc_requests)
+    status_breakdown = report_exports.status_aggregate(doc_requests)
+    doc_type_breakdown = report_exports.doc_type_aggregate(doc_requests)
+    payment_breakdown = report_exports.payment_aggregate(doc_requests)
+    daily_stats = report_exports.daily_stats(doc_requests, days=30)
+    monthly_stats = report_exports.monthly_counts(doc_requests, months=12)
+    fee_monthly_stats = report_exports.monthly_fees(doc_requests, months=12)
+    completed = sum(1 for r in doc_requests if r.status == 'completed')
+    rate = report_exports.completion_rate(doc_requests, completed=completed)
+
+    metadata = [
+        ('Report', 'Barangay Document Request Report'),
+        ('Barangay', brgy.name),
+        ('Generated On', timezone.localtime().strftime('%Y-%m-%d %H:%M')),
+    ]
+    if filters['status']:
+        metadata.append(('Status Filter', report_exports.STATUS_LABELS.get(filters['status'], filters['status'].title())))
+    if filters['date_from']:
+        metadata.append(('Date From', filters['date_from']))
+    if filters['date_to']:
+        metadata.append(('Date To', filters['date_to']))
+
+    summary = [
+        ('Total Requests', len(doc_requests)),
+        ('Pending', sum(1 for r in doc_requests if r.status == 'pending')),
+        ('Completed', completed),
+        ('Completion Rate', f'{rate}%'),
+        ('Paid Requests', paid_count),
+        ('Total Fees Collected', total_fees),
+    ]
+
+    breakdowns = [
+        {
+            'title': 'STATUS BREAKDOWN',
+            'headers': ['Status', 'Count', 'Percent'],
+            'rows': [[sb['label'], sb['count'], f"{sb['pct']}%"] for sb in status_breakdown],
+        },
+        {
+            'title': 'REQUESTS AND FEES BY DOCUMENT TYPE',
+            'headers': ['Document Type', 'Request Count', 'Fees Collected'],
+            'rows': [[dt['name'], dt['count'], dt['fees']] for dt in doc_type_breakdown],
+        },
+        {
+            'title': 'DAILY REQUESTS (LAST 30 DAYS)',
+            'headers': ['Date', 'Submitted', 'Completed'],
+            'rows': [[d['date'].strftime('%Y-%m-%d'), d['count'], d['completed']] for d in daily_stats],
+        },
+        {
+            'title': 'MONTHLY TREND (LAST 12 MONTHS)',
+            'headers': ['Month', 'Requests'],
+            'rows': [[m['month'].strftime('%B %Y'), m['count']] for m in monthly_stats],
+        },
+        {
+            'title': 'FEES COLLECTED BY MONTH (LAST 12 MONTHS)',
+            'headers': ['Month', 'Fees Collected'],
+            'rows': [[m['month'].strftime('%B %Y'), m['fees']] for m in fee_monthly_stats],
+        },
+    ]
+    if payment_breakdown:
+        breakdowns.append({
+            'title': 'FEES BY PAYMENT METHOD',
+            'headers': ['Payment Method', 'Paid Requests', 'Fees Collected'],
+            'rows': [[p['method'], p['count'], p['fees']] for p in payment_breakdown],
+        })
+
+    detail_rows = [report_exports.detail_row(r, barangay_name=brgy.name) for r in doc_requests]
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    safe_name = re.sub(r'[^A-Za-z0-9]+', '-', brgy.name or '').strip('-') or 'brgy'
+    response['Content-Disposition'] = (
+        f'attachment; filename="barangay_reports_{safe_name}_{timezone.localdate().strftime("%Y-%m-%d")}.csv"'
+    )
+    report_exports.write_report_csv(
+        response,
+        title='BARANGAY REPORTS EXPORT',
+        metadata=metadata,
+        summary=summary,
+        breakdowns=breakdowns,
+        detail_rows=detail_rows,
+    )
     return response
 
 
@@ -2495,6 +2533,40 @@ def admin_dashboard(request):
     })
 
 
+def _parse_report_filters(request):
+    """Parse shared report filters (status, date_from/date_to, optional barangay)
+    from GET params. The filters dict keeps the raw submitted strings so they can
+    be echoed back into the filter form; parsed dates are returned separately."""
+    filters = {
+        'barangay': request.GET.get('barangay', ''),
+        'status': request.GET.get('status', ''),
+        'date_from': request.GET.get('date_from', ''),
+        'date_to': request.GET.get('date_to', ''),
+    }
+    from_date = to_date = None
+    try:
+        from_date = datetime.strptime(filters['date_from'], '%Y-%m-%d').date() if filters['date_from'] else None
+    except ValueError:
+        pass
+    try:
+        to_date = datetime.strptime(filters['date_to'], '%Y-%m-%d').date() if filters['date_to'] else None
+    except ValueError:
+        pass
+    return filters, from_date, to_date
+
+
+def _matches_report_filter(r, filters, from_date, to_date):
+    if filters['barangay'] and getattr(r, '_resident_brgy_id', None) != filters['barangay']:
+        return False
+    if filters['status'] and r.status != filters['status']:
+        return False
+    if from_date and (r.created_at is None or r.created_at.date() < from_date):
+        return False
+    if to_date and (r.created_at is None or r.created_at.date() > to_date):
+        return False
+    return True
+
+
 def _admin_reports_scope(request):
     """Build the filtered set of document requests for system-wide reporting,
     attributing each request to its resident's barangay."""
@@ -2507,38 +2579,8 @@ def _admin_reports_scope(request):
         object.__setattr__(req, '_resident_last', resident.get('last_name', '') if resident else '')
         object.__setattr__(req, '_resident_email', resident.get('email', '') if resident else '')
 
-    barangay_filter = request.GET.get('barangay', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
-    status_filter = request.GET.get('status', '')
-    from_date = to_date = None
-    try:
-        from_date = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else None
-    except ValueError:
-        pass
-    try:
-        to_date = datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else None
-    except ValueError:
-        pass
-
-    def _matches(r):
-        if barangay_filter and r._resident_brgy_id != barangay_filter:
-            return False
-        if status_filter and r.status != status_filter:
-            return False
-        if from_date and (r.created_at is None or r.created_at.date() < from_date):
-            return False
-        if to_date and (r.created_at is None or r.created_at.date() > to_date):
-            return False
-        return True
-
-    filters = {
-        'barangay': barangay_filter,
-        'date_from': date_from,
-        'date_to': date_to,
-        'status': status_filter,
-    }
-    return [r for r in requests if _matches(r)], filters
+    filters, from_date, to_date = _parse_report_filters(request)
+    return [r for r in requests if _matches_report_filter(r, filters, from_date, to_date)], filters
 
 
 @login_required
@@ -2548,92 +2590,28 @@ def admin_reports(request):
     barangays = [Barangay(b) for b in firestore_db.list_barangays(order_by='name')]
 
     total_requests = len(filtered)
-    status_counts = {}
-    total_fees = 0.0
-    paid_count = 0
-    pending = 0
-    completed = 0
-    for r in filtered:
-        status_counts[r.status] = status_counts.get(r.status, 0) + 1
-        if r.status == 'pending':
-            pending += 1
-        elif r.status == 'completed':
-            completed += 1
-        if r.is_paid:
-            paid_count += 1
-            total_fees += r.total_fee
-
-    status_labels = dict(DocumentRequest.Status.choices)
-    status_pill_classes = {
-        'ready_for_pickup': 'ready',
-        'cancelled': 'cancelled',
-        'approved': 'approved',
-        'printed': 'printed',
-        'completed': 'completed',
-        'rejected': 'rejected',
-        'pending': 'pending',
-    }
-    status_breakdown = []
-    for s, c in sorted(status_counts.items(), key=lambda kv: kv[1], reverse=True):
-        status_breakdown.append({
-            'status': s,
-            'count': c,
-            'label': status_labels.get(s, s.title()),
-            'pill_class': status_pill_classes.get(s, s),
-            'pct': round(c * 100 / total_requests, 1) if total_requests else 0,
-        })
-
+    total_fees, paid_count = report_exports.fee_totals(filtered)
+    pending = sum(1 for r in filtered if r.status == 'pending')
+    completed = sum(1 for r in filtered if r.status == 'completed')
     total_fees_fmt = f'{total_fees:,.2f}'
-    completion_rate = round(completed * 100 / total_requests) if total_requests else 0
+    completion_rate = report_exports.completion_rate(filtered, completed=completed, total=total_requests)
 
-    per_barangay = []
-    for b in barangays:
-        brgy_requests = [r for r in filtered if r._resident_brgy_id == b.pk]
-        if not brgy_requests:
-            continue
-        fees = sum(r.total_fee for r in brgy_requests if r.is_paid)
-        per_barangay.append({
-            'barangay': b,
-            'count': len(brgy_requests),
-            'pending': sum(1 for r in brgy_requests if r.status == 'pending'),
-            'completed': sum(1 for r in brgy_requests if r.status == 'completed'),
-            'paid': sum(1 for r in brgy_requests if r.is_paid),
-            'fees': fees,
-            'pct': round(len(brgy_requests) * 100 / total_requests, 1) if total_requests else 0,
-            'fees_fmt': f'{fees:,.2f}',
-        })
-    per_barangay.sort(key=lambda x: x['count'], reverse=True)
+    status_breakdown = report_exports.status_aggregate(filtered, total=total_requests)
+    per_barangay = report_exports.barangay_aggregate(filtered, barangays)
+    doc_type_breakdown = report_exports.doc_type_aggregate(filtered, total=total_requests)
+    payment_breakdown = report_exports.payment_aggregate(filtered)
 
-    doc_type_counts = {}
-    for r in filtered:
-        for item in r.items.all():
-            name = item.document_type.name if item.document_type else 'Unknown'
-            doc_type_counts[name] = doc_type_counts.get(name, 0) + 1
-    doc_type_breakdown = [
-        {'document_type__name': name, 'count': count}
-        for name, count in sorted(doc_type_counts.items(), key=lambda kv: kv[1], reverse=True)
-    ]
-
-    monthly_counts = {}
-    for r in filtered:
-        if r.created_at is None:
-            continue
-        key = (r.created_at.year, r.created_at.month)
-        monthly_counts[key] = monthly_counts.get(key, 0) + 1
-    today = timezone.localdate()
-    monthly_stats = []
-    for i in range(12):
-        month_start = (today.replace(day=1) - timedelta(days=28 * i)).replace(day=1)
-        monthly_stats.append({
-            'month': month_start,
-            'count': monthly_counts.get((month_start.year, month_start.month), 0),
-        })
+    monthly_stats = report_exports.monthly_counts(filtered, months=12)
     monthly_counts_list = [m['count'] for m in monthly_stats]
     monthly_max = max(monthly_counts_list) or 1
     monthly_total = sum(monthly_counts_list)
     monthly_avg = round(monthly_total / len(monthly_counts_list)) if monthly_counts_list else 0
     monthly_peak_index = monthly_counts_list.index(max(monthly_counts_list)) if monthly_counts_list else 0
 
+    fee_monthly_stats = report_exports.monthly_fees(filtered, months=12)
+    fee_monthly_max = max((m['fees'] for m in fee_monthly_stats), default=0) or 1
+
+    status_labels = dict(DocumentRequest.Status.choices)
     barangay_by_pk = {b.pk: b.name for b in barangays}
     filter_summary = []
     if filters['barangay']:
@@ -2660,6 +2638,7 @@ def admin_reports(request):
         'status_choices': DocumentRequest.Status.choices,
         'per_barangay': per_barangay,
         'doc_type_breakdown': doc_type_breakdown,
+        'payment_breakdown': payment_breakdown,
         'monthly_stats': monthly_stats,
         'monthly_max': monthly_max,
         'monthly_total': monthly_total,
@@ -2667,7 +2646,10 @@ def admin_reports(request):
         'monthly_peak_index': monthly_peak_index,
         'monthly_peak_month': monthly_stats[monthly_peak_index]['month'],
         'monthly_peak_count': monthly_stats[monthly_peak_index]['count'],
+        'fee_monthly_stats': fee_monthly_stats,
+        'fee_monthly_max': fee_monthly_max,
         'filter_summary': filter_summary,
+        'generated_at': timezone.localtime(),
     })
 
 
@@ -2675,45 +2657,96 @@ def admin_reports(request):
 @role_required('admin')
 def admin_reports_export(request):
     filtered, filters = _admin_reports_scope(request)
-    brgy_names = {b['id']: b.get('name', '') for b in firestore_db.list_barangays()}
+    barangays = [Barangay(b) for b in firestore_db.list_barangays(order_by='name')]
+    brgy_names = {b.pk: b.name for b in barangays}
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="system_reports.csv"'
-    writer = csv.writer(response)
-    writer.writerow([
-        'Request Number', 'Date Submitted', 'Barangay', 'Resident', 'Email',
-        'Documents', 'Purpose', 'Status', 'Total Fee', 'Payment', 'Payment Method',
-        'OR Number', 'Processed By',
-    ])
-    total_fees = 0
-    paid_count = 0
-    for req in filtered:
-        documents = '; '.join(
-            f'{item.document_type.name}{" x" + str(item.quantity) if item.quantity and item.quantity > 1 else ""}'
-            for item in req.items.all() if item.document_type
-        )
-        fee = req.total_fee
-        if req.is_paid:
-            total_fees += fee
-            paid_count += 1
-        writer.writerow([
-            req.request_number,
-            req.created_at.strftime('%Y-%m-%d %H:%M') if req.created_at else '',
-            brgy_names.get(req._resident_brgy_id, ''),
-            f"{req._resident_name} {req._resident_last}".strip() or '',
-            req._resident_email or '',
-            documents,
-            req.purpose or '',
-            req.get_status_display(),
-            f'{fee:.2f}',
-            req.get_payment_status_display(),
-            req.payment_method or '',
-            req.or_number or '',
-            req.processed_by.display_name if req.processed_by else '',
-        ])
-    writer.writerow([])
-    writer.writerow(['TOTAL FEES (paid requests)', f'{total_fees:.2f}'])
-    writer.writerow(['PAID REQUESTS COUNT', f'{paid_count}'])
+    total_fees, paid_count = report_exports.fee_totals(filtered)
+    status_breakdown = report_exports.status_aggregate(filtered, total=len(filtered))
+    per_barangay = report_exports.barangay_aggregate(filtered, barangays)
+    doc_type_breakdown = report_exports.doc_type_aggregate(filtered, total=len(filtered))
+    payment_breakdown = report_exports.payment_aggregate(filtered)
+    monthly_stats = report_exports.monthly_counts(filtered, months=12)
+    fee_monthly_stats = report_exports.monthly_fees(filtered, months=12)
+    completed = sum(1 for r in filtered if r.status == 'completed')
+    rate = report_exports.completion_rate(filtered, completed=completed, total=len(filtered))
+
+    metadata = [
+        ('Report', 'System-wide Document Request Report'),
+        ('Generated On', timezone.localtime().strftime('%Y-%m-%d %H:%M')),
+    ]
+    if filters['barangay']:
+        metadata.append(('Barangay Filter', brgy_names.get(filters['barangay'], filters['barangay'])))
+    if filters['status']:
+        metadata.append(('Status Filter', report_exports.STATUS_LABELS.get(filters['status'], filters['status'].title())))
+    if filters['date_from']:
+        metadata.append(('Date From', filters['date_from']))
+    if filters['date_to']:
+        metadata.append(('Date To', filters['date_to']))
+
+    summary = [
+        ('Total Requests', len(filtered)),
+        ('Pending', sum(1 for r in filtered if r.status == 'pending')),
+        ('Completed', completed),
+        ('Completion Rate', f'{rate}%'),
+        ('Paid Requests', paid_count),
+        ('Total Fees Collected', total_fees),
+        ('Barangays Represented', len(per_barangay)),
+    ]
+
+    breakdowns = [
+        {
+            'title': 'STATUS BREAKDOWN',
+            'headers': ['Status', 'Count', 'Percent'],
+            'rows': [[sb['label'], sb['count'], f"{sb['pct']}%"] for sb in status_breakdown],
+        },
+        {
+            'title': 'PER-BARANGAY BREAKDOWN',
+            'headers': ['Barangay', 'Requests', 'Pending', 'Completed', 'Paid', 'Fees Collected'],
+            'rows': [[
+                row['barangay_name'], row['count'], row['pending'],
+                row['completed'], row['paid'], row['fees'],
+            ] for row in per_barangay],
+        },
+        {
+            'title': 'REQUESTS AND FEES BY DOCUMENT TYPE',
+            'headers': ['Document Type', 'Request Count', 'Fees Collected'],
+            'rows': [[dt['name'], dt['count'], dt['fees']] for dt in doc_type_breakdown],
+        },
+        {
+            'title': 'MONTHLY TREND (LAST 12 MONTHS)',
+            'headers': ['Month', 'Requests'],
+            'rows': [[m['month'].strftime('%B %Y'), m['count']] for m in monthly_stats],
+        },
+        {
+            'title': 'FEES COLLECTED BY MONTH (LAST 12 MONTHS)',
+            'headers': ['Month', 'Fees Collected'],
+            'rows': [[m['month'].strftime('%B %Y'), m['fees']] for m in fee_monthly_stats],
+        },
+    ]
+    if payment_breakdown:
+        breakdowns.append({
+            'title': 'FEES BY PAYMENT METHOD',
+            'headers': ['Payment Method', 'Paid Requests', 'Fees Collected'],
+            'rows': [[p['method'], p['count'], p['fees']] for p in payment_breakdown],
+        })
+
+    detail_rows = [
+        report_exports.detail_row(r, barangay_name=brgy_names.get(r._resident_brgy_id, ''))
+        for r in filtered
+    ]
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = (
+        f'attachment; filename="system_reports_{timezone.localdate().strftime("%Y-%m-%d")}.csv"'
+    )
+    report_exports.write_report_csv(
+        response,
+        title='SYSTEM REPORTS EXPORT',
+        metadata=metadata,
+        summary=summary,
+        breakdowns=breakdowns,
+        detail_rows=detail_rows,
+    )
     return response
 
 
@@ -3047,8 +3080,9 @@ def activity_logs_export(request):
     barangay_filter = request.GET.get('barangay', '')
     logs = _filtered_activity_logs(search, action_filter, date_from, date_to, barangay_filter)
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="activity_logs.csv"'
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="activity_logs_{timezone.localdate().strftime("%Y-%m-%d")}.csv"'
+    response.write('\ufeff')
     writer = csv.writer(response)
     writer.writerow(['Timestamp', 'User', 'Role', 'Barangay', 'Action', 'Details', 'IP Hash'])
     for log in logs:

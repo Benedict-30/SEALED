@@ -62,14 +62,14 @@
 <div class="card">
     <div class="card-header">
         <h3>Document Types</h3>
-        <div class="filter-bar" style="margin:0;">
+        <div class="filter-bar" style="margin:0;flex-wrap:wrap;">
             <form method="get" class="search-input-wrapper">
                 <i class="fa-solid fa-search"></i>
-                <input type="text" name="search" class="form-input" placeholder="Search..." value="{{ search }}" style="min-width:140px;">
+                <input type="text" name="search" class="form-input" placeholder="Search..." value="{{ search }}" style="width:auto;">
             </form>
             <form method="get" style="display:flex;gap:0;">
                 <input type="hidden" name="search" value="{{ search }}">
-                <select name="barangay" class="form-input" style="min-width:140px;" onchange="this.form.submit()">
+                <select name="barangay" class="form-input" style="width:auto;" onchange="this.form.submit()">
                     <option value="">All Barangays</option>
                     {% for b in barangays %}
                     <option value="{{ b.pk }}" {% if brgy_filter|stringformat:"s" == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>

@@ -9,7 +9,7 @@
         </div>
         <div class="page-hero-sub">Welcome back, {{ user.first_name|default:user.username }}! Here's the system-wide overview.</div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
         <a href="{% url 'admin_reports' %}" class="btn btn-primary btn-sm">
             <i class="fa-solid fa-chart-pie"></i> View Reports
         </a>

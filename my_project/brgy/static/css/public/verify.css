@@ -199,3 +199,15 @@
             color: #64748b;
             font-weight: 500;
         }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .verify-container { padding: 12px; }
+            .verify-card { padding: 32px 18px; }
+            .verify-icon { width: 80px; height: 80px; font-size: 36px; }
+            .verify-card h2 { font-size: 24px; }
+            .verify-details { padding: 18px 14px; }
+            .verify-detail-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .verify-detail-row .value { text-align: left; word-break: break-word; }
+            .verify-form input { font-size: 18px; letter-spacing: 2px; }
+        }

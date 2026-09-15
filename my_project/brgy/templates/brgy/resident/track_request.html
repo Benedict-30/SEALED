@@ -140,7 +140,7 @@
                     <span class="detail-value">
                         {% if req.pickup_date %}{{ req.pickup_date|date:"M d, Y" }}{% else %}-{% endif %}
                         {% if req.pickup_date and req.status == 'ready_for_pickup' %}
-                        <span class="badge badge-success" style="margin-left:8px;"><i class="fa-regular fa-clock"></i> {{ req.get_pickup_slot_display }}</span>
+                        <span class="badge badge-success detail-badge"><i class="fa-regular fa-clock"></i> {{ req.get_pickup_slot_display }}</span>
                         {% endif %}
                     </span>
                 </div>
@@ -149,9 +149,9 @@
                     <span class="detail-value detail-value-strong">
                         &#8369; {{ total_fee|floatformat:2 }}
                         {% if req.is_paid %}
-                        <span class="badge badge-success" style="margin-left:8px;"><i class="fa-solid fa-circle-check"></i> Paid</span>
+                        <span class="badge badge-success detail-badge"><i class="fa-solid fa-circle-check"></i> Paid</span>
                         {% else %}
-                        <span class="badge badge-muted" style="margin-left:8px;">Unpaid</span>
+                        <span class="badge badge-muted detail-badge">Unpaid</span>
                         {% endif %}
                     </span>
                 </div>
