@@ -9,20 +9,98 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
 import os
+import secrets
 from pathlib import Path
+import firebase_admin
+from django.core.exceptions import ImproperlyConfigured
+from firebase_admin import credentials
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-brgy-doc-system-2024-change-this-in-production!'
 
-DEBUG = True
+def _load_dotenv(path=os.path.join(BASE_DIR, '.env')):
+    """Optionally load a local ``.env`` file (stdlib only, no dependency).
 
-ALLOWED_HOSTS = ['*']
+    Intended for local development so ``runserver`` works without manually
+    exporting env vars.  Real environment variables always win over values in
+    the file, and a non-existent or malformed file is simply ignored.  This is
+    NOT a production secret-storage mechanism: production deployments should
+    set DJANGO_SECRET_KEY / DJANGO_DEBUG / DJANGO_ALLOWED_HOSTS directly in
+    the environment.
+    """
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, encoding='utf-8') as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, _, value = line.partition('=')
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and value and key not in os.environ:
+                    os.environ[key] = value
+    except OSError:
+        pass
+
+
+_load_dotenv()
+
+# Path to your downloaded Firebase credentials JSON file
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase_credentials.json')
+
+# Initialize Firebase Admin SDK (check if already initialized to prevent duplicate app errors)
+if not firebase_admin._apps:
+    if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+        firebase_admin.initialize_app(cred)
+    else:
+        # No service account file: use Application Default Credentials, or the
+        # Firestore emulator when FIRESTORE_EMULATOR_HOST is set.
+        firebase_admin.initialize_app()
+
+# ── DEBUG / environment ──────────────────────────────────────────────
+# Default to a safe (non-debug) mode unless explicitly enabled.  Production
+# deployments MUST set DJANGO_DEBUG=false (or leave it unset).
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('1', 'true', 'yes')
+
+# ── SECRET KEY ───────────────────────────────────────────────────────
+# Never ship a public/guessable value.  In non-debug (production) mode a
+# missing DJANGO_SECRET_KEY is a hard error so we fail fast instead of
+# silently using a known-insecure key that lets anyone forge sessions.
+DEPLOYED = not DEBUG
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '').strip()
+if not SECRET_KEY:
+    if DEPLOYED:
+        raise ImproperlyConfigured(
+            'DJANGO_SECRET_KEY must be set to a strong random value when '
+            'DEBUG is disabled. Generate one with e.g. '
+            '`python -c "import secrets; print(secrets.token_urlsafe(64))"`.'
+        )
+    # Local development only: a random per-process key is fine, since no
+    # sensitive data is stored server-side for cookie sessions in dev.
+    SECRET_KEY = secrets.token_urlsafe(64)
+
+# ── ALLOWED HOSTS ────────────────────────────────────────────────────
+# Never accept every Host header in production.  Require an explicit list.
+ALLOWED_HOSTS = os.environ.get(
+    'DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1' if DEBUG else ''
+).split(',')
+ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
+if not ALLOWED_HOSTS:
+    raise ImproperlyConfigured(
+        'DJANGO_ALLOWED_HOSTS must be set to a comma-separated list of '
+        'allowed hostnames when DEBUG is disabled.'
+    )
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
+    if o.strip()
+]
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -36,7 +114,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'brgy.middleware.FirestoreAuthMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -62,12 +140,83 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'my_project.wsgi.application'
 
+# All data lives in Cloud Firestore, so Django's ORM is not used.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.dummy',
     }
 }
+
+# Low-volatility reads (document types, barangay list) are cached in-memory.
+# LocMemCache is a single-process cache, which is exactly what the dev server
+# uses; it is cheap and correct for this scale.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+# Users are stored in Firestore; provide the custom backend and cookie sessions
+# so no database tables are needed for authentication.
+AUTHENTICATION_BACKENDS = ['brgy.auth.FirestoreBackend']
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+
+# ── Sessions / cookies ───────────────────────────────────────────────
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+# A signed-cookie session lives entirely in the browser; keep it finite so a
+# lost/stolen cookie does not grant permanent access.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+# Secure flags: enforced whenever not running in DEBUG.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = True
+
+# ── Transport security ───────────────────────────────────────────────
+# When DEBUG is off we expect to run behind HTTPS (e.g. a reverse proxy).
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
+X_FRAME_OPTIONS = 'DENY'
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+if not DEBUG:
+    # 31536000 = 1 year; only used once the site is actually served over HTTPS.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # Trust X-Forwarded-Proto from the reverse proxy so scheme detection works.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# ── Upload limits ────────────────────────────────────────────────────
+# Cap the size of data posted and files uploaded.  Per-field validation in
+# brgy/forms.py additionally enforces file types.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB total POST body
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024    # 5 MB per file (images/templates)
+
+# ── Email / SMTP ────────────────────────────────────────────────────
+# All environment-driven (a local .env file is supported).  Views treat a
+# missing EMAIL_HOST as "email not configured" and gracefully skip sending,
+# so development works without an SMTP server.  Production must set these.
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587') or 587)
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() in ('1', 'true', 'yes')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '')
+SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL) or 'no-reply@barangay.local'
+
+# Public base URL used to build absolute links inside emails.  Override with
+# DJANGO_SITE_URL in production (defaults to localhost in DEBUG and empty
+# otherwise; email links degrade to relative paths when unset).
+SITE_URL = os.environ.get('DJANGO_SITE_URL', 'http://localhost:8000' if DEBUG else '').rstrip('/')
+
+# Avoid a Django system check warning (there is no ORM/generated PK).
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -75,8 +224,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
-
-AUTH_USER_MODEL = 'brgy.CustomUser'
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Manila'
@@ -89,8 +236,8 @@ STATICFILES_DIRS = [BASE_DIR / 'brgy' / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','192.168.75.116']  # Allow all hosts for development; restrict in production

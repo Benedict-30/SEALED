@@ -1,121 +1,162 @@
 {% extends 'brgy/base.html' %}
-{% block nav_staff_reports %}active{% endblock %}   
-{% block page_title %}Reports{% endblock %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/reports.css' %}">
+{% endblock %}
 
 {% block content %}
-<!-- Summary Stats -->
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
-    <div class="card">
-        <div class="card-body" style="text-align:center;">
-            <div class="text-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:0.5px;">Total Fees Collected</div>
-            <div style="font-size:32px;font-weight:800;color:var(--success);margin-top:8px;">
-                &#8369;{{ total_fees|floatformat:2 }}
+<div class="reports-page">
+
+    <!-- Page header -->
+    <div class="page-hero" style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
+        <div>
+            <div class="page-hero-title">
+                <i class="fa-solid fa-chart-column"></i>
+                Barangay Reports
+            </div>
+            <div class="page-hero-sub">Activity and fee summaries for {{ brgy.name }}.</div>
+        </div>
+        <a href="{% url 'staff_reports_export' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-file-csv"></i> Export CSV
+        </a>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="reports-stats-grid">
+        <div class="card">
+            <div class="card-body reports-stat">
+                <div class="reports-stat-icon success"><i class="fa-solid fa-coins"></i></div>
+                <div class="reports-stat-body">
+                    <div class="reports-stat-value success">&#8369;{{ total_fees|floatformat:2 }}</div>
+                    <div class="reports-stat-label">Total Fees Collected ({{ paid_count|default:0 }} paid)</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body reports-stat">
+                <div class="reports-stat-icon primary"><i class="fa-solid fa-calendar-days"></i></div>
+                <div class="reports-stat-body">
+                    <div class="reports-stat-value primary">{{ daily_stats|length }}</div>
+                    <div class="reports-stat-label">Days Tracked</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body reports-stat">
+                <div class="reports-stat-icon info"><i class="fa-solid fa-file-lines"></i></div>
+                <div class="reports-stat-body">
+                    <div class="reports-stat-value info">{{ doc_type_breakdown|length }}</div>
+                    <div class="reports-stat-label">Document Types</div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Status Breakdown -->
+    {% if status_breakdown %}
     <div class="card">
-        <div class="card-body" style="text-align:center;">
-            <div class="text-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:0.5px;">Status Breakdown</div>
-            <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap;">
+        <div class="card-header">
+            <h3>Status Breakdown</h3>
+        </div>
+        <div class="card-body">
+            <div class="status-pills">
                 {% for sb in status_breakdown %}
-                <div class="text-xs text-muted" style="text-transform:capitalize;">
-                {%if sb.status == 'ready_for_pickup' %}Ready for Pickup
-                {% else %}{{ sb.status }}{% endif %}
-                </div>
+                <span class="status-pill pill-{{ sb.status }}">
+                    <span class="status-dot"></span>
+                    <span class="status-pill-label">
+                        {% if sb.status == 'ready_for_pickup' %}Ready for Pickup
+                        {% elif sb.status == 'printed' %}Printed
+                        {% else %}{{ sb.status|capfirst }}{% endif %}
+                    </span>
+                    <span class="status-pill-count">{{ sb.count }}</span>
+                </span>
                 {% endfor %}
             </div>
         </div>
     </div>
-    <div class="card">
-        <div class="card-body" style="text-align:center;">
-            <div class="text-xs text-muted fw-600" style="text-transform:uppercase;letter-spacing:0.5px;">Days Tracked</div>
-            <div style="font-size:32px;font-weight:800;color:var(--primary);margin-top:8px;">
-                {{ daily_stats|length }}
-            </div>
-        </div>
-    </div>
-</div>
+    {% endif %}
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-    <!-- Document Type Breakdown -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Requests by Document Type</h3>
-        </div>
-        <div class="card-body">
-            {% if doc_type_breakdown %}
-            <div class="bar-chart">
-                {% for dt in doc_type_breakdown %}
-                {% with max_count=doc_type_breakdown.0.count %}
-                <div class="bar-row">
-                    <div class="bar-label" title="{{ dt.document_type__name }}">{{ dt.document_type__name }}</div>
-                    <div class="bar-track">
-                        <div class="bar-fill" style="background:var(--primary);" data-width="{% widthratio dt.count max_count 100 %}">{{ dt.count }}</div>
+    <!-- Main Charts Grid -->
+    <div class="reports-grid">
+
+        <!-- Document Type Breakdown -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Requests by Document Type</h3>
+            </div>
+            <div class="card-body">
+                {% if doc_type_breakdown %}
+                {% with max_count=doc_type_breakdown.0.count|default:1 %}
+                <div class="bar-chart">
+                    {% for dt in doc_type_breakdown %}
+                    <div class="bar-row">
+                        <div class="bar-label" title="{{ dt.document_type__name }}">{{ dt.document_type__name }}</div>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="background:var(--primary);width:{% widthratio dt.count max_count 100 %}%;">{{ dt.count }}</div>
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
                 {% endwith %}
-                {% endfor %}
+                {% else %}
+                <div class="empty-state" style="padding:24px;">
+                    <i class="fa-solid fa-chart-bar" style="font-size:32px;"></i>
+                    <p class="text-muted text-sm mt-2">No data available.</p>
+                </div>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="empty-state" style="padding:24px;">
-                <i class="fa-solid fa-chart-bar" style="font-size:32px;"></i>
-                <p class="text-muted text-sm mt-2">No data available.</p>
-            </div>
-            {% endif %}
         </div>
-    </div>
 
-    <!-- Daily Activity -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Daily Activity (Last 30 Days)</h3>
-        </div>
-        <div class="card-body">
-            {% if daily_stats %}
-            <div class="bar-chart">
-                {% for day in daily_stats %}
+        <!-- Daily Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Daily Activity (Last 30 Days)</h3>
+            </div>
+            <div class="card-body">
+                {% if daily_stats %}
                 {% with max_count=daily_stats.0.count|default:1 %}
-                <div class="bar-row">
-                    <div class="bar-label" title="{{ day.date }}">{{ day.date|date:"M d" }}</div>
-                    <div class="bar-track">
-                        <div class="bar-fill" style="background:{% if day.completed > 0 %}var(--success){% else %}var(--accent){% endif %};" data-width="{% widthratio day.count max_count 100 %}">{{ day.count }}</div>
+                <div class="mini-chart">
+                    {% for day in daily_stats %}
+                    <div class="mini-chart-col" title="{{ day.date|date:'M d, Y' }} — {{ day.count }} submitted{% if day.completed > 0 %} / {{ day.completed }} completed{% endif %}">
+                        <div class="mini-chart-bar {% if day.completed > 0 %}success{% endif %}" style="height:{% widthratio day.count max_count 80 %}px;"></div>
+                        {% if forloop.counter0|divisibleby:5 %}
+                        <div class="mini-chart-label">{{ day.date|date:"d" }}</div>
+                        {% endif %}
                     </div>
-                    <div class="bar-value">{{ day.count }}</div>
+                    {% endfor %}
                 </div>
                 {% endwith %}
-                {% endfor %}
+                {% else %}
+                <div class="empty-state" style="padding:24px;">
+                    <i class="fa-solid fa-chart-line" style="font-size:32px;"></i>
+                    <p class="text-muted text-sm mt-2">No daily data available.</p>
+                </div>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="empty-state" style="padding:24px;">
-                <i class="fa-solid fa-chart-line" style="font-size:32px;"></i>
-                <p class="text-muted text-sm mt-2">No daily data available.</p>
-            </div>
-            {% endif %}
         </div>
     </div>
-</div>
 
-<!-- Monthly Trend -->
-{% if monthly_stats %}
-<div class="card mt-4">
-    <div class="card-header">
-        <h3>Monthly Trend</h3>
-    </div>
-    <div class="card-body">
-        <div class="bar-chart">
-            {% for month in monthly_stats %}
+    <!-- Monthly Trend -->
+    {% if monthly_stats %}
+    <div class="card">
+        <div class="card-header">
+            <h3>Monthly Trend</h3>
+        </div>
+        <div class="card-body">
             {% with max_count=monthly_stats.0.count|default:1 %}
-            <div class="bar-row">
-                <div class="bar-label" title="{{ month.month }}">{{ month.month|date:"M Y" }}</div>
-                <div class="bar-track" style="height:36px;">
-                    <div class="bar-fill" style="background:var(--primary);font-size:12px;" data-width="{% widthratio month.count max_count 100 %}">{{ month.count }}</div>
+            <div class="mini-chart mini-chart-wide">
+                {% for month in monthly_stats %}
+                <div class="mini-chart-col" title="{{ month.month|date:'F Y' }} — {{ month.count }} requests">
+                    <div class="mini-chart-bar primary" style="height:{% widthratio month.count max_count 80 %}px;"></div>
+                    <div class="mini-chart-label">{{ month.month|date:"M Y" }}</div>
                 </div>
-                <div class="bar-value">{{ month.count }}</div>
+                {% endfor %}
             </div>
             {% endwith %}
-            {% endfor %}
         </div>
     </div>
+    {% endif %}
+
 </div>
-{% endif %}
 {% endblock %}

@@ -1,56 +1,16 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"{% if user.role != 'admin' and user.barangay and user.barangay.theme_color %} data-theme-color="{{ user.barangay.theme_color }}"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Dashboard{% endblock %} - Barangay Document System</title>
+    <link rel="icon" type="image/png" href="{% static 'img/sealed-logo.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    
-    <!-- Apply Barangay Theme Color -->
-    {% if user.barangay and user.barangay.theme_color %}
-    <style>
-        :root {
-            --primary: {{ user.barangay.theme_color }} !important;
-        }
-    </style>
-    <script>
-    (function() {
-        const hex = '{{ user.barangay.theme_color }}';
-        // Parse hex to RGB
-        const r = parseInt(hex.slice(1,3), 16);
-        const g = parseInt(hex.slice(3,5), 16);
-        const b = parseInt(hex.slice(5,7), 16);
-
-        // Generate light variant (mix with white)
-        const lr = Math.round(r + (255 - r) * 0.65);
-        const lg = Math.round(g + (255 - g) * 0.65);
-        const lb = Math.round(b + (255 - b) * 0.65);
-        const light = '#' + [lr,lg,lb].map(c => c.toString(16).padStart(2,'0')).join('');
-
-        // Generate dark variant (mix with black)
-        const dr = Math.round(r * 0.75);
-        const dg = Math.round(g * 0.75);
-        const db = Math.round(b * 0.75);
-        const dark = '#' + [dr,dg,db].map(c => c.toString(16).padStart(2,'0')).join('');
-
-        // Generate very light background tint
-        const blr = Math.round(r + (255 - r) * 0.9);
-        const blg = Math.round(g + (255 - g) * 0.9);
-        const blb = Math.round(b + (255 - b) * 0.9);
-        const bgLight = '#' + [blr,blg,blb].map(c => c.toString(16).padStart(2,'0')).join('');
-
-        const root = document.documentElement.style;
-        root.setProperty('--primary-light', light);
-        root.setProperty('--primary-dark', dark);
-        root.setProperty('--primary-bg', bgLight);
-        root.setProperty('--primary', hex);
-    })();
-    </script>
-    {% endif %}
+    <link rel="stylesheet" href="{% static 'css/global/style.css' %}?v=7">
+    <script src="{% static 'js/global/theme.js' %}?v=2"></script>
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -58,10 +18,12 @@
     {% if messages %}
     <div class="messages-container">
         {% for message in messages %}
+        {% if 'generated-password' not in message.tags %}
         <div class="toast toast-{{ message.tags }}">
             <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% elif message.tags == 'error' %}fa-circle-xmark{% elif message.tags == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
             <span>{{ message }}</span>
         </div>
+        {% endif %}
         {% endfor %}
     </div>
     {% endif %}
@@ -69,139 +31,10 @@
     <div class="app-layout">
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">
-                    <div class="sidebar-logo-icon">📝</div>
-                    <div class="sidebar-logo-text">
-                        SEALED
-                        <small>Document Request System</small>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="sidebar-nav">
-                {% if user.role == 'resident' %}
-                <div class="sidebar-section-label">Main</div>
-                <a href="{% url 'resident_dashboard' %}" class="sidebar-item {% block nav_res_dashboard %}{% endblock %}">
-                    <i class="fa-solid fa-house"></i> Dashboard
-                </a>
-                <a href="{% url 'request_document' %}" class="sidebar-item {% block nav_res_request %}{% endblock %}">
-                    <i class="fa-solid fa-file-circle-plus"></i> Request Document
-                </a>
-                <a href="{% url 'request_history' %}" class="sidebar-item {% block nav_res_history %}{% endblock %}">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Request History
-                </a>
-                <div class="sidebar-section-label">Updates</div>
-                <a href="{% url 'notifications' %}" class="sidebar-item {% block nav_res_notifications %}{% endblock %}">
-                    <i class="fa-solid fa-bell"></i> Notifications
-                    {% if unread_notification_count > 0 %}
-                    <span class="badge-sidebar">{{ unread_notification_count }}</span>
-                    {% endif %}
-                </a>
-
-                {% elif user.role == 'staff' %}
-                <div class="sidebar-section-label">Overview</div>
-                <a href="{% url 'staff_dashboard' %}" class="sidebar-item {% block nav_staff_dashboard %}{% endblock %}">
-                    <i class="fa-solid fa-gauge-high"></i> Dashboard
-                </a>
-                <div class="sidebar-section-label">Management</div>
-                <a href="{% url 'verify_residents' %}" class="sidebar-item {% block nav_staff_verify %}{% endblock %}">
-                    <i class="fa-solid fa-user-check"></i> Verify Residents
-                </a>
-                <a href="{% url 'manage_requests' %}" class="sidebar-item {% block nav_staff_requests %}{% endblock %}">
-                    <i class="fa-solid fa-file-lines"></i> Document Requests
-                </a>
-                <a href="{% url 'staff_manage_document_types' %}" class="sidebar-item {% block nav_staff_doctypes %}{% endblock %}">
-                    <i class="fa-solid fa-file-circle-check"></i> Document Types
-                </a>
-                <div class="sidebar-section-label">Analytics</div>
-                <a href="{% url 'staff_reports' %}" class="sidebar-item {% block nav_staff_reports %}{% endblock %}">
-                    <i class="fa-solid fa-chart-bar"></i> Reports
-                </a>
-
-                {% elif user.role == 'admin' %}
-                <div class="sidebar-section-label">Overview</div>
-                <a href="{% url 'admin_dashboard' %}" class="sidebar-item {% block nav_admin_dashboard %}{% endblock %}">
-                    <i class="fa-solid fa-gauge-high"></i> Dashboard
-                </a>
-                <div class="sidebar-section-label">Management</div>
-                <a href="{% url 'manage_staff' %}" class="sidebar-item {% block nav_admin_staff %}{% endblock %}">
-                    <i class="fa-solid fa-user-shield"></i> Manage Staff
-                </a>
-                <a href="{% url 'manage_barangays' %}" class="sidebar-item {% block nav_admin_barangays %}{% endblock %}">
-                    <i class="fa-solid fa-building"></i> Barangays
-                </a>
-                <a href="{% url 'manage_document_types' %}" class="sidebar-item {% block nav_admin_doctypes %}{% endblock %}">
-                    <i class="fa-solid fa-file-circle-check"></i> Document Types
-                </a>
-                <div class="sidebar-section-label">System</div>
-                <a href="{% url 'activity_logs' %}" class="sidebar-item {% block nav_admin_logs %}{% endblock %}">
-                    <i class="fa-solid fa-list-check"></i> Activity Logs
-                </a>
-                {% endif %}
-            </nav>
-
-            <div class="sidebar-footer">
-                <!-- CHANGED: Wrapped the profile section in an anchor tag -->
-                <a href="{% url 'profile' %}" class="sidebar-user">
-                    <div class="sidebar-avatar">{{ user.first_name.0 }}{{ user.last_name.0 }}</div>
-                    <div class="sidebar-user-info">
-                        <div class="sidebar-user-name">{{ user.display_name }}</div>
-                        <div class="sidebar-user-role">{{ user.get_role_display }}{% if user.barangay %} &middot; {{ user.barangay.name }}{% endif %}</div>
-                    </div>
-                </a>
-            </div>
-        </aside>
+        {% include 'brgy/partials/sidebar.html' %}
 
         <main class="main-content">
-            <header class="topbar">
-                <div class="topbar-left">
-                    <button class="topbar-toggle" id="sidebarToggle">
-                        <i class="fa-solid fa-bars"></i>
-                    </button>
-                    <h1 class="topbar-title">{% block page_title %}Dashboard{% endblock %}</h1>
-                </div>
-                <div class="topbar-right">
-                    <div style="position:relative">
-                        <button class="topbar-btn" id="notifBtn" aria-label="Notifications">
-                            <i class="fa-solid fa-bell"></i>
-                            {% if unread_notification_count > 0 %}
-                            <span class="topbar-badge">{{ unread_notification_count }}</span>
-                            {% endif %}
-                        </button>
-                        <div class="notification-dropdown" id="notifDropdown">
-                            <div class="notif-dropdown-header">
-                                <h4>Notifications</h4>
-                                {% if unread_notification_count > 0 %}
-                                <a href="{% url 'mark_all_notifications_read' %}" style="font-size:12px;font-weight:600;">Mark all read</a>
-                                {% endif %}
-                            </div>
-                            <div class="notif-dropdown-body">
-                                {% if recent_notifications %}
-                                    {% for notif in recent_notifications %}
-                                    <a href="{% url 'mark_notification_read' notif.pk %}" class="notif-dropdown-item {% if not notif.is_read %}unread{% endif %}">
-                                        <div class="notif-title">{{ notif.title }}</div>
-                                        <div class="notif-msg">{{ notif.message|truncatechars:80 }}</div>
-                                        <div class="notif-time">{{ notif.created_at|timesince }} ago</div>
-                                    </a>
-                                    {% endfor %}
-                                {% else %}
-                                <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">
-                                    No notifications
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div class="notif-dropdown-footer">
-                                <a href="{% url 'notifications' %}">View All Notifications</a>
-                            </div>
-                        </div>
-                    </div>
-                    <a href="{% url 'logout' %}" class="topbar-btn" title="Logout" data-confirm="Are you sure you want to logout?">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                    </a>
-                </div>
-            </header>
+            {% include 'brgy/partials/topbar.html' with topbar_title=page_title %}
 
             <div class="page-content">
                 {% block content %}{% endblock %}
@@ -209,37 +42,7 @@
         </main>
     </div>
 
-    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/global/script.js' %}"></script>
     {% block extra_js %}{% endblock %}
-    
-    <!-- ADDED: Global Stat Counter Animation Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const counters = document.querySelectorAll('.stat-value');
-            const speed = 200; // The lower the slower
-
-            counters.forEach(counter => {
-                const updateCount = () => {
-                    const target = +counter.getAttribute('data-count');
-                    const count = +counter.innerText;
-
-                    // Lower inc to slow down, higher to speed up
-                    const inc = target / speed;
-
-                    // Check if target is reached
-                    if (count < target) {
-                        // Add inc to count and output in counter
-                        counter.innerText = Math.ceil(count + inc);
-                        // Call function every ms
-                        setTimeout(updateCount, 10);
-                    } else {
-                        counter.innerText = target;
-                    }
-                };
-
-                updateCount();
-            });
-        });
-    </script>
 </body>
 </html>

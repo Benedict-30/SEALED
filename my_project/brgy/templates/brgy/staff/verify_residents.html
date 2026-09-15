@@ -1,67 +1,9 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
 
-{% block nav_staff_verify %}active{% endblock %}
-{% block page_title %}Verify Residents{% endblock %}
 
 {% block extra_css %}
-<style>
-    .id-modal { display:none; }
-    .id-modal.show { display:flex; }
-    .id-modal-overlay {
-        position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;
-        display:flex;align-items:center;justify-content:center;padding:20px;
-    }
-    .id-modal-content {
-        background:var(--card);border-radius:var(--radius);max-width:800px;width:100%;
-        box-shadow:var(--shadow-lg);overflow:hidden;
-    }
-    .id-modal-header {
-        padding:16px 20px;border-bottom:1px solid var(--border);
-        display:flex;align-items:center;justify-content:space-between;
-    }
-    .id-modal-header h3 { font-size:15px;font-weight:700; }
-    .id-modal-close {
-        background:none;border:none;font-size:20px;color:var(--text-muted);
-        cursor:pointer;padding:4px;
-    }
-    .id-modal-close:hover { color:var(--text); }
-    .id-modal-body { padding:20px; }
-    .id-images {
-        display:grid;grid-template-columns:1fr 1fr;gap:20px;
-    }
-    .id-img-box {
-        text-align:center;
-    }
-    .id-img-box img {
-        max-width:100%;max-height:400px;border-radius:var(--radius-sm);
-        border:1px solid var(--border);object-fit:contain;
-        background:var(--bg);
-    }
-    .id-img-box .id-label {
-        font-size:13px;font-weight:600;color:var(--text-secondary);margin-top:8px;
-    }
-    .resident-info-grid {
-        display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;
-        font-size:13px;margin-bottom:16px;
-    }
-    .resident-info-grid .info-label {
-        color:var(--text-muted);font-weight:500;
-    }
-    .resident-info-grid .info-value {
-        font-weight:600;
-    }
-    .id-thumb {
-        width:40px;height:30px;border-radius:3px;object-fit:cover;
-        border:1px solid var(--border);cursor:pointer;
-        transition:transform 0.15s ease;
-    }
-    .id-thumb:hover { transform:scale(1.15); }
-    .no-id {
-        display:inline-flex;align-items:center;justify-content:center;
-        width:40px;height:30px;border-radius:3px;background:var(--bg);
-        border:1px solid var(--border);color:var(--text-muted);font-size:10px;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/staff/verify_residents.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -71,7 +13,7 @@
         <div class="id-modal-content" onclick="event.stopPropagation()">
             <div class="id-modal-header">
                 <h3 id="idModalTitle">Resident ID</h3>
-                <button class="id-modal-close" onclick="closeIdModal()">&times;</button>
+                <button class="id-modal-close" onclick="closeIdModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="id-modal-body">
                 <div class="resident-info-grid" id="idModalInfo"></div>
@@ -81,61 +23,118 @@
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <h3>Resident Verification</h3>
+<div class="vr-page">
+
+    <!-- Page header -->
+    <div class="page-hero vr-hero">
+        <div>
+            <div class="page-hero-title">
+                <i class="fa-solid fa-id-card-clip"></i>
+                Resident Verification
+            </div>
+            <div class="page-hero-sub">Approve, review, or reject resident account verification requests.</div>
+        </div>
+        <div class="vr-results-pill">
+            <span class="vr-results-total">{{ page_obj.paginator.count }}</span>
+            <span class="vr-results">resident{{ page_obj.paginator.count|pluralize }}</span>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="filter-bar mb-4">
-            <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;">
+
+    <!-- Status filter chips -->
+    <div class="vr-legend-wrap">
+        <span class="vr-legend-label"><i class="fa-solid fa-filter"></i> Status:</span>
+        <a href="{% url 'verify_residents' %}?search={{ search }}" class="vr-chip {% if not status_filter %}active{% endif %}">
+            <span class="vr-dot vr-dot-all"></span>All
+            <span class="vr-chip-count">{{ page_obj.paginator.count }}</span>
+        </a>
+        <a href="{% url 'verify_residents' %}?status=pending&search={{ search }}" class="vr-chip vr-chip-pending {% if status_filter == 'pending' %}active{% endif %}">
+            <span class="vr-dot"></span>Pending
+            <span class="vr-chip-count">{{ status_counts.pending|default:0 }}</span>
+        </a>
+        <a href="{% url 'verify_residents' %}?status=approved&search={{ search }}" class="vr-chip vr-chip-approved {% if status_filter == 'approved' %}active{% endif %}">
+            <span class="vr-dot"></span>Verified
+            <span class="vr-chip-count">{{ status_counts.approved|default:0 }}</span>
+        </a>
+        <a href="{% url 'verify_residents' %}?status=rejected&search={{ search }}" class="vr-chip vr-chip-rejected {% if status_filter == 'rejected' %}active{% endif %}">
+            <span class="vr-dot"></span>Rejected
+            <span class="vr-chip-count">{{ status_counts.rejected|default:0 }}</span>
+        </a>
+    </div>
+
+    <!-- Search toolbar -->
+    <div class="vr-toolbar card">
+        <form method="get" class="vr-filter-form">
+            <div class="vr-search-field">
+                <label for="id-search" class="vr-field-label">Search residents</label>
                 <div class="search-input-wrapper">
                     <i class="fa-solid fa-search"></i>
-                    <input type="text" name="search" class="form-input" placeholder="Search by name, username, email..." value="{{ search }}">
+                    <input type="text" name="search" id="id-search" class="form-input" placeholder="Search by name, username, email..." value="{{ search }}">
                 </div>
-                <select name="status" class="form-input" style="width:auto;min-width:150px;" onchange="this.form.submit()">
-                    <option value="">All Statuses</option>
-                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
-                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
-                    <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
-                </select>
+            </div>
+            <div class="vr-filter-actions">
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
                 {% if search or status_filter %}
-                <a href="{% url 'verify_residents' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i> Clear</a>
+                <a href="{% url 'verify_residents' %}" class="btn btn-ghost btn-icon" title="Clear filters"><i class="fa-solid fa-rotate-left"></i></a>
                 {% endif %}
-            </form>
-        </div>
+            </div>
+        </form>
+    </div>
 
+    <!-- Active search indicator -->
+    {% if search or status_filter %}
+    <div class="vr-active-filters">
+        <span class="vr-active-label"><i class="fa-solid fa-sliders"></i> Showing:</span>
+        {% if status_filter %}<span class="vr-active-tag">{{ status_filter }}</span>{% endif %}
+        {% if search %}<span class="vr-active-tag">"{{ search }}"</span>{% endif %}
+        <a href="{% url 'verify_residents' %}" class="vr-active-clear">Clear all</a>
+    </div>
+    {% endif %}
+
+    <!-- Table -->
+    <div class="card vr-table-card">
         {% if page_obj %}
-        <div class="table-wrapper">
-            <table class="table">
+        <div class="table-wrapper vr-table-wrapper">
+            <table class="table vr-table">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Username</th>
+                        <th>Resident</th>
                         <th>Email</th>
                         <th>Phone</th>
                         <th>ID Photos</th>
                         <th>Status</th>
                         <th>Registered</th>
-                        <th>Actions</th>
+                        <th class="text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for res in page_obj %}
                     <tr>
-                        <td><div class="fw-600">{{ res.display_name }}</div></td>
-                        <td class="text-sm">{{ res.username }}</td>
-                        <td class="text-sm">{{ res.email }}</td>
-                        <td class="text-sm">{{ res.phone_number|default:"-" }}</td>
                         <td>
-                            {% if res.id_front or res.id_back %}
-                            <div style="display:flex;gap:6px;align-items:center;">
+                            <div class="vr-resident">
+                                <span class="vr-avatar">{{ res.display_name|default:"?"|slice:":1"|upper }}</span>
+                                <div class="vr-resident-meta">
+                                    <span class="vr-name">{{ res.display_name }}</span>
+                                    <span class="vr-username">@{{ res.username }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-sm">{{ res.email }}</td>
+                        <td class="text-sm">{{ res.phone_number|default:"—" }}</td>
+                        <td>
+                            {% if res.id_front or res.id_back or res.id_selfie %}
+                            <div class="vr-id-thumbs">
                                 {% if res.id_front %}
-                                <img src="{{ res.id_front.url }}" class="id-thumb" alt="Front" title="Click to view" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{{ res.id_front.url }}", "{% if res.id_back %}{{ res.id_back.url }}{% else %}{% endif %}")'>
+                                <img src="{{ res.id_front.url }}" class="id-thumb" alt="ID Front" title="Click to view" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{{ res.id_front.url }}", "{% if res.id_back %}{{ res.id_back.url }}{% else %}{% endif %}", "{% if res.id_selfie %}{{ res.id_selfie.url }}{% else %}{% endif %}")'>
                                 {% endif %}
                                 {% if res.id_back %}
-                                <img src="{{ res.id_back.url }}" class="id-thumb" alt="Back" title="Click to view">
+                                <img src="{{ res.id_back.url }}" class="id-thumb" alt="ID Back" title="Click to view" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{% if res.id_front %}{{ res.id_front.url }}{% else %}{% endif %}", "{{ res.id_back.url }}", "{% if res.id_selfie %}{{ res.id_selfie.url }}{% else %}{% endif %}")'>
                                 {% endif %}
-                                <span class="text-xs text-muted" style="cursor:pointer;text-decoration:underline;" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{{ res.id_front.url }}", "{% if res.id_back %}{{ res.id_back.url }}{% else %}{% endif %}")'>View</span>
+                                {% if res.id_selfie %}
+                                <img src="{{ res.id_selfie.url }}" class="id-thumb" alt="Selfie with ID" title="Click to view" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{% if res.id_front %}{{ res.id_front.url }}{% endif %}", "{% if res.id_back %}{{ res.id_back.url }}{% endif %}", "{{ res.id_selfie.url }}")'>
+                                {% endif %}
+                                <span class="vr-view-link" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{% if res.id_front %}{{ res.id_front.url }}{% endif %}", "{% if res.id_back %}{{ res.id_back.url }}{% endif %}", "{% if res.id_selfie %}{{ res.id_selfie.url }}{% endif %}")'>
+                                    <i class="fa-solid fa-eye"></i> View
+                                </span>
                             </div>
                             {% else %}
                             <span class="no-id">None</span>
@@ -143,28 +142,50 @@
                         </td>
                         <td>
                             {% if res.verification_status == 'pending' %}
-                            <span class="badge badge-warning">Pending</span>
+                            <span class="vr-status status-pending"><span class="vr-status-dot"></span>Pending</span>
                             {% elif res.verification_status == 'approved' %}
-                            <span class="badge badge-success">Verified</span>
+                            <span class="vr-status status-approved"><span class="vr-status-dot"></span>Verified</span>
+                            {% if not res.is_active %}<span class="vr-inactive-tag">Inactive</span>{% endif %}
                             {% else %}
-                            <span class="badge badge-danger">Rejected</span>
+                            <span class="vr-status status-rejected"><span class="vr-status-dot"></span>Rejected</span>
                             {% endif %}
                         </td>
                         <td class="text-sm text-muted">{{ res.date_joined|date:"M d, Y" }}</td>
-                        <td>
+                        <td class="text-right">
                             {% if res.verification_status == 'pending' %}
-                            <div style="display:flex;gap:4px;">
-                                <a href="{% url 'approve_resident' res.pk %}" class="btn btn-success btn-xs" data-confirm="Approve {{ res.display_name }}?">
-                                    <i class="fa-solid fa-check"></i> Approve
-                                </a>
-                                <a href="{% url 'reject_resident' res.pk %}" class="btn btn-danger btn-xs">
+                            <div class="vr-actions">
+                                <form method="post" action="{% url 'approve_resident' res.pk %}" onsubmit="return confirm('Approve {{ res.display_name }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-xs">
+                                        <i class="fa-solid fa-check"></i> Approve
+                                    </button>
+                                </form>
+                                <a href="{% url 'reject_resident' res.pk %}" class="btn btn-xs vr-btn-reject">
                                     <i class="fa-solid fa-xmark"></i> Reject
                                 </a>
                             </div>
                             {% elif res.verification_status == 'rejected' and res.rejection_reason %}
-                            <span class="text-xs text-danger" title="{{ res.rejection_reason }}">{{ res.rejection_reason|truncatechars:25 }}</span>
+                            <span class="vr-reason" title="{{ res.rejection_reason }}"><i class="fa-solid fa-circle-info"></i> {{ res.rejection_reason|truncatechars:20 }}</span>
+                            {% elif res.verification_status == 'approved' %}
+                            <div class="vr-actions">
+                                {% if res.is_active %}
+                                <form method="post" action="{% url 'toggle_resident_active' res.pk %}" onsubmit="return confirm('Deactivate {{ res.display_name }}? They will not be able to log in until reactivated.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-xs">
+                                        <i class="fa-solid fa-user-slash"></i> Deactivate
+                                    </button>
+                                </form>
+                                {% else %}
+                                <form method="post" action="{% url 'toggle_resident_active' res.pk %}" onsubmit="return confirm('Reactivate {{ res.display_name }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-xs">
+                                        <i class="fa-solid fa-user-check"></i> Reactivate
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
                             {% else %}
-                            <span class="text-xs text-muted">-</span>
+                            <span class="text-xs text-muted">—</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -175,58 +196,31 @@
 
         {% if page_obj.has_other_pages %}
         <div class="pagination">
-            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&search={{ search }}">&laquo;</a>{% endif %}
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&search={{ search }}"><i class="fa-solid fa-chevron-left"></i></a>{% endif %}
             {% for num in page_obj.paginator.page_range %}
                 {% if page_obj.number == num %}<span class="active">{{ num }}</span>
                 {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                 <a href="?page={{ num }}&status={{ status_filter }}&search={{ search }}">{{ num }}</a>{% endif %}
             {% endfor %}
-            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&search={{ search }}">&raquo;</a>{% endif %}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&search={{ search }}"><i class="fa-solid fa-chevron-right"></i></a>{% endif %}
         </div>
         {% endif %}
 
         {% else %}
         <div class="empty-state">
-            <i class="fa-solid fa-users"></i>
+            <div class="empty-state-icon"><i class="fa-solid fa-users"></i></div>
             <h4>No Residents Found</h4>
             <p>{% if status_filter or search %}No residents match your search criteria.{% else %}No residents have registered yet.{% endif %}</p>
+            {% if status_filter or search %}
+            <a href="{% url 'verify_residents' %}" class="btn btn-ghost btn-sm mt-3"><i class="fa-solid fa-rotate-left"></i> Clear filters</a>
+            {% endif %}
         </div>
         {% endif %}
     </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-function openIdModal(name, email, phone, address, frontUrl, backUrl) {
-    document.getElementById('idModalTitle').textContent = name + ' — ID Verification';
-    document.getElementById('idModalInfo').innerHTML = `
-        <div><span class="info-label">Email:</span></div><div><span class="info-value">${email}</span></div>
-        <div><span class="info-label">Phone:</span></div><div><span class="info-value">${phone}</span></div>
-        <div><span class="info-label">Address:</span></div><div><span class="info-value" style="grid-column:1/-1;">${address}</span></div>
-    `;
-    let imgs = '';
-    if (frontUrl) {
-        imgs += `<div class="id-img-box"><img src="${frontUrl}" alt="ID Front"><div class="id-label">Front Side</div></div>`;
-    }
-    if (backUrl) {
-        imgs += `<div class="id-img-box"><img src="${backUrl}" alt="ID Back"><div class="id-label">Back Side</div></div>`;
-    }
-    if (!frontUrl && !backUrl) {
-        imgs = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:32px;">No ID photos uploaded.</div>';
-    }
-    document.getElementById('idModalImages').innerHTML = imgs;
-    document.getElementById('idModal').classList.add('show');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeIdModal() {
-    document.getElementById('idModal').classList.remove('show');
-    document.body.style.overflow = '';
-}
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeIdModal();
-});
-</script>
+<script src="{% static 'js/staff/verify_residents.js' %}"></script>
 {% endblock %}

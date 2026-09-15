@@ -1,0 +1,33 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environment
+venv/
+
+# Django
+*.sqlite3
+db.sqlite3
+
+# Secrets (never commit)
+.env
+.env.*
+firebase_credentials.json
+firebase-service-account.json
+serviceAccountKey.json
+*.pem
+*.key
+!*.keychain
+
+# Media uploads - user data / PII (never commit)
+media/resident_ids/
+media/profile_pictures/
+
+# Stray redirect artifacts (e.g. accidental `curl -L` output)
+-L
+
+# OS
+.DS_Store
+Thumbs.db

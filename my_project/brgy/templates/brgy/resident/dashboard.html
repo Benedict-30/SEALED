@@ -1,213 +1,136 @@
 {% extends 'brgy/base.html' %}
-{% block nav_res_dashboard %}active{% endblock %}
-{% block page_title %}Resident Dashboard{% endblock %}
-
-{% block extra_css %}
-<style>
-    /* CIRCULAR PROGRESS STYLES */
-    .track-card {
-        background: linear-gradient(135deg, var(--primary-50) 0%, #ffffff 100%);
-        border: 1px solid var(--primary-200);
-        border-radius: var(--radius);
-        padding: 28px;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 30px;
-        text-decoration: none;
-        color: inherit;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    .track-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.12);
-        border-color: var(--primary);
-    }
-    
-    /* Wrapper controls size and shadow */
-    .progress-ring-wrapper {
-        position: relative;
-        width: 140px;
-        height: 140px;
-        flex-shrink: 0;
-        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-    }
-    .progress-ring {
-        transform: rotate(-90deg);
-    }
-    .progress-ring__circle {
-        transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-        stroke-linecap: round;
-    }
-    
-    /* Active pulse animation */
-    .progress-ring__circle.active {
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.7; }
-        100% { opacity: 1; }
-    }
-
-    .progress-text {
-        position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-        background: #fff;
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-    }
-    .progress-text .percentage {
-        font-size: 28px;
-        font-weight: 800;
-        color: var(--primary);
-        line-height: 1;
-    }
-    .progress-text .label {
-        font-size: 10px;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-top: 4px;
-        font-weight: 600;
-    }
-    
-    .track-info h4 {
-        margin: 0 0 6px 0;
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text);
-    }
-    .track-info p {
-        margin: 0;
-        font-size: 14px;
-        color: var(--text-secondary);
-    }
-    .track-status-badge {
-        display: inline-block;
-        margin-top: 10px;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 700;
-        background: #fff;
-        border: 1px solid var(--border-light);
-    }
-</style>
-{% endblock %}
 
 {% block content %}
+
 {% if unverified %}
-<!-- Unverified Resident View -->
 <div class="verification-banner {% if user.verification_status == 'rejected' %}rejected{% endif %}">
+    <div class="banner-icon">
+        {% if user.verification_status == 'pending' %}
+            <i class="fa-solid fa-hourglass-half"></i>
+        {% elif user.verification_status == 'rejected' %}
+            <i class="fa-solid fa-circle-xmark"></i>
+        {% endif %}
+    </div>
+
     {% if user.verification_status == 'pending' %}
-    <i class="fa-solid fa-hourglass-half"></i>
-    <h3>Account Pending Verification</h3>
-    <p>Your account is currently being reviewed by barangay staff.</p>
-    <p class="text-muted text-sm mt-2">You will be notified once your account has been verified. This usually takes 1-3 business days.</p>
+        <h3>Account Pending Verification</h3>
+        <p>Your account is currently being reviewed by barangay staff.</p>
+        <p class="text-muted">You will be notified once your account has been verified. This usually takes 1–3 business days.</p>
+
     {% elif user.verification_status == 'rejected' %}
-    <i class="fa-solid fa-circle-xmark"></i>
-    <h3>Verification Rejected</h3>
-    <p>Your account verification was not approved.</p>
-    {% if rejection_reason %}
-    <p class="text-sm mt-2" style="color:var(--danger);"><strong>Reason:</strong> {{ rejection_reason }}</p>
-    {% endif %}
-    <p class="text-muted text-sm mt-2">Please contact your barangay office for assistance.</p>
+        <h3>Verification Rejected</h3>
+        <p>Your account verification was not approved.</p>
+        {% if rejection_reason %}
+        <p class="rejection-reason">
+            <strong>Reason:</strong> {{ rejection_reason }}
+        </p>
+        {% endif %}
+        <p class="text-muted">Please contact your barangay office for assistance.</p>
     {% endif %}
 </div>
 
 {% else %}
-<!-- Verified Resident View -->
-<div class="stats-grid">
-    <div class="stat-card" style="--stat-color: var(--primary)">
-        <div class="stat-icon primary"><i class="fa-solid fa-file-lines"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ total }}">0</div>
-            <div class="stat-label">Total Requests</div>
+
+{# ─── Page Header ──────────────────────────────────────────────── #}
+<div class="page-hero staff-hero">
+    <div>
+        <div class="page-hero-title">
+            <i class="fa-solid fa-house-user"></i>
+            Welcome back, {{ user.first_name|default:user.username }}!
+        </div>
+        <div class="page-hero-sub">Here's what's happening with your document requests.</div>
+    </div>
+</div>
+
+{# ─── Stat Cards ───────────────────────────────────────────────── #}
+<div class="stat-cards stat-cards-4">
+    <div class="stat-card stat-card-viv stat-card-viv-success">
+        <div class="stat-card-icon success"><i class="fa-solid fa-file-lines"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ total }}</span>
+            <span class="stat-card-label">Total Requests</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--warning)">
-        <div class="stat-icon warning"><i class="fa-solid fa-clock"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ pending }}">0</div>
-            <div class="stat-label">Pending</div>
+    <div class="stat-card stat-card-viv stat-card-viv-warning">
+        <div class="stat-card-icon warning"><i class="fa-solid fa-clock"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ pending }}</span>
+            <span class="stat-card-label">Pending</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--info)">
-        <div class="stat-icon info"><i class="fa-solid fa-circle-check"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ approved }}">0</div>
-            <div class="stat-label">Approved</div>
+    <div class="stat-card stat-card-viv stat-card-viv-danger">
+        <div class="stat-card-icon danger"><i class="fa-solid fa-file-pen"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ approved }}</span>
+            <span class="stat-card-label">Approved</span>
         </div>
     </div>
-    <div class="stat-card" style="--stat-color: var(--success)">
-        <div class="stat-icon success"><i class="fa-solid fa-hand-holding"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ ready }}">0</div>
-            <div class="stat-label">Ready for Pickup</div>
-        </div>
-    </div>
-    <div class="stat-card" style="--stat-color: var(--accent)">
-        <div class="stat-icon accent"><i class="fa-solid fa-flag-checkered"></i></div>
-        <div class="stat-info">
-            <div class="stat-value" data-count="{{ completed }}">0</div>
-            <div class="stat-label">Completed</div>
+    <div class="stat-card stat-card-viv stat-card-viv-ready">
+        <div class="stat-card-icon ready"><i class="fa-solid fa-hand-holding"></i></div>
+        <div class="stat-card-body">
+            <span class="stat-card-value">{{ ready }}</span>
+            <span class="stat-card-label">Ready for Pickup</span>
         </div>
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
-    <!-- Left Column: Tracking & Recent Requests -->
-    <div>
-        <!-- LATEST REQUEST TRACKING CARD -->
+{# ─── Main Dashboard Grid ──────────────────────────────────────── #}
+<div class="dash-grid dash-grid-main">
+
+    {# ── Left Column ────────────────────────────────────────────── #}
+    <div class="dash-grid-stack">
+
         {% if recent_requests %}
         {% with latest_req=recent_requests|first %}
         <a href="{% url 'track_request' latest_req.pk %}" class="track-card">
             <div class="progress-ring-wrapper">
-                <svg class="progress-ring" width="140" height="140">
-                    <!-- Background Circle -->
-                    <circle class="progress-ring__circle" stroke="#e5e7eb" stroke-width="12" fill="transparent" r="60" cx="70" cy="70" />
-                    <!-- Progress Circle -->
-                    <!-- Circumference = 2 * pi * 60 = 376.99 -->
-                    <circle 
-                        class="progress-ring__circle {% if latest_req.status == 'pending' or latest_req.status == 'approved' or latest_req.status == 'ready_for_pickup' %}active{% endif %}" 
-                        stroke="var(--primary)" 
-                        stroke-width="12" 
-                        fill="transparent" 
-                        r="60" 
-                        cx="70" 
-                        cy="70" 
-                        stroke-dasharray="376.99" 
-                        stroke-dashoffset="{% if latest_req.status == 'completed' %}0{% elif latest_req.status == 'ready_for_pickup' %}94.25{% elif latest_req.status == 'approved' %}188.5{% elif latest_req.status == 'pending' %}282.74{% else %}376.99{% endif %}" 
+                <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                    <circle
+                        class="progress-ring__circle"
+                        stroke="var(--border, #e2e8f0)"
+                        stroke-width="12"
+                        fill="transparent"
+                        r="60" cx="70" cy="70"
+                    />
+                    <circle
+                        class="progress-ring__circle {% if latest_req.status in 'pending,approved,printed,ready_for_pickup' %}active{% endif %}"
+                        stroke="var(--primary)"
+                        stroke-width="12"
+                        fill="transparent"
+                        r="60" cx="70" cy="70"
+                        stroke-dasharray="376.99"
+                        stroke-dashoffset="{% if latest_req.status == 'completed' %}0{% elif latest_req.status == 'ready_for_pickup' %}94.25{% elif latest_req.status in 'approved,printed' %}188.5{% elif latest_req.status == 'pending' %}282.74{% else %}376.99{% endif %}"
                     />
                 </svg>
                 <div class="progress-text">
-                    <div class="percentage">{% if latest_req.status == 'completed' %}100%{% elif latest_req.status == 'ready_for_pickup' %}75%{% elif latest_req.status == 'approved' %}50%{% elif latest_req.status == 'pending' %}25%{% else %}0%{% endif %}</div>
+                    <div class="percentage">
+                        {% if latest_req.status == 'completed' %}100%
+                        {% elif latest_req.status == 'ready_for_pickup' %}75%
+                        {% elif latest_req.status in 'approved,printed' %}50%
+                        {% elif latest_req.status == 'pending' %}25%
+                        {% else %}0%{% endif %}
+                    </div>
                     <div class="label">Progress</div>
                 </div>
             </div>
+
             <div class="track-info">
                 <h4>Track Latest Request</h4>
-                <p><strong>{{ latest_req.request_number }}</strong> &middot; Submitted {{ latest_req.created_at|date:"M d" }}</p>
-                <div class="track-status-badge" style="color: var(--text); border-color: var(--border);">
-                    Status: {{ latest_req.get_status_display }}
+                <p>
+                    <strong>{{ latest_req.request_number }}</strong> &middot;
+                    Submitted {{ latest_req.created_at|date:"M d" }}
+                </p>
+                <div class="track-status-badge {% if latest_req.status == 'pending' %}pending{% endif %}">
+                    {{ latest_req.get_status_display }}
                 </div>
-                <p style="margin-top: 12px; font-size: 13px; color: var(--primary); font-weight: 700;">Click to view full timeline &rarr;</p>
+                <div class="track-cta">
+                    Click to view full timeline <i class="fa-solid fa-arrow-right"></i>
+                </div>
             </div>
         </a>
         {% endwith %}
         {% endif %}
 
-        <!-- Recent Requests Table -->
         <div class="card">
             <div class="card-header">
                 <h3>Recent Requests</h3>
@@ -229,18 +152,26 @@
                             {% for req in recent_requests %}
                             <tr>
                                 <td class="fw-600">
-                                    <a href="{% url 'track_request' req.pk %}" style="color: var(--primary); text-decoration: none;">
+                                    <a href="{% url 'track_request' req.pk %}" class="table-link">
                                         {{ req.request_number }}
                                     </a>
                                 </td>
-                                <!-- FIXED: Now correctly loops through items -->
                                 <td>
-                                    {% for item in req.items.all %}
-                                        <span class="text-sm">{{ item.document_type.name }}</span><br>
-                                    {% endfor %}
+                                    <div class="table-doc-list">
+                                        {% for item in req.items.all %}
+                                        <span class="table-doc-name">
+                                            <i class="fa-solid fa-file-lines"></i>
+                                            {{ item.document_type.name }}
+                                        </span>
+                                        {% endfor %}
+                                    </div>
                                 </td>
-                                <td><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
-                                <td class="text-muted text-sm">{{ req.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge badge-{{ req.status_color }}">
+                                        {{ req.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="table-date">{{ req.created_at|date:"M d, Y" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -248,10 +179,12 @@
                 </div>
                 {% else %}
                 <div class="empty-state">
-                    <i class="fa-solid fa-inbox"></i>
+                    <div class="empty-state-icon">
+                        <i class="fa-solid fa-inbox"></i>
+                    </div>
                     <h4>No Requests Yet</h4>
                     <p>Start by requesting a barangay document.</p>
-                    <a href="{% url 'request_document' %}" class="btn btn-primary btn-sm mt-3">
+                    <a href="{% url 'request_document' %}" class="btn btn-primary btn-sm">
                         <i class="fa-solid fa-plus"></i> Request Document
                     </a>
                 </div>
@@ -260,44 +193,122 @@
         </div>
     </div>
 
-    <!-- Right Column: Notifications & Quick Actions -->
-    <div style="display:flex;flex-direction:column;gap:20px;">
+    {# ── Right Column ───────────────────────────────────────────── #}
+    <div class="dash-grid-stack">
+
         <div class="card">
             <div class="card-header">
                 <h3>Quick Actions</h3>
             </div>
-            <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
-                <a href="{% url 'request_document' %}" class="btn btn-primary btn-block">
-                    <i class="fa-solid fa-file-circle-plus"></i> New Document Request
-                </a>
-                <a href="{% url 'request_history' %}" class="btn btn-ghost btn-block">
-                    <i class="fa-solid fa-clock-rotate-left"></i> View History
-                </a>
-                <a href="{% url 'notifications' %}" class="btn btn-ghost btn-block">
-                    <i class="fa-solid fa-bell"></i> Notifications
-                    {% if unread_notification_count > 0 %}
-                    <span class="badge badge-warning" style="margin-left:auto;">{{ unread_notification_count }}</span>
-                    {% endif %}
-                </a>
+            <div class="card-body">
+                <div class="quick-actions">
+                    <a href="{% url 'request_document' %}" class="quick-action-link primary">
+                        <div class="quick-action-icon">
+                            <i class="fa-solid fa-file-circle-plus"></i>
+                        </div>
+                        <div class="quick-action-text">
+                            <span class="quick-action-title">New Document Request</span>
+                            <span class="quick-action-desc">Submit a new request</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right quick-action-arrow"></i>
+                    </a>
+
+                    <a href="{% url 'request_history' %}" class="quick-action-link info">
+                        <div class="quick-action-icon">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div class="quick-action-text">
+                            <span class="quick-action-title">View History</span>
+                            <span class="quick-action-desc">All past requests</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right quick-action-arrow"></i>
+                    </a>
+
+                    <a href="{% url 'notifications' %}" class="quick-action-link warning">
+                        <div class="quick-action-icon">
+                            <i class="fa-solid fa-bell"></i>
+                        </div>
+                        <div class="quick-action-text">
+                            <span class="quick-action-title">Notifications</span>
+                            <span class="quick-action-desc">Updates & alerts</span>
+                        </div>
+                        {% if unread_notification_count > 0 %}
+                        <span class="quick-action-badge">{{ unread_notification_count }}</span>
+                        {% endif %}
+                        <i class="fa-solid fa-chevron-right quick-action-arrow"></i>
+                    </a>
+                </div>
             </div>
         </div>
 
-        {% if announcements %}
+        {% if unread_updates %}
         <div class="card">
             <div class="card-header">
-                <h3>Latest Updates</h3>
+                <h3><i class="fa-solid fa-bell"></i> Latest Updates</h3>
+                <a href="{% url 'notifications' %}" class="btn btn-ghost btn-sm">
+                    {% if unread_notification_count %}<span class="quick-action-badge" style="margin-right:6px;">{{ unread_notification_count }}</span>{% endif %}
+                    View All
+                </a>
             </div>
-            <div class="card-body" style="padding:12px 16px;">
-                {% for ann in announcements %}
-                <div style="padding:10px 0;{% if not forloop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
-                    <div class="fw-600 text-sm">{{ ann.title }}</div>
-                    <div class="text-xs text-muted mt-2">{{ ann.message|truncatechars:100 }}</div>
-                    <div class="text-xs text-muted mt-2"><i class="fa-regular fa-clock"></i> {{ ann.created_at|timesince }} ago</div>
+            <div class="card-body-flush">
+                <div class="updates-list">
+                    {% for ann in unread_updates %}
+                    <div class="update-item unread">
+                        <div class="update-icon {% if "request" in ann.title|lower %}info{% elif "verified" in ann.title|lower or "account" in ann.title|lower or "register" in ann.title|lower %}success{% elif "rejected" in ann.title|lower %}danger{% else %}default{% endif %}">
+                            <i class="fa-solid {% if "request" in ann.title|lower %}fa-file-lines{% elif "verified" in ann.title|lower or "register" in ann.title|lower %}fa-user-check{% else %}fa-bell{% endif %}"></i>
+                        </div>
+                        <div class="update-text">
+                            <div class="update-title">
+                                {{ ann.title }}
+                                <span class="update-badge"><i class="fa-solid fa-circle"></i> New</span>
+                            </div>
+                            <div class="update-excerpt">{{ ann.message|truncatechars:110 }}</div>
+                            <div class="update-meta">
+                                <i class="fa-regular fa-clock"></i> {{ ann.created_at|timesince }} ago
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
+                <div class="updates-feed-footer">
+                    <a href="{% url 'notifications' %}">
+                        <i class="fa-regular fa-bell"></i> View All Notifications
+                    </a>
+                </div>
             </div>
         </div>
         {% endif %}
+
+        {% if latest_announcements %}
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-bullhorn"></i> Announcements</h3>
+            </div>
+            <div class="card-body-flush">
+                <div class="updates-list">
+                    {% for a in latest_announcements %}
+                    <div class="update-item {% if not forloop.last %}update-item-bordered{% endif %}">
+                        <div class="update-icon warning">
+                            <i class="fa-solid fa-bullhorn"></i>
+                        </div>
+                        <div class="update-text">
+                            <div class="update-title">
+                                {{ a.title }}
+                                {% if a.is_global %}<span class="update-badge update-badge-system"><i class="fa-solid fa-server"></i> System</span>{% endif %}
+                            </div>
+                            <div class="update-excerpt">{{ a.body|truncatechars:120 }}</div>
+                            <div class="update-meta">
+                                <i class="fa-regular fa-clock"></i> {{ a.published_at|timesince }} ago
+                                {% if a.author %}&middot; <i class="fa-solid fa-user-pen"></i> {{ a.author.display_name }}{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </div>
 

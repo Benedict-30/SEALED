@@ -1,0 +1,79 @@
+{% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/document_type_form.css' %}">
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 32px;">
+    <h2 style="font-size: 22px; font-weight: 800; color: var(--text, #12263f); margin-bottom: 6px;">Configure - {{ doc_type.name }}</h2>
+    <p class="text-sm text-muted">Set the price and template this barangay uses for the shared document type.</p>
+</div>
+
+{% if form.errors %}
+<div class="form-error-list" style="margin-bottom: 20px;">
+    {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+</div>
+{% endif %}
+
+<div class="form-layout">
+    <div class="form-container">
+        <div class="form-header">
+            <h3><i class="fa-solid fa-gear" style="color:var(--primary); margin-right:8px;"></i>{{ doc_type.name }}</h3>
+            <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost btn-sm">
+                <i class="fa-solid fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+
+        <div class="form-info" style="padding:14px;border-radius:10px;background:var(--bg,#f8fafc);border:1px solid var(--border,#e9ecef);margin-bottom:20px;">
+            <p style="margin:0 0 6px;font-weight:600;color:var(--text, #12263f);"><i class="fa-solid fa-globe" style="color:var(--info);margin-right:6px;"></i>Global Document Type</p>
+            <p style="margin:0;font-size:13px;color:var(--text-muted);">This document type applies to all barangays. The price and template below are used only for <strong>{{ brgy.name }}</strong>. Residents can request it once you save a price or template.</p>
+        </div>
+
+        <form method="post" class="clean-form" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label" for="id_fee">Processing Fee (&#8369;)</label>
+                {{ form.fee }}
+                <small style="color:var(--text-muted); font-size:12px; margin-top:6px; display:block;">Leave blank to default to 0.00.</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Document Template (.docx)</label>
+
+                {% if form.instance.template_file %}
+                    <div class="current-file-actions" style="margin-bottom: 12px; justify-content: flex-start;">
+                        <i class="fa-solid fa-file-word" style="color: #2b579a; font-size: 20px;"></i>
+                        <span style="font-size: 14px; font-weight: 600; color: var(--text);">{{ form.instance.template_file.name }}</span>
+                        <a href="{{ form.instance.template_file.url }}" target="_blank" class="btn btn-ghost btn-xs">
+                            <i class="fa-solid fa-eye"></i> View Current
+                        </a>
+                    </div>
+                {% endif %}
+
+                <div class="file-upload-area">
+                    <input type="file" name="template_file" id="id_template_file" accept=".docx,.doc">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Drag & drop your template here or <strong>browse</strong></p>
+                    <p style="font-size: 12px; margin-top: 6px; opacity: 0.7;">
+                        {% if override %}Uploading a new file replaces the current template.{% else %}Optional. Residents can request once a price or template is set.{% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 16px; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border, #e9ecef);">
+                <button type="submit" class="btn btn-primary" style="flex:1; padding: 14px; font-size: 15px; border-radius: 10px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Configuration
+                </button>
+                <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost" style="padding: 14px; font-size: 15px;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/staff/document_type_form.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services - SEALED</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/global/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/public/pages.css' %}">
+</head>
+<body>
+    {% include 'brgy/partials/topbar.html' with topbar_title=page_title %}
+
+    <main class="page-main">
+        <!-- Hero -->
+        <section class="page-hero">
+            <div class="page-hero-inner" data-reveal>
+                <span class="page-hero-eyebrow"><i class="fa-solid fa-file-lines"></i> Our Services</span>
+                <h1>Documents We <span>Process</span></h1>
+                <p>
+                    Browse the barangay documents you can request online. Pick a service,
+                    prepare the requirements, and submit your request from home &mdash; no queues, no hassle.
+                </p>
+            </div>
+        </section>
+
+        <!-- Services Grid -->
+        <section class="page-section">
+            {% if doc_types %}
+            <div class="service-grid">
+                {% for dt in doc_types %}
+                <article class="service-card" data-reveal>
+                    <div class="service-card-head">
+                        <div class="service-icon"><i class="fa-solid fa-file-lines"></i></div>
+                        {% if dt.is_global %}
+                        <span class="service-barangay"><i class="fa-solid fa-globe"></i> Global</span>
+                        {% elif dt.barangay %}
+                        <span class="service-barangay">{{ dt.barangay.name }}</span>
+                        {% endif %}
+                    </div>
+                    <h3>{{ dt.name }}</h3>
+                    {% if dt.description %}
+                    <p class="service-desc">{{ dt.description }}</p>
+                    {% endif %}
+                    {% if dt.requirements_list %}
+                    <div class="service-reqs">
+                        <h4><i class="fa-solid fa-list-check"></i> Requirements</h4>
+                        <ul>
+                            {% for requirement in dt.requirements_list %}
+                            <li>{{ requirement }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    <div class="service-foot">
+                        {% if dt.fee %}
+                        <span class="service-fee">&#8369;{{ dt.fee|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="service-fee free">No Fee</span>
+                        {% endif %}
+                        <a href="{% if user.is_authenticated %}{% url 'request_document' %}{% else %}{% url 'register' %}{% endif %}" class="service-cta">
+                            {% if user.is_authenticated %}Request{% else %}Sign Up to Request{% endif %}
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="page-empty">
+                <i class="fa-regular fa-folder-open"></i>
+                <h3>No Services Available Yet</h3>
+                <p>Document services will appear here once your barangay publishes them.</p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- CTA -->
+        <section class="page-cta">
+            <div class="page-cta-inner" data-reveal>
+                <h2>Need a Barangay Document?</h2>
+                <p>Create your account, get verified by barangay staff, and request documents online in minutes.</p>
+                {% if user.is_authenticated %}
+                <a href="{% url 'request_document' %}" class="btn-page-primary"><i class="fa-solid fa-file-circle-plus"></i> Request a Document</a>
+                {% else %}
+                <a href="{% url 'register' %}" class="btn-page-primary"><i class="fa-solid fa-user-plus"></i> Create Your Account</a>
+                <a href="{% url 'login' %}" class="btn-page-primary ghost"><i class="fa-solid fa-right-to-bracket"></i> Sign In</a>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+
+    <footer class="pages-footer">
+        <span>&copy; {% now "Y" %} SEALED &mdash; Barangay Document Request &amp; Management System</span>
+        <nav>
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'about' %}">About</a>
+            <a href="{% url 'verify_document' %}">Verify Document</a>
+        </nav>
+    </footer>
+    <script src="{% static 'js/global/script.js' %}"></script>
+</body>
+</html>

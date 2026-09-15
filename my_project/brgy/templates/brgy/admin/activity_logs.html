@@ -1,11 +1,12 @@
 {% extends 'brgy/base.html' %}
-{% block nav_admin_logs %}active{% endblock %}
-{% block page_title %}Activity Logs{% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="card-header">
         <h3>System Activity Logs</h3>
+        <a href="{% url 'activity_logs_export' %}?search={{ search }}&action={{ action_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&barangay={{ barangay_filter }}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-file-csv"></i> Export CSV
+        </a>
     </div>
     <div class="card-body">
         <div class="filter-bar mb-4">
@@ -14,10 +15,16 @@
                     <i class="fa-solid fa-search"></i>
                     <input type="text" name="search" class="form-input" placeholder="Search actions, details, users..." value="{{ search }}">
                 </div>
+                <select name="barangay" class="form-input" style="width:auto;min-width:160px;">
+                    <option value="">All Barangays</option>
+                    {% for b in barangays %}
+                    <option value="{{ b.pk }}" {% if barangay_filter == b.pk %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
                 <input type="text" name="action" class="form-input" style="width:auto;min-width:160px;" placeholder="Filter by action..." value="{{ action_filter }}">
                 <input type="date" name="date_from" class="form-input" style="width:auto;" value="{{ date_from }}" title="From">
                 <input type="date" name="date_to" class="form-input" style="width:auto;" value="{{ date_to }}" title="To">
-                {% if search or action_filter or date_from or date_to %}
+                {% if search or action_filter or date_from or date_to or barangay_filter %}
                 <a href="{% url 'activity_logs' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i> Clear</a>
                 {% endif %}
                 <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
@@ -31,6 +38,7 @@
                     <tr>
                         <th>Timestamp</th>
                         <th>User</th>
+                        <th>Barangay</th>
                         <th>Action</th>
                         <th>Details</th>
                         <th>IP Address</th>
@@ -48,9 +56,12 @@
                             <span class="text-sm text-muted">System</span>
                             {% endif %}
                         </td>
+                        <td class="text-sm text-muted">
+                            {% if log.barangay %}{{ log.barangay.name }}{% else %}-{% endif %}
+                        </td>
                         <td class="text-sm fw-600">{{ log.action }}</td>
                         <td class="text-sm" style="max-width:300px;" title="{{ log.details }}">{{ log.details|truncatechars:80|default:"-" }}</td>
-                        <td class="text-sm text-muted">{{ log.ip_address|default:"-" }}</td>
+                        <td class="text-sm text-muted" title="Hashed for privacy">{{ log.ip_hash|truncatechars:16|default:"-" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -59,13 +70,13 @@
 
         {% if page_obj.has_other_pages %}
         <div class="pagination">
-            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&search={{ search }}&action={{ action_filter }}&date_from={{ date_from }}&date_to={{ date_to }}">&laquo;</a>{% endif %}
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&amp;search={{ search }}&amp;action={{ action_filter }}&amp;date_from={{ date_from }}&amp;date_to={{ date_to }}&amp;barangay={{ barangay_filter }}">&laquo;</a>{% endif %}
             {% for num in page_obj.paginator.page_range %}
                 {% if page_obj.number == num %}<span class="active">{{ num }}</span>
                 {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <a href="?page={{ num }}&search={{ search }}&action={{ action_filter }}&date_from={{ date_from }}&date_to={{ date_to }}">{{ num }}</a>{% endif %}
+                <a href="?page={{ num }}&amp;search={{ search }}&amp;action={{ action_filter }}&amp;date_from={{ date_from }}&amp;date_to={{ date_to }}&amp;barangay={{ barangay_filter }}">{{ num }}</a>{% endif %}
             {% endfor %}
-            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&search={{ search }}&action={{ action_filter }}&date_from={{ date_from }}&date_to={{ date_to }}">&raquo;</a>{% endif %}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&amp;search={{ search }}&amp;action={{ action_filter }}&amp;date_from={{ date_from }}&amp;date_to={{ date_to }}&amp;barangay={{ barangay_filter }}">&raquo;</a>{% endif %}
         </div>
         {% endif %}
 
@@ -73,7 +84,7 @@
         <div class="empty-state">
             <i class="fa-solid fa-list-check"></i>
             <h4>No Activity Logs</h4>
-            <p>{% if search or action_filter %}No logs match your filters.{% else %}No activity has been recorded yet.{% endif %}</p>
+            <p>{% if search or action_filter or barangay_filter or date_from or date_to %}No logs match your filters.{% else %}No activity has been recorded yet.{% endif %}</p>
         </div>
         {% endif %}
     </div>

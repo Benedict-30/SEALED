@@ -1,0 +1,356 @@
+{% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/resident/profile.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page" id="profilePage">
+
+    <form method="post" action="{% url 'admin_profile' %}" id="profileForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="info">
+        <input type="hidden" name="edit_mode" id="editModeFlag" value="false">
+
+        {% if info_form.errors %}
+        <div class="form-error-list" style="margin-bottom: 20px;">
+            {% for field in info_form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ══════ HERO BANNER ══════ -->
+        <div class="profile-hero">
+            <div class="hero-bg-gradient"></div>
+            <div class="hero-bg-pattern"></div>
+
+            <div class="hero-content">
+                <div class="hero-avatar-section">
+                    <div class="hero-avatar-wrapper">
+                        <div class="avatar-container">
+                            <div class="avatar-glow"></div>
+                            <div class="avatar-ring">
+                                {% if user.profile_picture %}
+                                    <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="avatar-img">
+                                {% else %}
+                                    <div class="avatar-placeholder">
+                                        <span class="avatar-initials">{% if user.first_name %}{{ user.first_name|first }}{% endif %}{% if user.last_name %}{{ user.last_name|first }}{% endif %}{% if not user.first_name and not user.last_name %}{{ user.username|first|upper }}{% endif %}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <label for="id_profile_picture" class="avatar-upload-btn" title="Change photo">
+                                <i class="fa-solid fa-camera"></i>
+                            </label>
+                            <input type="file" id="id_profile_picture" name="profile_picture" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+
+                            <div class="avatar-status-indicator status-approved">
+                                <i class="fa-solid fa-check-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-info-section">
+                    <div class="hero-header">
+                        <div class="hero-name-row">
+                            <h1 class="hero-name">{{ user.get_full_name|default:user.username }}</h1>
+                            <button type="button" class="btn-hero btn-hero-primary btn-hero-compact" id="editProfileBtn" onclick="toggleEditMode()">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                <span>Edit Profile</span>
+                            </button>
+                        </div>
+                        <div class="hero-badges-row">
+                            <span class="badge badge-role">
+                                <i class="fa-solid fa-user-shield"></i> Administrator
+                            </span>
+                            <span class="badge badge-verification status-approved">
+                                <span class="badge-dot"></span>
+                                System Admin
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="hero-details-grid">
+                        <div class="detail-item">
+                            <i class="fa-solid fa-at detail-icon"></i>
+                            <div class="detail-content">
+                                <span class="detail-label">Username</span>
+                                <span class="detail-value">{{ user.username }}</span>
+                            </div>
+                        </div>
+
+                        {% if user.email %}
+                        <div class="detail-item">
+                            <i class="fa-solid fa-envelope detail-icon"></i>
+                            <div class="detail-content">
+                                <span class="detail-label">Email</span>
+                                <span class="detail-value">{{ user.email }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if user.phone_number %}
+                        <div class="detail-item">
+                            <i class="fa-solid fa-phone detail-icon"></i>
+                            <div class="detail-content">
+                                <span class="detail-label">Phone</span>
+                                <span class="detail-value">{{ user.phone_number }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="detail-item">
+                            <i class="fa-solid fa-gear detail-icon"></i>
+                            <div class="detail-content">
+                                <span class="detail-label">Role</span>
+                                <span class="detail-value">{{ user.get_role_display }}</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <i class="fa-solid fa-calendar detail-icon"></i>
+                            <div class="detail-content">
+                                <span class="detail-label">Member Since</span>
+                                <span class="detail-value">{{ user.created_at|date:"M Y"|default:"—" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ PROFILE BODY ══════ -->
+        <div class="profile-body">
+            <div class="profile-layout">
+
+                <!-- ── LEFT SIDEBAR ── -->
+                <aside class="profile-sidebar" id="profileSidebar">
+
+                    <!-- Quick Actions -->
+                    <div class="sidebar-card card-actions">
+                        <div class="card-header">
+                            <div class="header-icon icon-emerald">
+                                <i class="fa-solid fa-bolt-lightning"></i>
+                            </div>
+                            <h3 class="header-title">Quick Actions</h3>
+                        </div>
+
+                        <div class="actions-list">
+                            <a href="{% url 'manage_barangays' %}" class="action-link">
+                                <div class="action-icon-wrap">
+                                    <i class="fa-solid fa-building"></i>
+                                </div>
+                                <div class="action-text">
+                                    <span class="action-title">Manage Barangays</span>
+                                    <span class="action-desc">Configure barangays</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right action-arrow"></i>
+                            </a>
+
+                            <a href="{% url 'manage_staff' %}" class="action-link">
+                                <div class="action-icon-wrap icon-blue">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                </div>
+                                <div class="action-text">
+                                    <span class="action-title">Manage Staff</span>
+                                    <span class="action-desc">Add or edit staff accounts</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right action-arrow"></i>
+                            </a>
+
+                            <a href="{% url 'manage_document_types' %}" class="action-link">
+                                <div class="action-icon-wrap icon-amber">
+                                    <i class="fa-solid fa-file-lines"></i>
+                                </div>
+                                <div class="action-text">
+                                    <span class="action-title">Document Types</span>
+                                    <span class="action-desc">Manage document catalog</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right action-arrow"></i>
+                            </a>
+
+                            <a href="{% url 'activity_logs' %}" class="action-link">
+                                <div class="action-icon-wrap icon-cyan">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                                <div class="action-text">
+                                    <span class="action-title">Activity Logs</span>
+                                    <span class="action-desc">Review system activity</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right action-arrow"></i>
+                            </a>
+
+                            <a href="{% url 'admin_reports' %}" class="action-link">
+                                <div class="action-icon-wrap icon-rose">
+                                    <i class="fa-solid fa-chart-column"></i>
+                                </div>
+                                <div class="action-text">
+                                    <span class="action-title">Reports</span>
+                                    <span class="action-desc">View system reports</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right action-arrow"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Account Details -->
+                    <div class="sidebar-card card-summary">
+                        <div class="card-header">
+                            <div class="header-icon icon-cyan">
+                                <i class="fa-solid fa-id-badge"></i>
+                            </div>
+                            <h3 class="header-title">Account Details</h3>
+                        </div>
+
+                        <div class="summary-list">
+                            <div class="summary-item">
+                                <span class="summary-label">Role</span>
+                                <span class="summary-value">{{ user.get_role_display }}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Joined</span>
+                                <span class="summary-value">{{ user.created_at|date:"M d, Y"|default:"—" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- ── RIGHT MAIN CONTENT ── -->
+                <main class="profile-main">
+
+                    <!-- Personal Information Card -->
+                    <section class="content-card card-personal">
+                        <div class="card-top">
+                            <div class="card-icon-wrap icon-green">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div class="card-title-group">
+                                <h2 class="card-title">Personal Information</h2>
+                                <p class="card-subtitle">Basic profile details and contact info</p>
+                            </div>
+                        </div>
+
+                        <div class="card-content">
+                            <div class="info-grid">
+                                <div class="info-field">
+                                    <label class="field-label">First Name</label>
+                                    <div class="field-display view-mode">
+                                        <span class="field-text">{{ user.first_name|default:"—" }}</span>
+                                    </div>
+                                    <input type="text" name="first_name" value="{{ user.first_name }}" class="field-input edit-mode" style="display:none;">
+                                </div>
+
+                                <div class="info-field">
+                                    <label class="field-label">Last Name</label>
+                                    <div class="field-display view-mode">
+                                        <span class="field-text">{{ user.last_name|default:"—" }}</span>
+                                    </div>
+                                    <input type="text" name="last_name" value="{{ user.last_name }}" class="field-input edit-mode" style="display:none;">
+                                </div>
+
+                                <div class="info-field">
+                                    <label class="field-label">Username</label>
+                                    <div class="field-display view-mode">
+                                        <span class="field-badge">@{{ user.username }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="info-field">
+                                    <label class="field-label">Email Address</label>
+                                    <div class="field-display view-mode">
+                                        <span class="field-text">{{ user.email|default:"—" }}</span>
+                                    </div>
+                                    <input type="email" name="email" value="{{ user.email }}" class="field-input edit-mode" style="display:none;">
+                                </div>
+
+                                <div class="info-field">
+                                    <label class="field-label">Phone Number</label>
+                                    <div class="field-display view-mode">
+                                        <span class="field-text">{{ user.phone_number|default:"Not set" }}</span>
+                                    </div>
+                                    <input type="tel" name="phone_number" value="{{ user.phone_number }}" class="field-input edit-mode" style="display:none;">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Account Security (visible only in edit mode) -->
+                    <section class="content-card card-security" id="securityCard">
+                        <div class="card-top">
+                            <div class="card-icon-wrap icon-rose">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <div class="card-title-group">
+                                <h2 class="card-title">Account Security</h2>
+                                <p class="card-subtitle">Password and security settings</p>
+                            </div>
+                        </div>
+
+                        {% if password_form.errors %}
+                        <div class="form-error-list" style="margin: 0 0 16px;">
+                            {% for field in password_form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="card-content">
+                            <div class="security-item">
+                                <div class="security-icon">
+                                    <i class="fa-solid fa-lock"></i>
+                                </div>
+                                <div class="security-info">
+                                    <h4 class="security-title">Password</h4>
+                                    <p class="security-desc">Change your password to keep your account secure</p>
+                                </div>
+                                <button type="submit" name="form_type" value="password" class="btn btn-primary btn-sm">
+                                    <i class="fa-solid fa-key"></i> Update Password
+                                </button>
+                            </div>
+                            <div class="security-form-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="id_current_password">Current Password</label>
+                                    {{ password_form.current_password }}
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="id_new_password">New Password</label>
+                                    {{ password_form.new_password }}
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="id_confirm_password">Confirm New Password</label>
+                                    {{ password_form.confirm_password }}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                </main>
+            </div>
+        </div>
+
+        <!-- Sticky Save Bar -->
+        <div class="save-bar-enhanced" id="saveActions" style="display:none;">
+            <div class="save-bar-container">
+                <div class="save-bar-info">
+                    <div class="save-indicator">
+                        <span class="indicator-dot"></span>
+                    </div>
+                    <span class="save-text">You have unsaved changes</span>
+                </div>
+                <div class="save-bar-buttons">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="toggleEditMode()">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </button>
+                    <button type="submit" name="form_type" value="info" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/resident/profile.js' %}?v=2"></script>
+{% endblock %}

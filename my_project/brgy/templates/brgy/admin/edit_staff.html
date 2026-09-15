@@ -1,6 +1,4 @@
 {% extends 'brgy/base.html' %}
-{% block nav_admin_staff %}active{% endblock %}
-{% block page_title %}Edit Staff - {{ staff.display_name }}{% endblock %}
 
 {% block content %}
 <div style="max-width:640px;">
@@ -10,46 +8,63 @@
             <a href="{% url 'manage_staff' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Back</a>
         </div>
         <div class="card-body">
-            {% if form.errors %}
-            <div class="form-error-list" style="margin-bottom:16px;">
-                {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
-            </div>
-            {% endif %}
             <form method="post">
                 {% csrf_token %}
+                {% if form.errors %}
+                <ul class="form-error-list">
+                    {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+                </ul>
+                {% endif %}
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">First Name</label>
+                        <label class="form-label" for="{{ form.first_name.id_for_label }}">First Name</label>
                         {{ form.first_name }}
+                        {% for error in form.first_name.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Last Name</label>
+                        <label class="form-label" for="{{ form.last_name.id_for_label }}">Last Name</label>
                         {{ form.last_name }}
+                        {% for error in form.last_name.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Email</label>
+                        <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
                         {{ form.email }}
+                        {% for error in form.email.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Phone Number</label>
+                        <label class="form-label" for="{{ form.phone_number.id_for_label }}">Phone Number</label>
                         {{ form.phone_number }}
+                        {% for error in form.phone_number.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Barangay</label>
+                    <label class="form-label" for="{{ form.barangay.id_for_label }}">Barangay</label>
                     {{ form.barangay }}
+                    {% for error in form.barangay.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">New Password</label>
-                        {{ form.password }}
-                        <div class="form-helptext">Leave blank to keep current password.</div>
+                        <label class="form-label" for="{{ form.password.id_for_label }}">New Password</label>
+                        <div class="password-wrap">
+                            {{ form.password }}
+                            <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        {% for error in form.password.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
+                        <div class="form-helptext">{% if creating %}Leave blank to auto-generate a strong temporary password.{% else %}Leave blank to keep current password.{% endif %}</div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Confirm New Password</label>
-                        {{ form.password_confirm }}
+                        <label class="form-label" for="{{ form.password_confirm.id_for_label }}">Confirm New Password</label>
+                        <div class="password-wrap">
+                            {{ form.password_confirm }}
+                            <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        {% for error in form.password_confirm.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                     </div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:20px;">

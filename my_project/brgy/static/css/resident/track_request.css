@@ -1,0 +1,396 @@
+/* ═══════════════════════════════════════════════════════════════
+   Track Request — Modern Redesign
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Hero Card ──────────────────────────────────────────────── */
+.track-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    background: var(--grad-surface, var(--card));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px 26px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+    animation: fadeSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.track-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--grad-primary, linear-gradient(90deg, #059669, #10b981));
+}
+
+.track-hero-rejected::before {
+    background: linear-gradient(90deg, var(--danger), #f87171);
+}
+
+.track-hero-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+    flex: 1;
+}
+
+.track-hero-icon {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    color: #059669;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.16);
+}
+
+.track-hero-rejected .track-hero-icon {
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    color: #dc2626;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.16);
+}
+
+.track-hero-info h3 {
+    margin: 0 0 4px 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.3px;
+}
+
+.track-hero-number {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+}
+
+.track-hero-info p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.track-hero-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.track-hero-status .badge {
+    font-size: 12px;
+    padding: 6px 14px;
+}
+
+.track-ring .progress-text {
+    width: 66px;
+    height: 66px;
+}
+
+.track-ring .progress-text .percentage {
+    font-size: 21px;
+}
+
+.track-ring .progress-text .label {
+    bottom: 7px;
+}
+
+/* ─── Horizontal Stepper ─────────────────────────────────────── */
+.track-steps {
+    margin-bottom: 20px;
+    animation: fadeSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+    animation-delay: 0.08s;
+}
+
+.track-steps .card-body {
+    display: flex;
+    align-items: flex-start;
+    padding: 24px 26px;
+}
+
+.track-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    padding-top: 6px;
+}
+
+.track-step-line {
+    position: absolute;
+    top: 24px;
+    left: -50%;
+    width: 100%;
+    height: 3px;
+    background: var(--border-light);
+    z-index: 0;
+    transition: background 0.3s ease;
+}
+
+.track-step-line.line-done {
+    background: var(--primary);
+}
+
+.track-step:first-child .track-step-line {
+    display: none;
+}
+
+.track-step-node {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--bg-alt);
+    border: 2px solid var(--border);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.track-step.done .track-step-node {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(5, 150, 105, 0.25);
+}
+
+.track-step.active .track-step-node {
+    background: var(--card);
+    border-color: var(--primary);
+    color: var(--primary);
+    border-width: 3px;
+    box-shadow: 0 0 0 5px rgba(5, 150, 105, 0.12);
+    animation: trackPulse 2s ease-in-out infinite;
+}
+
+.track-step.todo .track-step-node {
+    background: var(--bg-alt);
+}
+
+.track-step-label {
+    margin-top: 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+}
+
+.track-step-name {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    max-width: 100%;
+    padding: 0 4px;
+}
+
+.track-step.done .track-step-name,
+.track-step.active .track-step-name {
+    color: var(--text);
+}
+
+.track-step-date {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+@keyframes trackPulse {
+    0%, 100% { box-shadow: 0 0 0 5px rgba(5, 150, 105, 0.12); }
+    50%      { box-shadow: 0 0 0 9px rgba(5, 150, 105, 0.06); }
+}
+
+/* ─── Rejected State ─────────────────────────────────────────── */
+.track-rejected {
+    text-align: center;
+    padding: 34px 26px;
+    margin-bottom: 20px;
+    background: linear-gradient(180deg, var(--card) 0%, rgba(220, 38, 38, 0.04) 100%);
+    border: 1px solid #fecaca;
+    border-radius: 16px;
+    animation: fadeSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.track-rejected-icon {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 14px;
+    border-radius: 15px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+
+.track-rejected h4 {
+    margin: 0 0 8px 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.track-rejected p {
+    margin: 0 auto 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    max-width: 480px;
+    line-height: 1.6;
+}
+
+/* ─── Request Details ────────────────────────────────────────── */
+.track-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 22px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.detail-item-full {
+    grid-column: 1 / -1;
+}
+
+.detail-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+}
+
+.detail-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.detail-value-strong {
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--primary);
+}
+
+/* ─── Document Selector (dropdown) ───────────────────────────── */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.track-doc-select {
+    max-width: 560px;
+}
+
+.track-doc-select select.form-input {
+    width: 100%;
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 11px 42px 11px 14px;
+    border-radius: 12px;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .track-hero { padding: 20px; }
+    .track-hero-status { width: 100%; flex-direction: row; justify-content: space-between; }
+
+    .track-steps .card-body {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding: 20px;
+    }
+
+    .track-step {
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+        padding: 8px 0;
+    }
+
+    .track-step-line {
+        left: 20px;
+        top: -4px;
+        width: 3px;
+        height: 100%;
+    }
+
+    .track-step:first-child .track-step-line { display: none; }
+
+    .track-step-label {
+        margin-top: 0;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        text-align: left;
+        flex: 1;
+    }
+
+    .track-details { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+    .track-hero { flex-direction: column; align-items: flex-start; }
+    .track-hero-status { width: 100%; }
+    .track-details { grid-template-columns: 1fr; }
+    .track-step-name { font-size: 12px; }
+    .track-doc-select { max-width: 100%; }
+}
+
+
+
+
+
+/* ─── Reduced Motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

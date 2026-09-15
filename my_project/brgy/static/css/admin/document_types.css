@@ -1,0 +1,36 @@
+    .file-upload-area {
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        padding: 24px 20px;
+        text-align: center;
+        background: var(--bg);
+        transition: all 0.2s;
+        position: relative;
+    }
+    .file-upload-area:hover {
+        border-color: var(--primary);
+        background: var(--primary-bg, #f0fdf4);
+    }
+    .file-upload-area input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+    .file-upload-area i {
+        font-size: 26px;
+        color: var(--primary);
+        margin-bottom: 8px;
+    }
+    .file-upload-area p {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin: 0;
+    }
+    .file-upload-area p strong { color: var(--primary); }
+    .current-file-actions {
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }

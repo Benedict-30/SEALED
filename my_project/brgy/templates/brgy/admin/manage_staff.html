@@ -1,59 +1,100 @@
 {% extends 'brgy/base.html' %}
-{% block nav_admin_staff %}active{% endblock %}
-{% block page_title %}Manage Staff{% endblock %}
+{% load static %}
 
 {% block content %}
+<!-- Generated Password Card -->
+{% for message in messages %}
+{% if 'generated-password' in message.tags %}
+<div class="card mb-4" id="generatedPasswordCard">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-key"></i> Share Temporary Password</h3>
+        <button type="button" class="btn btn-ghost btn-sm" id="dismissPasswordCard" aria-label="Dismiss">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="card-body">
+        <p style="margin:0;">Share this one-time password with the staff member securely. They can change it after signing in.</p>
+        <div class="generated-password-row">
+            <code class="generated-password" id="generatedPasswordValue">{{ message }}</code>
+            <button type="button" class="btn btn-primary btn-sm" id="copyGeneratedPassword">
+                <i class="fa-solid fa-copy"></i> Copy
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
 <!-- Create Staff Form -->
 <div class="card mb-4">
     <div class="card-header">
         <h3>Create New Staff Account</h3>
-        <button class="btn btn-ghost btn-sm" onclick="this.closest('.card').querySelector('.card-body').style.display = this.closest('.card').querySelector('.card-body').style.display === 'none' ? 'block' : 'none'">
-            <i class="fa-solid fa-chevron-down"></i> Toggle
+        <button type="button" class="btn btn-primary btn-sm" id="createStaffToggle" aria-expanded="false">
+            <i class="fa-solid fa-plus"></i> Create Staff Account
         </button>
     </div>
-    <div class="card-body">
-        {% if form.errors %}
-        <div class="form-error-list" style="margin-bottom:16px;">
-            {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
-        </div>
-        {% endif %}
+    <div class="card-body {% if not form.errors %}hidden{% endif %}" id="createStaffForm">
         <form method="post">
             {% csrf_token %}
+            {% if form.errors %}
+            <ul class="form-error-list">
+                {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+            </ul>
+            {% endif %}
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">First Name</label>
+                    <label class="form-label" for="{{ form.first_name.id_for_label }}">First Name</label>
                     {{ form.first_name }}
+                    {% for error in form.first_name.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Last Name</label>
+                    <label class="form-label" for="{{ form.last_name.id_for_label }}">Last Name</label>
                     {{ form.last_name }}
+                    {% for error in form.last_name.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Email</label>
+                    <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
                     {{ form.email }}
+                    {% for error in form.email.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
+                    <div class="form-helptext" id="usernamePreview" hidden>Username will be @<span id="usernamePreviewValue"></span></div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Phone Number</label>
+                    <label class="form-label" for="{{ form.phone_number.id_for_label }}">Phone Number</label>
                     {{ form.phone_number }}
+                    {% for error in form.phone_number.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Barangay</label>
+                <label class="form-label" for="{{ form.barangay.id_for_label }}">Barangay</label>
                 {{ form.barangay }}
-                {% for error in form.barangay.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                {% for error in form.barangay.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
+                {% if not has_barangays %}
+                <div class="form-helptext">No active barangays yet. <a href="{% url 'manage_barangays' %}">Create a barangay first</a>.</div>
+                {% endif %}
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Password</label>
-                    {{ form.password }}
-                    {% for error in form.password.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    <label class="form-label" for="{{ form.password.id_for_label }}">Password</label>
+                    <div class="password-wrap">
+                        {{ form.password }}
+                        <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                    {% for error in form.password.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
+                    <div class="form-helptext">{% if creating %}Leave blank to auto-generate a strong temporary password.{% else %}Leave blank to keep current password.{% endif %}</div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Confirm Password</label>
-                    {{ form.password_confirm }}
-                    {% for error in form.password_confirm.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    <label class="form-label" for="{{ form.password_confirm.id_for_label }}">Confirm Password</label>
+                    <div class="password-wrap">
+                        {{ form.password_confirm }}
+                        <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                    {% for error in form.password_confirm.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
                 </div>
             </div>
             <button type="submit" class="btn btn-primary">
@@ -104,14 +145,25 @@
                         </td>
                         <td class="text-sm text-muted">{{ staff.date_joined|date:"M d, Y" }}</td>
                         <td>
-                            <div style="display:flex;gap:4px;">
+                            <div style="display:flex;gap:4px;flex-wrap:wrap;">
                                 <a href="{% url 'edit_staff' staff.pk %}" class="btn btn-ghost btn-xs">
                                     <i class="fa-solid fa-pen"></i> Edit
                                 </a>
-                                <a href="{% url 'toggle_staff_active' staff.pk %}" class="btn {% if staff.is_active %}btn-danger{% else %}btn-success{% endif %} btn-xs" data-confirm="{% if staff.is_active %}Deactivate{% else %}Activate{% endif %} {{ staff.display_name }}?">
-                                    <i class="fa-solid {% if staff.is_active %}fa-ban{% else %}fa-check{% endif %}"></i>
-                                    {% if staff.is_active %}Deactivate{% else %}Activate{% endif %}
-                                </a>
+                                <form method="post" action="{% url 'reset_staff_password' staff.pk %}" style="display:inline;margin:0;"
+                                      onsubmit="return confirm('Generate a new temporary password for {{ staff.display_name }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-ghost btn-xs" title="Reset password">
+                                        <i class="fa-solid fa-key"></i> Reset
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'toggle_staff_active' staff.pk %}" style="display:inline;margin:0;"
+                                      onsubmit="return confirm('{% if staff.is_active %}Deactivate{% else %}Activate{% endif %} {{ staff.display_name }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn {% if staff.is_active %}btn-danger{% else %}btn-success{% endif %} btn-xs">
+                                        <i class="fa-solid {% if staff.is_active %}fa-ban{% else %}fa-check{% endif %}"></i>
+                                        {% if staff.is_active %}Deactivate{% else %}Activate{% endif %}
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
@@ -141,4 +193,8 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/admin/manage_staff.js' %}"></script>
 {% endblock %}

@@ -1,6 +1,4 @@
 {% extends 'brgy/base.html' %}
-{% block nav_res_history %}active{% endblock %}
-{% block page_title %}Request History{% endblock %}
 
 {% block content %}
 <div class="card">
@@ -41,6 +39,7 @@
                         <th>Document(s) Requested</th>
                         <th>Purpose</th>
                         <th>Status</th>
+                        <th>Fee</th>
                         <th>Submitted</th>
                         <th>Notes</th>
                         <th>Actions</th>
@@ -57,11 +56,26 @@
                         <!-- FIXED: Now loops through the items to show all documents requested -->
                         <td>
                             {% for item in req.items.all %}
-                                <span class="text-sm">{{ item.document_type.name }}</span><br>
+                                <a href="{% url 'track_request_item' req.pk item.pk %}" style="color: var(--primary); text-decoration: none;" title="Track this document">
+                                    <span class="text-sm">{{ item.document_type.name }}</span> <i class="fa-solid fa-arrow-right fa-xs"></i>
+                                </a>
+                                {% if item.is_printed %}
+                                <span class="badge badge-info text-xs">Printed</span>
+                                {% endif %}
+                                <br>
                             {% endfor %}
                         </td>
                         <td style="max-width:200px;"><span class="text-sm">{{ req.purpose|truncatechars:50 }}</span></td>
                         <td><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
+                        <td>
+                            {% if req.is_paid %}
+                            <span class="badge badge-success text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Paid</span>
+                            {% elif req.status == 'rejected' or req.status == 'pending' or req.status == 'cancelled' %}
+                            <span class="text-xs text-muted">&#8369; {{ req.total_fee|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="badge badge-muted text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Unpaid</span>
+                            {% endif %}
+                        </td>
                         <td class="text-sm text-muted">{{ req.created_at|date:"M d, Y" }}</td>
                         <td style="max-width:150px;">
                             {% if req.staff_notes %}
@@ -94,17 +108,17 @@
         {% if page_obj.has_other_pages %}
         <div class="pagination">
             {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">&laquo;</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search|urlencode }}{% endif %}">&laquo;</a>
             {% endif %}
             {% for num in page_obj.paginator.page_range %}
                 {% if page_obj.number == num %}
                 <span class="active">{{ num }}</span>
                 {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <a href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                <a href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search|urlencode }}{% endif %}">{{ num }}</a>
                 {% endif %}
             {% endfor %}
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">&raquo;</a>
+            <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search|urlencode }}{% endif %}">&raquo;</a>
             {% endif %}
         </div>
         {% endif %}

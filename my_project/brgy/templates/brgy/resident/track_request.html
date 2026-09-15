@@ -1,154 +1,180 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
 
-{% block nav_res_history %}active{% endblock %}
-{% block page_title %}Track Request - {{ req.request_number }}{% endblock %}
 
 {% block extra_css %}
-<style>
-    .timeline {
-        position: relative;
-        padding: 20px 0 0 0;
-        margin-top: 20px;
-    }
-    .timeline::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 24px;
-        width: 2px;
-        background: var(--border-light);
-    }
-    .timeline-item {
-        position: relative;
-        margin-bottom: 30px;
-        padding-left: 60px;
-    }
-    .timeline-icon {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: var(--bg-body);
-        border: 2px solid var(--border-light);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        color: var(--text-muted);
-        z-index: 1;
-    }
-    .timeline-item.active .timeline-icon {
-        background: var(--primary);
-        border-color: var(--primary);
-        color: #fff;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .timeline-item.rejected .timeline-icon {
-        background: #dc2626;
-        border-color: #dc2626;
-        color: #fff;
-    }
-    .timeline-content {
-        background: var(--card);
-        border: 1px solid var(--border-light);
-        border-radius: var(--radius);
-        padding: 16px 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-    .timeline-item.active .timeline-content {
-        border-color: var(--primary-200);
-        background: linear-gradient(135deg, var(--primary-50) 0%, #ffffff 100%);
-    }
-    .timeline-content h4 {
-        margin: 0 0 5px 0;
-        font-size: 15px;
-        font-weight: 700;
-        color: var(--text);
-        display: flex;
-        justify-content: space-between;
-    }
-    .timeline-content .date {
-        font-size: 12px;
-        color: var(--text-muted);
-        font-weight: 500;
-    }
-    .timeline-content p {
-        margin: 0;
-        font-size: 13px;
-        color: var(--text-secondary);
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/resident/track_request.css' %}">
 {% endblock %}
 
 {% block content %}
-<div style="max-width: 700px; margin: 0 auto;">
+<div style="max-width: 900px; margin: 0 auto;">
     <a href="{% url 'request_history' %}" class="btn btn-ghost btn-sm mb-4" style="display:inline-flex;">
         <i class="fa-solid fa-arrow-left"></i> Back to History
     </a>
 
-    <div class="card mb-4">
-        <div class="card-body" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div>
-                <h3 style="margin:0; font-size:18px; font-weight:700;">Track Request: {{ req.request_number }}</h3>
-                <p class="text-sm text-muted" style="margin:0;">Submitted on {{ req.created_at|date:"M d, Y g:i A" }}</p>
+    {# ─── Hero Card ──────────────────────────────────────────────── #}
+    <div class="track-hero {% if display_status == 'rejected' or display_status == 'cancelled' %}track-hero-rejected{% endif %}">
+        <div class="track-hero-main">
+            <div class="track-hero-icon">
+                <i class="fa-solid fa-truck-fast"></i>
             </div>
-            <span class="badge badge-{{ req.status_color }}" style="font-size: 14px; padding: 8px 16px;">
-                {{ req.get_status_display }}
-            </span>
+            <div class="track-hero-info">
+                <h3>Track Request</h3>
+                <div class="track-hero-number">
+                    <i class="fa-regular fa-hashtag"></i> {{ req.request_number }}
+                </div>
+                <p>Submitted on {{ req.created_at|date:"M d, Y g:i A" }}</p>
+            </div>
+        </div>
+
+        <div class="track-hero-status">
+            <span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span>
+            <div class="progress-ring-wrapper track-ring">
+                <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+                    <circle class="progress-ring__bg" stroke="var(--bg-alt, #f1f5f9)" stroke-width="10"
+                            fill="transparent" r="52" cx="60" cy="60"/>
+                    <circle class="progress-ring__circle {% if display_status in 'pending,approved,printed,ready_for_pickup' %}active{% endif %}"
+                            stroke="{% if display_status == 'rejected' %}var(--danger){% elif display_status == 'cancelled' %}var(--text-muted){% else %}var(--primary){% endif %}"
+                            stroke-width="10" fill="transparent" r="52" cx="60" cy="60"
+                            stroke-dasharray="326.73"
+                            stroke-dashoffset="{{ progress.offset }}"
+                            data-percent="{{ progress.percent }}"/>
+                </svg>
+                <div class="progress-text">
+                    <div class="percentage">{{ progress.percent }}%</div>
+                    <div class="label">Progress</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="timeline">
-        
-        <!-- Step 1: Submitted -->
-        <div class="timeline-item active">
-            <div class="timeline-icon"><i class="fa-solid fa-paper-plane"></i></div>
-            <div class="timeline-content">
-                <h4>Request Submitted <span class="date">{{ req.created_at|date:"M d, g:i A" }}</span></h4>
-                <p>Your document request has been successfully submitted to the barangay staff.</p>
+    {% if display_status != 'rejected' and display_status != 'cancelled' %}
+    {# ─── Horizontal Stepper ─────────────────────────────────────── #}
+    <div class="track-steps card">
+        <div class="card-body">
+            {% for step in steps %}
+            <div class="track-step {{ step.state }}">
+                {% if not forloop.first %}
+                <div class="track-step-line {% if step.state != 'todo' %}line-done{% endif %}"></div>
+                {% endif %}
+                <div class="track-step-node">
+                    {% if step.state == 'done' %}
+                    <i class="fa-solid fa-check"></i>
+                    {% else %}
+                    <i class="fa-solid {{ step.icon }}"></i>
+                    {% endif %}
+                </div>
+                <div class="track-step-label">
+                    <span class="track-step-name">{{ step.label }}</span>
+                    {% if step.date %}
+                    <span class="track-step-date">{{ step.date|date:"M d, Y" }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    {# ─── Rejected / Cancelled State ─────────────────────────────── #}
+    <div class="track-rejected">
+        {% if display_status == 'cancelled' %}
+        <div class="track-rejected-icon"><i class="fa-solid fa-ban"></i></div>
+        <h4>Request Cancelled</h4>
+        <p>This request was cancelled by the resident. No documents were processed for this request.</p>
+        {% else %}
+        <div class="track-rejected-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+        <h4>Request Rejected</h4>
+        <p>{% if req.rejection_reason %}{{ req.rejection_reason }}{% else %}Your request was rejected by the barangay staff. Please contact the barangay hall for more details.{% endif %}</p>
+        {% endif %}
+        {% if req.updated_at %}
+        <span class="text-xs text-muted">Decision made on {{ req.updated_at|date:"M d, Y g:i A" }}</span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if item_statuses %}
+    {# ─── Per-Document Tracking ──────────────────────────────────── #}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Documents in this Request</h3>
+            <span class="text-sm text-muted">Select a document to track individually</span>
+        </div>
+        <div class="card-body">
+            <div class="track-doc-select">
+                <label class="sr-only" for="trackDocSelect">Select document</label>
+                <select id="trackDocSelect" class="form-input" onchange="if(this.value) window.location.href=this.value;">
+                    <option value="{% url 'track_request' req.pk %}" {% if not selected_item %}selected{% endif %}>
+                        View whole request
+                    </option>
+                    {% for es in item_statuses %}
+                    {% with item=es.item istatus=es.status icolor=es.color %}
+                    <option value="{% url 'track_request_item' req.pk item.pk %}"
+                            {% if selected_item and selected_item.pk == item.pk %}selected{% endif %}>
+                        {{ item.document_type.name }}{% if item.quantity and item.quantity > 1 %} &times; {{ item.quantity }}{% endif %} &mdash; {{ istatus|capfirst }}
+                    </option>
+                    {% endwith %}
+                    {% endfor %}
+                </select>
             </div>
         </div>
+    </div>
+    {% endif %}
 
-        <!-- Step 2: Approved -->
-        {% if req.status == 'rejected' %}
-            <div class="timeline-item rejected">
-                <div class="timeline-icon"><i class="fa-solid fa-xmark"></i></div>
-                <div class="timeline-content">
-                    <h4>Request Rejected <span class="date">{{ req.updated_at|date:"M d, g:i A" }}</span></h4>
-                    <p>{{ req.rejection_reason|default:"Your request was rejected by the barangay staff. Please contact the barangay hall for more details." }}</p>
+    {# ─── Request Details ────────────────────────────────────────── #}
+    <div class="card">
+        <div class="card-header">
+            <h3>Request Details</h3>
+        </div>
+        <div class="card-body">
+            <div class="track-details">
+                <div class="detail-item">
+                    <span class="detail-label">Purpose</span>
+                    <span class="detail-value">{{ req.purpose|default:'-' }}</span>
                 </div>
-            </div>
-        {% else %}
-            <div class="timeline-item {% if req.approved_at %}active{% endif %}">
-                <div class="timeline-icon"><i class="fa-solid fa-check"></i></div>
-                <div class="timeline-content">
-                    <h4>Request Approved {% if req.approved_at %}<span class="date">{{ req.approved_at|date:"M d, g:i A" }}</span>{% endif %}</h4>
-                    <p>{% if req.approved_at %}Your request has been reviewed and approved.{% else %}Waiting for staff to review and approve your request.{% endif %}</p>
+                <div class="detail-item">
+                    <span class="detail-label">Contact Number</span>
+                    <span class="detail-value">{{ req.contact_number|default:'-' }}</span>
                 </div>
-            </div>
-
-            <!-- Step 3: Ready for Pickup -->
-            <div class="timeline-item {% if req.ready_at %}active{% endif %}">
-                <div class="timeline-icon"><i class="fa-solid fa-box-open"></i></div>
-                <div class="timeline-content">
-                    <h4>Ready for Pickup {% if req.ready_at %}<span class="date">{{ req.ready_at|date:"M d, g:i A" }}</span>{% endif %}</h4>
-                    <p>{% if req.ready_at %}Your document is printed and ready. Please proceed to the barangay hall to claim it.{% else %}Document is being processed and printed.{% endif %}</p>
+                <div class="detail-item">
+                    <span class="detail-label">Pickup Date</span>
+                    <span class="detail-value">
+                        {% if req.pickup_date %}{{ req.pickup_date|date:"M d, Y" }}{% else %}-{% endif %}
+                        {% if req.pickup_date and req.status == 'ready_for_pickup' %}
+                        <span class="badge badge-success" style="margin-left:8px;"><i class="fa-regular fa-clock"></i> {{ req.get_pickup_slot_display }}</span>
+                        {% endif %}
+                    </span>
                 </div>
-            </div>
-
-            <!-- Step 4: Completed -->
-            <div class="timeline-item {% if req.completed_at %}active{% endif %}">
-                <div class="timeline-icon"><i class="fa-solid fa-flag-checkered"></i></div>
-                <div class="timeline-content">
-                    <h4>Completed {% if req.completed_at %}<span class="date">{{ req.completed_at|date:"M d, g:i A" }}</span>{% endif %}</h4>
-                    <p>{% if req.completed_at %}Document has been successfully claimed by the resident.{% else %}Waiting for resident to claim the document.{% endif %}</p>
+                <div class="detail-item">
+                    <span class="detail-label">Total Fee</span>
+                    <span class="detail-value detail-value-strong">
+                        &#8369; {{ total_fee|floatformat:2 }}
+                        {% if req.is_paid %}
+                        <span class="badge badge-success" style="margin-left:8px;"><i class="fa-solid fa-circle-check"></i> Paid</span>
+                        {% else %}
+                        <span class="badge badge-muted" style="margin-left:8px;">Unpaid</span>
+                        {% endif %}
+                    </span>
                 </div>
+                {% if req.is_paid %}
+                <div class="detail-item">
+                    <span class="detail-label">Payment Details</span>
+                    <span class="detail-value">{{ req.payment_method|default:"—" }}{% if req.or_number %} · OR# {{ req.or_number }}{% endif %}</span>
+                </div>
+                {% endif %}
+                {% if req.rejection_reason %}
+                <div class="detail-item detail-item-full">
+                    <span class="detail-label">Rejection Reason</span>
+                    <span class="detail-value text-danger">{{ req.rejection_reason }}</span>
+                </div>
+                {% endif %}
+                {% if req.staff_notes %}
+                <div class="detail-item detail-item-full">
+                    <span class="detail-label">Staff Notes</span>
+                    <span class="detail-value">{{ req.staff_notes }}</span>
+                </div>
+                {% endif %}
             </div>
-        {% endif %}
-
+        </div>
     </div>
 </div>
 {% endblock %}

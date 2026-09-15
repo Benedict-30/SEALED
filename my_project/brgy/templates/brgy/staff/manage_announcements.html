@@ -1,0 +1,181 @@
+{% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/manage_announcements.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ann-page">
+
+    <!-- Page header -->
+    <div class="page-hero">
+        <div>
+            <div class="page-hero-title">
+                <i class="fa-solid fa-bullhorn"></i>
+                Announcements
+            </div>
+            <div class="page-hero-sub">
+                {% if user.role == 'admin' %}Publish system-wide or per-barangay announcements.{% else %}Keep your barangay residents informed.{% endif %}
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="document.getElementById('annForm').scrollIntoView({behavior:'smooth'})">
+            <i class="fa-solid fa-plus"></i> New Announcement
+        </button>
+    </div>
+
+    <!-- Create form -->
+    <div class="card ann-form-card" id="annForm">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-pen-to-square"></i> New Announcement</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" class="ann-form">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="ann-form-grid">
+                    <div class="form-group ann-title-field">
+                        {{ form.title.label_tag }}
+                        {{ form.title }}
+                        {% for error in form.title.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    {% if user.role == 'admin' %}
+                    <div class="form-group">
+                        {{ form.scope.label_tag }}
+                        {{ form.scope }}
+                        {% for error in form.scope.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="form-group ann-barangay-field" id="annBarangayField">
+                        {{ form.barangay.label_tag }}
+                        {{ form.barangay }}
+                        {% for error in form.barangay.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="form-group">
+                        <label>Scope</label>
+                        <div class="ann-scope-static"><i class="fa-solid fa-location-dot"></i> My Barangay</div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.body.label_tag }}
+                    {{ form.body }}
+                    {% for error in form.body.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="ann-form-footer">
+                    <label class="form-check">
+                        {{ form.is_published }}
+                        <span>{{ form.is_published.label }}</span>
+                    </label>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-bullhorn"></i> Create Announcement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- List -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-list"></i> Your Announcements</h3>
+        </div>
+        <div class="card-body">
+            {% if announcements %}
+            <div class="ann-list">
+                {% for a in announcements %}
+                <div class="ann-item {% if not a.is_published %}draft{% endif %}">
+                    <div class="ann-item-main">
+                        <div class="ann-item-top">
+                            <span class="ann-title">{{ a.title }}</span>
+                            {% if a.is_global %}
+                            <span class="ann-badge ann-badge-global"><i class="fa-solid fa-earth-asia"></i> System-Wide</span>
+                            {% else %}
+                            <span class="ann-badge ann-badge-barangay"><i class="fa-solid fa-location-dot"></i> {{ a.barangay.name|default:'Barangay' }}</span>
+                            {% endif %}
+                            <span class="ann-status {% if a.is_published %}published{% else %}draft{% endif %}">{{ a.get_status_display }}</span>
+                        </div>
+                        <div class="ann-body">{{ a.body|linebreaksbr }}</div>
+                        <div class="ann-meta">
+                            <span><i class="fa-solid fa-user-pen"></i> {{ a.author.display_name|default:'Unknown' }}</span>
+                            {% if a.published_at %}
+                            <span><i class="fa-regular fa-clock"></i> {{ a.published_at|date:"M d, Y" }} {% if a.published_at|date:"H:i" != "00:00" %}{{ a.published_at|date:"h:i A" }}{% endif %}</span>
+                            {% else %}
+                            <span class="text-muted"><i class="fa-regular fa-clock"></i> Created {{ a.created_at|date:"M d, Y" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="ann-actions">
+                        <form method="post" action="{% url 'toggle_announcement' a.pk %}" onsubmit="return confirm('{% if a.is_published %}Unpublish{% else %}Publish{% endif %} "{{ a.title }}"?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost btn-sm" title="{% if a.is_published %}Unpublish{% else %}Publish{% endif %}">
+                                <i class="fa-solid {% if a.is_published %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
+                                {% if a.is_published %}Unpublish{% else %}Publish{% endif %}
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'delete_announcement' a.pk %}" onsubmit="return confirm('Delete "{{ a.title }}"? This cannot be undone.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" title="Delete"><i class="fa-solid fa-trash"></i> Delete</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state" style="padding:24px;">
+                <div class="empty-state-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                <h4>No Announcements Yet</h4>
+                <p>Create your first announcement above.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- System-wide announcements (staff reference) -->
+    {% if system_announcements %}
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-earth-asia"></i> System-Wide Announcements</h3>
+        </div>
+        <div class="card-body">
+            <div class="ann-list">
+                {% for a in system_announcements %}
+                <div class="ann-item ann-item-system">
+                    <div class="ann-item-main">
+                        <div class="ann-item-top">
+                            <span class="ann-title">{{ a.title }}</span>
+                            <span class="ann-badge ann-badge-global"><i class="fa-solid fa-earth-asia"></i> System-Wide</span>
+                            <span class="ann-status {% if a.is_published %}published{% else %}draft{% endif %}">{{ a.get_status_display }}</span>
+                        </div>
+                        <div class="ann-body">{{ a.body|linebreaksbr }}</div>
+                        <div class="ann-meta">
+                            <span><i class="fa-solid fa-user-pen"></i> {{ a.author.display_name|default:'Unknown' }}</span>
+                            {% if a.published_at %}
+                            <span><i class="fa-regular fa-clock"></i> {{ a.published_at|date:"M d, Y" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if user.role == 'admin' %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var scope = document.getElementById('id_scope');
+    var barField = document.getElementById('annBarangayField');
+    function sync() {
+        if (barField) barField.style.display = scope && scope.value === 'barangay' ? '' : 'none';
+    }
+    if (scope) { scope.addEventListener('change', sync); sync(); }
+});
+</script>
+{% endif %}
+{% endblock %}
