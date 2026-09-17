@@ -108,6 +108,17 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
+/* SEALED system logo (fallback for admins / barangays without a logo) */
+.sidebar-logo-img-system {
+    width: 56px;
+    height: 56px;
+    border-radius: 13px;
+    object-fit: contain;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--accent-light, #F59E0B), var(--accent, #D97706));
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
 .sidebar-logo-text {
     font-size: 15px;
     font-weight: 800;
@@ -303,6 +314,17 @@
 .sidebar.open .sidebar-nav > *:nth-child(7) { animation-delay: 0.28s; }
 .sidebar.open .sidebar-nav > *:nth-child(8) { animation-delay: 0.32s; }
 .sidebar.open .sidebar-nav > *:nth-child(n+9) { animation-delay: 0.36s; }
+
+@media (max-width: 768px) {
+    .sidebar-close {
+        width: 44px;
+        height: 44px;
+        top: 16px;
+        right: 12px;
+        font-size: 16px;
+        border-radius: 12px;
+    }
+}
 
 @media (max-width: 480px) {
     .sidebar { width: 100%; }

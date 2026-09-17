@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/global/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/global/topbar.css' %}">
-    <link rel="stylesheet" href="{% static 'css/public/home.css' %}">
+    <link rel="stylesheet" href="{% static 'css/public/home.css' %}?v=3">
 </head>
 <body>
     {% include 'brgy/partials/topbar.html' with topbar_title="SEALED" %}
@@ -125,6 +125,9 @@
     <!-- CTA Section -->
     <section class="landing-cta">
         <div class="reveal">
+            <div class="cta-logo">
+                <img src="{% static 'img/sealed-logo.png' %}" alt="SEALED logo">
+            </div>
             <h2>Ready to Get Started?</h2>
             <p>Join your barangay's digital document system today.</p>
             <a href="{% url 'register' %}" class="btn-landing-primary">

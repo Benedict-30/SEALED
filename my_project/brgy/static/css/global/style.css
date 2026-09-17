@@ -3,12 +3,12 @@
    All styles are organized in separate files.
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('base.css');
-@import url('sidebar.css');
-@import url('topbar.css');
-@import url('components.css');
-@import url('dashboard.css');
-@import url('auth.css');
-@import url('modal.css');
-@import url('toast.css');
-@import url('motion.css');
+@import url('base.css?v=2');
+@import url('sidebar.css?v=7');
+@import url('topbar.css?v=3');
+@import url('components.css?v=4');
+@import url('dashboard.css?v=9');
+@import url('auth.css?v=4');
+@import url('modal.css?v=2');
+@import url('toast.css?v=2');
+@import url('motion.css?v=2');

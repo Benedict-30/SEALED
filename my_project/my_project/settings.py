@@ -240,4 +240,26 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','192.168.1.25']  # Allow all hosts for development; restrict in production
+# ── Logging ──────────────────────────────────────────────────────────
+# Surface brgy's own logs (e.g. "Firestore outage ...") on the console so the
+# reason for a degraded page is visible in the dev-server output.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {'format': '[%(asctime)s] %(levelname)s %(name)s: %(message)s'},
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'brgy': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}

@@ -2,14 +2,32 @@
 {% load static %}
 
 
+{% block title %}{{ page_title|default:title }}{% endblock %}
+
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff/document_type_form.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/document_type_form.css' %}?v=2">
 {% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 32px;">
-    <h2 style="font-size: 22px; font-weight: 800; color: var(--text, #12263f); margin-bottom: 6px;">{{ title }}</h2>
-    <p class="text-sm text-muted">Modify the details below. The preview updates in real-time.</p>
+
+<!-- ══════════ HERO BANNER ══════════ -->
+<div class="dtf-hero">
+    <div class="dtf-hero-bg"></div>
+    <div class="dtf-hero-glow"></div>
+    <div class="dtf-hero-icon"><i class="fa-solid fa-file-lines"></i></div>
+    <div class="dtf-hero-info">
+        <a href="{% url 'staff_manage_document_types' %}" class="dtf-crumb">
+            <i class="fa-solid fa-arrow-left"></i> Barangay Documents
+        </a>
+        <h1 class="dtf-hero-title">{{ title }}</h1>
+        <p class="dtf-hero-sub">Update the details below — residents see your changes as soon as you save.</p>
+    </div>
+    <div class="dtf-hero-actions">
+        <span class="dtf-status-pill {% if form.is_active.value %}is-live{% else %}is-off{% endif %}" id="heroStatusPill">
+            <i class="fa-solid {% if form.is_active.value %}fa-circle-check{% else %}fa-circle-pause{% endif %}" id="heroStatusIcon"></i>
+            <span id="heroStatusText">{% if form.is_active.value %}Available{% else %}Unavailable{% endif %}</span>
+        </span>
+    </div>
 </div>
 
 {% if form.errors %}
@@ -18,100 +36,170 @@
 </div>
 {% endif %}
 
-<div class="form-layout">
-    <div class="form-container">
-        <div class="form-header">
-            <h3><i class="fa-solid fa-pen-to-square" style="color:var(--primary); margin-right:8px;"></i>Document Details</h3>
-            <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost btn-sm">
-                <i class="fa-solid fa-arrow-left"></i> Back to List
-            </a>
-        </div>
+<!-- enctype is REQUIRED for file uploads -->
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
 
-        <!-- enctype is REQUIRED for file uploads -->
-        <form method="post" class="clean-form" enctype="multipart/form-data">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label class="form-label" for="id_name">Document Name</label>
-                {{ form.name }}
-            </div>
+    <div class="dtf-layout">
 
-            <div class="form-group">
-                <label class="form-label" for="id_description">Description</label>
-                {{ form.description }}
-            </div>
+        <div class="dtf-main">
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label" for="id_fee">Processing Fee (&#8369;)</label>
-                    {{ form.fee }}
+            <!-- ══════ BASIC INFORMATION ══════ -->
+            <section class="dtf-card">
+                <div class="dtf-card-head">
+                    <div class="dtf-card-icon"><i class="fa-solid fa-circle-info"></i></div>
+                    <div>
+                        <h3>Basic Information</h3>
+                        <p>The name and short description residents see when browsing documents.</p>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="id_requirements">Requirements</label>
-                    {{ form.requirements }}
-                    <small style="color:var(--text-muted); font-size:12px; margin-top:6px; display:block;">One per line.</small>
+                <div class="dtf-card-body">
+                    <div class="form-group">
+                        <label class="form-label" for="id_name">Document Name</label>
+                        {{ form.name }}
+                        <div class="dtf-hint"><i class="fa-solid fa-font"></i> <span id="nameCount">0</span> characters</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_description">Description</label>
+                        {{ form.description }}
+                        <div class="dtf-hint"><i class="fa-solid fa-note-sticky"></i> One or two sentences describing what this document is for.</div>
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="form-group">
-                <label class="form-label">Assigned Barangay</label>
-                <input type="text" class="form-input" value="{{ brgy.name }}" disabled style="opacity: 0.7; cursor: not-allowed; background: var(--bg, #f8fafc);">
-                <input type="hidden" name="barangay" value="{{ brgy.pk }}">
-            </div>
+            <!-- ══════ FEE & REQUIREMENTS ══════ -->
+            <section class="dtf-card">
+                <div class="dtf-card-head">
+                    <div class="dtf-card-icon"><i class="fa-solid fa-money-check-dollar"></i></div>
+                    <div>
+                        <h3>Fee &amp; Requirements</h3>
+                        <p>The processing fee residents pay and the requirements they must submit.</p>
+                    </div>
+                </div>
+                <div class="dtf-card-body">
+                    <div class="form-group">
+                        <label class="form-label" for="id_fee">Processing Fee</label>
+                        <div class="dtf-money-input">
+                            <span class="dtf-money-prefix">&#8369;</span>
+                            {{ form.fee }}
+                        </div>
+                        <div class="dtf-hint"><i class="fa-solid fa-receipt"></i> Leave at 0.00 to offer this document for free.</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_requirements">Requirements</label>
+                        {{ form.requirements }}
+                        <div class="dtf-hint"><i class="fa-solid fa-list-check"></i> One per line — <strong id="reqCount">0</strong> listed.</div>
+                    </div>
+                </div>
+            </section>
 
-            <!-- FILE UPLOAD SECTION -->
-            <div class="form-group">
-                <label class="form-label">Document Template (.docx)</label>
-                
-                {% if form.instance.template_file %}
-                    <div class="current-file-actions" style="margin-bottom: 12px; justify-content: flex-start;">
-                        <i class="fa-solid fa-file-word" style="color: #2b579a; font-size: 20px;"></i>
-                        <span style="font-size: 14px; font-weight: 600; color: var(--text);">{{ form.instance.template_file.name }}</span>
-                        <a href="{{ form.instance.template_file.url }}" target="_blank" class="btn btn-ghost btn-xs">
-                            <i class="fa-solid fa-eye"></i> View Current
+            <!-- ══════ DOCUMENT TEMPLATE ══════ -->
+            <section class="dtf-card">
+                <div class="dtf-card-head">
+                    <div class="dtf-card-icon"><i class="fa-solid fa-file-word"></i></div>
+                    <div>
+                        <h3>Document Template</h3>
+                        <p>The .docx file that shapes the printed certificate.</p>
+                    </div>
+                </div>
+                <div class="dtf-card-body">
+                    {% if form.instance.template_file %}
+                    <div class="dtf-current-file">
+                        <div class="dtf-file-type"><i class="fa-solid fa-file-word"></i></div>
+                        <div class="dtf-file-meta">
+                            <span class="dtf-file-name">{{ form.instance.template_file.name }}</span>
+                            <span class="dtf-file-sub">Current template</span>
+                        </div>
+                        <a href="{{ form.instance.template_file.url }}" target="_blank" class="btn btn-ghost btn-sm">
+                            <i class="fa-solid fa-eye"></i> View
                         </a>
                     </div>
-                {% endif %}
+                    {% endif %}
+                    <div class="file-upload-area" id="uploadArea">
+                        <input type="file" name="template_file" id="id_template_file" accept=".docx,.doc">
+                        <div class="dtf-upload-icon"><i class="fa-solid fa-cloud-arrow-up" id="uploadIcon"></i></div>
+                        <p class="dtf-upload-title" id="uploadTitle">Drag &amp; drop your template here or <strong>browse</strong></p>
+                        <p class="dtf-upload-sub">Supports .docx format only</p>
+                    </div>
+                </div>
+            </section>
 
-                <div class="file-upload-area">
-                    <input type="file" name="template_file" id="id_template_file" accept=".docx,.doc">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <p>Drag & drop your template here or <strong>browse</strong></p>
-                    <p style="font-size: 12px; margin-top: 6px; opacity: 0.7;">Supports .docx format only</p>
+            <!-- ══════ AVAILABILITY ══════ -->
+            <section class="dtf-card">
+                <div class="dtf-card-head">
+                    <div class="dtf-card-icon"><i class="fa-solid fa-toggle-on"></i></div>
+                    <div>
+                        <h3>Availability</h3>
+                        <p>Decide whether residents can request this document right now.</p>
+                    </div>
+                </div>
+                <div class="dtf-card-body">
+                    <label class="dtf-toggle-row" for="id_is_active">
+                        <span class="dtf-toggle-text">
+                            <strong>Actively available for residents</strong>
+                            <small>When on, residents of {{ brgy.name }} can see and request it.</small>
+                        </span>
+                        <span class="dtf-toggle">
+                            {{ form.is_active }}
+                            <span class="dtf-toggle-slider"></span>
+                        </span>
+                    </label>
+                    <div class="dtf-barangay-row">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <span class="dtf-barangay-text">
+                            <strong>Assigned Barangay</strong>
+                            <small>{{ brgy.name }}</small>
+                        </span>
+                    </div>
+                    <input type="hidden" name="barangay" value="{{ brgy.pk }}">
+                </div>
+            </section>
+
+            <!-- ══════ ACTIONS ══════ -->
+            <div class="dtf-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+                <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost">Cancel</a>
+            </div>
+
+        </div>
+
+        <aside class="dtf-side">
+            <div class="dtf-preview-head">
+                <div class="dtf-preview-icon"><i class="fa-solid fa-eye"></i></div>
+                <div>
+                    <h4>Live Preview</h4>
+                    <p>How residents see it</p>
                 </div>
             </div>
 
-            <label class="checkbox-group" for="id_is_active">
-                {{ form.is_active }}
-                <span style="font-weight: 600; color: var(--text, #12263f);">Actively available for residents to request</span>
-            </label>
-
-            <div style="display: flex; gap: 16px; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border, #e9ecef);">
-                <button type="submit" class="btn btn-primary" style="flex:1; padding: 14px; font-size: 15px; border-radius: 10px;">
-                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
-                </button>
-                <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost" style="padding: 14px; font-size: 15px;">Cancel</a>
+            <div class="doc-card">
+                <div class="doc-card-ribbon"></div>
+                <div class="doc-card-icon"><i class="fa-solid fa-file-lines"></i></div>
+                <h3 id="previewName">{{ form.name.value|default:"Document Name" }}</h3>
+                <p id="previewDesc">{{ form.description.value|default:"Click to request document" }}</p>
+                <div class="doc-card-meta">
+                    <span class="doc-badge {% if not form.is_active.value %}unavailable{% endif %}" id="previewStatus">
+                        {% if form.is_active.value %}Available{% else %}Unavailable{% endif %}
+                    </span>
+                    <span class="doc-chip"><i class="fa-solid fa-list-check"></i> <span id="previewReqs">0</span> reqs</span>
+                    {% if form.instance.template_file %}
+                    <span class="doc-chip chip-ok"><i class="fa-solid fa-circle-check"></i> Template ready</span>
+                    {% else %}
+                    <span class="doc-chip chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> No template</span>
+                    {% endif %}
+                </div>
+                <div class="doc-card-fee" id="previewFee">
+                    {% if form.fee.value %}Fee: &#8369;{{ form.fee.value|floatformat:2 }}{% else %}No Fee{% endif %}
+                </div>
+                <button type="button" class="doc-card-btn" disabled><i class="fa-solid fa-hand-pointer"></i> Request Document</button>
             </div>
-        </form>
+        </aside>
     </div>
-
-    <div class="preview-section">
-        <h4><i class="fa-solid fa-eye"></i> Resident Preview</h4>
-        <div class="doc-card">
-            <div class="doc-card-icon"><i class="fa-solid fa-file-lines"></i></div>
-            <h3 id="previewName">{{ form.name.value|default:"Document Name" }}</h3>
-            <p id="previewDesc">{{ form.description.value|default:"Click to request document" }}</p>
-            <span class="doc-badge {% if not form.is_active.value %}unavailable{% endif %}" id="previewStatus">
-                {% if form.is_active.value %}Available{% else %}Unavailable{% endif %}
-            </span>
-            <div class="doc-card-fee" id="previewFee">
-                {% if form.fee.value %}Fee: &#8369;{{ form.fee.value|floatformat:2 }}{% else %}No Fee{% endif %}
-            </div>
-        </div>
-    </div>
-</div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/staff/document_type_form.js' %}"></script>
+<script src="{% static 'js/staff/document_type_form.js' %}?v=2"></script>
 {% endblock %}

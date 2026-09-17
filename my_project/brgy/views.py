@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 import os
 import re
 import secrets
@@ -27,11 +28,13 @@ import mammoth
 from . import firestore_db, report_exports
 from .auth import login_user, logout_user
 from .security import hash_sensitive
+
+logger = logging.getLogger(__name__)
 from .forms import (
     CustomAuthForm, ResidentRegistrationForm, StaffCreationForm, BarangayForm,
     DocumentTypeForm, GlobalTypeOverrideForm, RejectForm, UpdateStatusForm,
     StaffProfileForm, ChangePasswordForm, RequestPasswordResetForm, SetNewPasswordForm,
-    MarkPaymentForm, AnnouncementForm,
+    MarkPaymentForm, AnnouncementForm, OTPVerificationForm,
 )
 from .models import (
     ActivityLog, Announcement, Barangay, CustomUser, DocumentRequest, DocumentRequestItem,
@@ -94,22 +97,32 @@ def notify_admins(title, message, link=''):
 
 
 def send_user_email(user, subject, body):
-    """Send an email to a user. No-op unless SMTP is configured in settings."""
+    """Send an email to a user. Returns True only when delivery succeeded.
+
+    SMTP errors are logged (not silently swallowed) so failures such as a bad
+    app password surface in the server console instead of being hidden.
+    """
     if not getattr(settings, 'EMAIL_HOST', None):
+        logger.warning('Email send skipped: EMAIL_HOST is not configured.')
         return False
     email = (getattr(user, 'email', '') or '').strip()
     if not email:
+        logger.warning('Email send skipped: user has no email address.')
         return False
     try:
-        send_mail(
+        sent = send_mail(
             subject,
             body,
             getattr(settings, 'DEFAULT_FROM_EMAIL', '') or 'no-reply@barangay.local',
             [email],
-            fail_silently=True,
+            fail_silently=False,
         )
+        if not sent:
+            logger.error('Email send reported 0 messages delivered to %s.', email)
+            return False
         return True
     except Exception:
+        logger.exception('Email delivery failed to %s.', email)
         return False
 
 
@@ -150,8 +163,12 @@ def _parse_reset_token(token):
 
 
 def send_welcome_email(email, display_name, password):
-    """Send staff credentials by email. No-op unless SMTP is configured in settings."""
+    """Send staff credentials by email. Returns True only on successful delivery."""
     if not getattr(settings, 'EMAIL_HOST', None):
+        logger.warning('Welcome email skipped: EMAIL_HOST is not configured.')
+        return False
+    if not (email or '').strip():
+        logger.warning('Welcome email skipped: no recipient email given.')
         return False
     subject = 'Your Barangay System Staff Account'
     body = (
@@ -163,9 +180,13 @@ def send_welcome_email(email, display_name, password):
         f'Share this email securely with the staff member only.'
     )
     try:
-        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL or 'no-reply@barangay.local', [email], fail_silently=True)
+        sent = send_mail(subject, body, settings.DEFAULT_FROM_EMAIL or 'no-reply@barangay.local', [email], fail_silently=False)
+        if not sent:
+            logger.error('Welcome email reported 0 messages delivered to %s.', email)
+            return False
         return True
     except Exception:
+        logger.exception('Welcome email delivery failed to %s.', email)
         return False
 
 
@@ -344,7 +365,7 @@ def _next_statuses(current):
     """
     allowed = {
         'pending': ['approved', 'rejected'],
-        'approved': ['printed', 'rejected'],
+        'approved': ['printed', 'ready_for_pickup', 'rejected'],
         'printed': ['ready_for_pickup', 'rejected'],
         'ready_for_pickup': ['completed', 'rejected'],
     }
@@ -544,15 +565,20 @@ def login_view(request):
             )
             if user is not None:
                 firestore_db.clear_failed_logins(rate_key)
-                login_user(request, user)
-                log_activity(user, 'User Login', 'User logged in.', request)
-                messages.success(request, f'Welcome back, {user.display_name}!')
+                log_activity(user, 'User Login', 'Password verified, OTP sent.', request)
+                if not _send_login_otp(request, user):
+                    # OTP could not be delivered; do not hand out a session.
+                    form.add_error(None, 'We could not send a One-Time PIN. Please try again later.')
+                    return render(request, 'brgy/login.html', {'form': form, 'page_title': 'Sign In'})
+                # Complete authentication is deferred until the OTP is verified.
+                request.session['otp_user_id'] = str(user.pk)
                 next_url = request.GET.get('next')
-                if next_url and url_has_allowed_host_and_scheme(
-                    next_url, allowed_hosts={request.get_host()}
-                ):
-                    return redirect(next_url)
-                return redirect('dashboard')
+                if next_url:
+                    from urllib.parse import urlencode
+                    return redirect(
+                        reverse('verify_otp') + '?' + urlencode({'next': next_url})
+                    )
+                return redirect('verify_otp')
 
         # Bad credentials (or a missing field): record the failure so repeated
         # attempts eventually lock the key.  Empty usernames are not credited.
@@ -570,6 +596,161 @@ def login_view(request):
                 )
                 form.add_error(None, 'Too many failed attempts. Please try again later.')
     return render(request, 'brgy/login.html', {'form': form, 'page_title': 'Sign In'})
+
+
+def _generate_otp():
+    """Return a fresh 6-digit numeric OTP (always zero-padded)."""
+    return f'{secrets.randbelow(10 ** 6):06d}'
+
+
+def _mask_email(email):
+    """Mask an email for display, e.g. john.doe@x.com -> j***e@x.com."""
+    email = (email or '').strip()
+    if not email or '@' not in email:
+        return ''
+    local, _, domain = email.partition('@')
+    if not local:
+        return email
+    return f'{local[0]}***{local[-1]}@{domain}'
+
+
+def _send_login_otp(request, user):
+    """Generate, persist and email a login OTP for *user*.
+
+    Returns True only when the email was actually delivered; otherwise the
+    OTP record is discarded and the login is aborted so a session is never
+    handed out without the code reaching the user's inbox.
+    """
+    otp = _generate_otp()
+    firestore_db.create_otp(user.pk, otp)
+    email = (getattr(user, 'email', '') or '').strip()
+
+    if not email:
+        firestore_db.delete_otp(user.pk)
+        return False
+
+    subject = 'Your Barangay System login code'
+    body = (
+        f'Hi {user.display_name},\n\n'
+        f'Your one-time login code is: {otp}\n\n'
+        'This code expires in 10 minutes. Do not share it with anyone. '
+        'If you did not try to sign in, you can safely ignore this email.'
+    )
+    sent = send_user_email(user, subject, body)
+    if sent:
+        return True
+
+    # Fallback: in DEBUG the code is exposed on the server console so local
+    # development isn't blocked by a missing or revoked SMTP credential.
+    # Production stays strict — without a delivered email we never hand out
+    # a session.
+    if getattr(settings, 'DEBUG', False):
+        logger.warning(
+            'SMTP delivery failed; login OTP for %s printed to console instead. '
+            'Recipient: %s', user.username, email,
+        )
+        print('=' * 62)
+        print(f'  [LOGIN OTP] {user.display_name} <{email}>')
+        print(f'  One-time code : {otp}')
+        print('=' * 62)
+        request.session['dev_otp'] = {
+            'code': otp,
+            'expires': (timezone.now() + timedelta(minutes=10)).timestamp(),
+        }
+        return True
+
+    firestore_db.delete_otp(user.pk)
+    return False
+
+
+def verify_otp_view(request):
+    """Complete the sign-in by confirming the email One-Time PIN."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    pending_id = request.session.get('otp_user_id')
+    form = OTPVerificationForm()
+    if not pending_id:
+        request.session.pop('dev_otp', None)
+        messages.error(request, 'Your sign-in session has expired. Please log in again.')
+        return redirect('login')
+
+    user = get_user(pending_id)
+    if user is None:
+        request.session.pop('otp_user_id', None)
+        request.session.pop('dev_otp', None)
+        messages.error(request, 'Your sign-in session has expired. Please log in again.')
+        return redirect('login')
+
+    if request.method == 'POST':
+        form = OTPVerificationForm(request.POST)
+        if form.is_valid():
+            code = form.cleaned_data['otp_code']
+            if firestore_db.verify_otp(user.pk, code):
+                request.session.pop('otp_user_id', None)
+                request.session.pop('dev_otp', None)
+                login_user(request, user)
+                log_activity(user, 'User Login', 'OTP verified, user logged in.', request)
+                messages.success(request, f'Welcome back, {user.display_name}!')
+                next_url = request.GET.get('next')
+                if next_url and url_has_allowed_host_and_scheme(
+                    next_url, allowed_hosts={request.get_host()}
+                ):
+                    return redirect(next_url)
+                return redirect('dashboard')
+            remaining = firestore_db.get_pending_otp(user.pk)
+            if remaining is None:
+                request.session.pop('otp_user_id', None)
+                request.session.pop('dev_otp', None)
+                messages.error(
+                    request,
+                    'Too many invalid attempts. Please log in again to receive a new code.'
+                )
+                log_activity(user, 'Login OTP Blocked',
+                             'Exceeded OTP attempts, pending login discarded.', request)
+                return redirect('login')
+            messages.error(request, 'That code is incorrect. Please try again.')
+            form.add_error('otp_code', 'Invalid code. Check your email and try again.')
+
+    dev_otp_code = None
+    if getattr(settings, 'DEBUG', False):
+        entry = request.session.get('dev_otp') or {}
+        if entry.get('code') and entry.get('expires', 0) > timezone.now().timestamp():
+            dev_otp_code = entry['code']
+        else:
+            request.session.pop('dev_otp', None)
+
+    return render(request, 'brgy/verify_otp.html', {
+        'form': form,
+        'page_title': 'Enter Login Code',
+        'mailto_email': (getattr(user, 'email', '') or '').strip(),
+        'masked_email': _mask_email(getattr(user, 'email', '')),
+        'dev_otp_code': dev_otp_code,
+    })
+
+
+def resend_otp_view(request):
+    """Issue a fresh OTP for the pending sign-in and email it again."""
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request.')
+        return redirect('login')
+    pending_id = request.session.get('otp_user_id')
+    if not pending_id:
+        messages.error(request, 'Your sign-in session has expired. Please log in again.')
+        return redirect('login')
+    user = get_user(pending_id)
+    if user is None:
+        request.session.pop('otp_user_id', None)
+        messages.error(request, 'Your sign-in session has expired. Please log in again.')
+        return redirect('login')
+    if _send_login_otp(request, user):
+        messages.success(request, 'A new code has been sent to your email.')
+    else:
+        messages.error(request, 'We could not send a new code. Please log in again.')
+        request.session.pop('otp_user_id', None)
+        request.session.pop('dev_otp', None)
+        return redirect('login')
+    return redirect('verify_otp')
 
 
 def register_view(request):
@@ -758,11 +939,16 @@ def resident_profile(request):
                         request.FILES['id_back'], 'resident_ids',
                         IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, 'ID image',
                     )
+                if 'id_selfie' in request.FILES:
+                    updates['id_selfie'] = _save_uploaded_file(
+                        request.FILES['id_selfie'], 'resident_ids',
+                        IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, 'ID selfie',
+                    )
             except ValidationError as e:
                 messages.error(request, ' '.join(e.messages))
                 return redirect('profile')
 
-            if 'id_front' in request.FILES or 'id_back' in request.FILES:
+            if 'id_front' in request.FILES or 'id_back' in request.FILES or 'id_selfie' in request.FILES:
                 current = firestore_db.get_user(user.pk)
                 if current and current.get('verification_status') == 'rejected':
                     updates['verification_status'] = 'pending'
@@ -1939,6 +2125,33 @@ def mark_paid(request, pk):
     if request.method != 'POST':
         messages.error(request, 'Invalid request.')
         return redirect('manage_requests')
+
+    payment_action = request.POST.get('payment_action', 'paid')
+
+    # ── Mark as UNPAID ──────────────────────────────────────────
+    if payment_action == 'unpaid':
+        if not doc_request.is_paid:
+            messages.info(request, 'This request is not marked as paid.')
+            return redirect('manage_requests')
+        firestore_db.update_document_request(doc_request.pk, {
+            'payment_status': 'unpaid',
+            'paid_at': None,
+            'payment_method': '',
+            'or_number': '',
+        })
+        notify(
+            doc_request.resident_id,
+            'Payment Status Updated',
+            f'Payment on request {doc_request.request_number} has been marked as unpaid by the barangay office. Please contact your barangay for details.',
+            link=reverse('request_history'),
+        )
+        log_activity(request.user, 'Payment Reverted',
+                     f'Payment record cleared for {doc_request.request_number}.', request,
+                     subject_user_id=doc_request.resident_id)
+        messages.success(request, f'Payment for {doc_request.request_number} marked as unpaid.')
+        return redirect('manage_requests')
+
+    # ── Mark as PAID ────────────────────────────────────────────
     if doc_request.status not in PAYABLE_STATUSES:
         messages.error(request, 'This request is not eligible for payment collection yet.')
         return redirect('manage_requests')
@@ -2394,8 +2607,7 @@ def print_document(request, req_pk, item_pk):
     file_stream = io.BytesIO()
     doc.save(file_stream)
     file_stream.seek(0)
-
-    # Read-only download: no state is mutated here.  Staff mark the request as
+# Read-only download: no state is mutated here.  Staff mark the request as
     # printed via the POST 'mark_printed' action, then this GET delivers the file.
     resident = doc_req.resident
     filename = f"{doc_type.name}_{resident.last_name if resident else 'resident'}_{doc_req.request_number}.docx"

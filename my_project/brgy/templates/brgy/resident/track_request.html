@@ -30,7 +30,7 @@
         <div class="track-hero-status">
             <span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span>
             <div class="progress-ring-wrapper track-ring">
-                <svg class="progress-ring" width="120" height="120">
+                <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
                     <circle class="progress-ring__bg" stroke="var(--bg-alt, #f1f5f9)" stroke-width="10"
                             fill="transparent" r="52" cx="60" cy="60"/>
                     <circle class="progress-ring__circle {% if display_status in 'pending,approved,printed,ready_for_pickup' %}active{% endif %}"

@@ -9,11 +9,20 @@ created manually in the console). Data is fetched with the auto-indexed
 single-field equality operators where useful, and any remaining filtering and
 sorting happens in Python. This is fine for a barangay-scale application.
 """
+import functools
+import logging
+import queue
+import sys
+import threading
+import time as _time
 import uuid
+from concurrent.futures import Future, TimeoutError as FutureTimeout
 from datetime import date, datetime, time, timedelta, timezone
 
 from firebase_admin import firestore
 from google.cloud.firestore_v1 import FieldFilter
+
+logger = logging.getLogger(__name__)
 
 _COLLECTION_NAMES = {
     'barangay': 'barangays',
@@ -27,7 +36,15 @@ _COLLECTION_NAMES = {
     'login_attempt': 'login_attempts',
     'counter': 'counters',
     'announcement': 'announcements',
+    'otp': 'otp_codes',
 }
+
+# Login OTP: verified via the user's email, valid for this many minutes.
+LOGIN_OTP_TTL_MINUTES = 10
+
+# Number of failed OTP attempts allowed before the pending login is discarded
+# and the user must start again from the login page.
+MAX_OTP_ATTEMPTS = 5
 
 # Notifications are auto-deleted once they are older than this many days.
 NOTIFICATION_TTL_DAYS = 7
@@ -74,6 +91,149 @@ def _cache_clear(key):
         pass
 
 
+# ─────────────────── Firestore availability guard ───────────────────
+# The Firebase Admin SDK can hang on a dead/stale connection for minutes
+# (transport-level retries are not bounded by the per-call ``timeout``
+# kwarg), which used to freeze every page that touched Firestore.  Every
+# network call now runs inside a worker thread with a hard deadline; after a
+# deadline is hit the module latches a short fail-fast window so we don't
+# pay a multi-second timeout on every request during an outage.  Reads
+# degrade (empty/None), writes raise FirestoreUnavailableError so data is
+# never silently dropped.
+
+class FirestoreUnavailableError(Exception):
+    """Firestore did not respond within the deadline (or is unreachable)."""
+
+# Hard ceiling for a single Firestore round-trip.
+FIRESTORE_TIMEOUT_SECONDS = 6
+# After a detected outage, eagerly fail NEW calls for this long, then probe
+# again so recovery is picked up automatically.
+_FAILURE_LATCH_SECONDS = 60
+
+class _DeadlineExecutor:
+    """Small pool of daemon worker threads for running Firestore calls.
+
+    Daemon workers ensure an abandoned call (one that exceeded its deadline
+    and is still stuck inside the SDK) can never block interpreter shutdown.
+    """
+
+    def __init__(self, max_workers=4):
+        self._work = queue.Queue()
+        for _ in range(max_workers):
+            t = threading.Thread(
+                target=self._worker, daemon=True, name='firestore-deadline'
+            )
+            t.start()
+
+    def _worker(self):
+        while True:
+            item = self._work.get()
+            if item is None:
+                return
+            fn, fut = item
+            try:
+                fut.set_result(fn())
+            except BaseException as exc:
+                fut.set_exception(exc)
+
+    def submit(self, fn):
+        fut = Future()
+        self._work.put((fn, fut))
+        return fut
+
+
+_executor = _DeadlineExecutor(max_workers=4)
+_outage_since = None
+_outage_lock = threading.Lock()
+_last_logged_error = None
+
+
+def _handle_outage(message):
+    global _outage_since, _last_logged_error
+    now = _time.monotonic()
+    with _outage_lock:
+        if _outage_since is None:
+            _outage_since = now
+            logger.error('Firestore outage: %s. Failing fast for next %ss.', message, _FAILURE_LATCH_SECONDS)
+            _last_logged_error = now
+        elif _last_logged_error is None or now - _last_logged_error > 60:
+            logger.error('Firestore still unavailable: %s', message)
+            _last_logged_error = now
+
+
+def _clear_outage():
+    global _outage_since
+    with _outage_lock:
+        _outage_since = None
+
+
+def _in_failure_window():
+    global _outage_since
+    with _outage_lock:
+        if _outage_since is None:
+            return False
+        if _time.monotonic() - _outage_since > _FAILURE_LATCH_SECONDS:
+            _outage_since = None  # time to probe Firestore again
+            return False
+        return True
+
+
+def _with_deadline(fn, timeout=FIRESTORE_TIMEOUT_SECONDS):
+    """Run ``fn`` in a worker thread and wait at most ``timeout`` seconds.
+
+    Raises FirestoreUnavailableError instead of hanging when Firestore is
+    unreachable or slower than the deadline.
+    """
+    if _in_failure_window():
+        raise FirestoreUnavailableError('Firestore unavailable (recent outage)')
+    future = _executor.submit(fn)
+    try:
+        result = future.result(timeout=timeout)
+    except FutureTimeout:
+        _handle_outage(f'call exceeded {timeout}s deadline')
+        raise FirestoreUnavailableError(
+            f'Firestore request exceeded the {timeout}s deadline'
+        )
+    except Exception:
+        _handle_outage(str(sys.exc_info()[1] or sys.exc_info()[0]))
+        raise
+    _clear_outage()
+    return result
+
+
+def outage_active():
+    """True when Firestore has recently failed and reads are failing fast.
+
+    Lets callers (e.g. the auth middleware) distinguish a Firestore outage
+    from a genuinely missing record so they can keep a session cookie alive
+    across an outage.
+    """
+    return _in_failure_window()
+
+
+def _outage_safe(default=None):
+    """Decorator: degrade to *default* instead of raising on Firestore trouble.
+
+    Applied to best-effort security/notification bookkeeping (login throttling,
+    OTP records) where a missing write must never take down a whole page during
+    an outage.  Business data writes are deliberately NOT wrapped so nothing is
+    silently lost.
+    """
+    def _decorator(fn):
+        @functools.wraps(fn)
+        def _wrapped(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            except Exception:
+                logger.warning(
+                    'Firestore unavailable during %s(); returning %r',
+                    fn.__name__, default,
+                )
+                return default
+        return _wrapped
+    return _decorator
+
+
 def get_db():
     return firestore.client()
 
@@ -115,7 +275,11 @@ def create_doc(name, data, doc_id=None):
     data = dict(data)
     data.setdefault('created_at', utcnow())
     data.setdefault('updated_at', utcnow())
-    collection(name).document(doc_id).set(_to_firestore(data))
+
+    def _write():
+        collection(name).document(doc_id).set(_to_firestore(data))
+
+    _with_deadline(_write)
     return doc_id
 
 
@@ -123,16 +287,35 @@ def update_doc(name, doc_id, data):
     """Merge updates into an existing document."""
     data = dict(data)
     data['updated_at'] = utcnow()
-    collection(name).document(str(doc_id)).set(_to_firestore(data), merge=True)
+
+    def _write():
+        collection(name).document(str(doc_id)).set(_to_firestore(data), merge=True)
+
+    _with_deadline(_write)
 
 
 def delete_doc(name, doc_id):
-    collection(name).document(str(doc_id)).delete()
+    def _write():
+        collection(name).document(str(doc_id)).delete()
+
+    _with_deadline(_write)
 
 
 def get_doc(name, doc_id):
-    """Return a document dict (with 'id') or None."""
-    snap = collection(name).document(str(doc_id)).get()
+    """Return a document dict (with 'id') or None.
+
+    Firestore being unreachable degrades to None so pages render (empty)
+    instead of hanging.
+    """
+    def _fetch():
+        return collection(name).document(str(doc_id)).get()
+
+    try:
+        snap = _with_deadline(_fetch)
+    except Exception:
+        if not _in_failure_window():
+            logger.exception('Firestore get_doc(%s, %s) failed', name, doc_id)
+        return None
     if not snap.exists:
         return None
     data = snap.to_dict() or {}
@@ -162,6 +345,9 @@ def list_docs(name, filters=None, order_by=None, descending=False, limit=None):
     equality-filtered, nothing is pushed (to guarantee we never require a
     composite index, which this project deliberately avoids).  All remaining
     filters and sorting happen in Python.
+
+    A Firestore outage degrades to an empty list so read-only pages render
+    instead of hanging.
     """
     query = collection(name)
     python_filters = list(filters or [])
@@ -176,8 +362,15 @@ def list_docs(name, filters=None, order_by=None, descending=False, limit=None):
             if not (op == '==' and k == key)
         ]
 
+    try:
+        snapshots = _with_deadline(lambda: list(query.stream()))
+    except Exception:
+        if not _in_failure_window():
+            logger.exception('Firestore list_docs(%s) failed', name)
+        return []
+
     docs = []
-    for snap in query.stream():
+    for snap in snapshots:
         data = snap.to_dict() or {}
         data['id'] = snap.id
         docs.append(data)
@@ -274,8 +467,18 @@ def get_users_bulk(user_ids):
     if not ids:
         return {}
     refs = [collection('user').document(i) for i in dict.fromkeys(ids)]
+
+    def _fetch_all():
+        return get_db().get_all(refs)
+
+    try:
+        snaps = _with_deadline(_fetch_all)
+    except Exception:
+        if not _in_failure_window():
+            logger.exception('Firestore get_users_bulk failed for %d ids', len(ids))
+        return {}
     result = {}
-    for snap in get_db().get_all(refs):
+    for snap in snaps:
         if snap.exists:
             data = snap.to_dict() or {}
             data['id'] = snap.id
@@ -409,7 +612,10 @@ def next_request_number():
     transaction = db.transaction()
     for attempt in range(5):
         try:
-            value = _increment(transaction, counter_ref)
+            value = _with_deadline(
+                lambda: _increment(transaction, counter_ref),
+                timeout=FIRESTORE_TIMEOUT_SECONDS * 2,
+            )
             return f'{prefix}{value:04d}'
         except Exception:
             # Conflict/transient error: give the SDK a fresh transaction and
@@ -454,6 +660,7 @@ def list_document_request_items(filters=None, order_by='created_at'):
 
 # ─────────────────────── Notification helpers ───────────────────────
 
+@_outage_safe(default=None)
 def create_notification(data):
     return create_doc('notification', data)
 
@@ -477,6 +684,9 @@ def delete_expired_notifications():
     Uses the stored ``expires_at`` timestamp when present; falls back to
     ``created_at + TTL`` for records created before ``expires_at`` existed.
     Returns the number of notifications deleted.
+
+    Best-effort by design: a Firestore outage or a single failing delete is
+    logged and ignored so it can never break the notification read path.
     """
     now = utcnow()
     fallback_cutoff = now - timedelta(days=NOTIFICATION_TTL_DAYS)
@@ -489,8 +699,11 @@ def delete_expired_notifications():
                 continue
         elif expires_at >= now:
             continue
-        delete_doc('notification', notif['id'])
-        deleted += 1
+        try:
+            delete_doc('notification', notif['id'])
+            deleted += 1
+        except Exception:
+            logger.exception('Failed to delete expired notification %s', notif.get('id'))
     return deleted
 
 
@@ -506,6 +719,7 @@ def _cleanup_expired_notifications():
 
 # ─────────────────────── Activity log helpers ───────────────────────
 
+@_outage_safe(default=None)
 def create_activity_log(data):
     return create_doc('activity_log', data)
 
@@ -538,6 +752,7 @@ def list_announcements(filters=None, order_by='published_at', descending=True, l
 
 # ────────────────────── Login attempt / lockout ──────────────────────
 
+@_outage_safe(default=None)
 def get_login_attempt(key):
     """Return the (possibly absent) login-attempt record for *key*.
 
@@ -562,6 +777,7 @@ def _login_lockout_time():
     return timedelta(minutes=LOGIN_LOCKOUT_MINUTES)
 
 
+@_outage_safe(default=False)
 def is_login_locked(key):
     """True if *key* is currently locked out from failed login attempts."""
     record = get_login_attempt(key)
@@ -575,6 +791,7 @@ def is_login_locked(key):
     return locked_until > utcnow()
 
 
+@_outage_safe(default=MAX_LOGIN_ATTEMPTS)
 def login_attempts_remaining(key):
     """Return the number of attempts left before lockout, or None if locked."""
     record = get_login_attempt(key)
@@ -587,6 +804,7 @@ def login_attempts_remaining(key):
     return max(remaining, 0)
 
 
+@_outage_safe(default=None)
 def record_failed_login(key):
     """Increment the failed-login counter for *key*; lock it when the cap is hit."""
     record = get_login_attempt(key)
@@ -604,8 +822,73 @@ def record_failed_login(key):
     return count
 
 
+@_outage_safe(default=None)
 def clear_failed_logins(key):
     """Reset the failed-login counter for *key* (e.g. on a successful login)."""
     record = get_login_attempt(key)
     if record:
         delete_doc('login_attempt', record['id'])
+
+
+# ─────────────────────── Login OTP helpers ───────────────────────
+
+@_outage_safe(default=None)
+def create_otp(user_id, code):
+    """Store a login OTP for *user_id*, replacing any previous one.
+
+    Only a single pending OTP is kept per user at a time so an old code
+    cannot be replayed after a resend.  Returns the OTP document id.
+    """
+    delete_otp(user_id)
+    now = utcnow()
+    data = {
+        'user_id': str(user_id),
+        'code': str(code),
+        'created_at': now,
+        'expires_at': now + timedelta(minutes=LOGIN_OTP_TTL_MINUTES),
+        'attempts': 0,
+    }
+    return create_doc('otp', data)
+
+
+@_outage_safe(default=None)
+def get_pending_otp(user_id):
+    """Return the active (unexpired) OTP record for *user_id*, or None."""
+    docs = list_docs('otp', filters=[('user_id', '==', str(user_id))])
+    if not docs:
+        return None
+    record = docs[0]
+    expires_at = record.get('expires_at')
+    if expires_at and expires_at <= utcnow():
+        delete_doc('otp', record['id'])
+        return None
+    return record
+
+
+@_outage_safe(default=False)
+def verify_otp(user_id, code):
+    """Validate *code* against the pending OTP for *user_id*.
+
+    Deletes the OTP record on a successful match and returns True.  Failed
+    attempts are counted on the record; once MAX_OTP_ATTEMPTS is reached the
+    record is invalidated (forcing a fresh OTP from the login page).
+    """
+    record = get_pending_otp(user_id)
+    if not record:
+        return False
+    if str(record.get('code')) == str(code):
+        delete_doc('otp', record['id'])
+        return True
+    attempts = int(record.get('attempts', 0)) + 1
+    if attempts >= MAX_OTP_ATTEMPTS:
+        delete_doc('otp', record['id'])
+    else:
+        update_doc('otp', record['id'], {'attempts': attempts})
+    return False
+
+
+@_outage_safe(default=None)
+def delete_otp(user_id):
+    """Delete any pending OTP record for *user_id*."""
+    for record in list_docs('otp', filters=[('user_id', '==', str(user_id))]):
+        delete_doc('otp', record['id'])

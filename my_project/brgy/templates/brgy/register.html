@@ -29,7 +29,7 @@
     <div class="auth-right">
         <div class="auth-form-wrapper">
             <div class="auth-form-brand">
-                <div class="brand-icon">📝</div>
+                <div class="brand-icon brand-icon-img"><img src="{% static 'img/sealed-logo.png' %}" alt="SEALED logo" class="logo-tile-img"></div>
                 <div class="brand-text">
                     SEALED
                     <small>Document Request System</small>
@@ -194,11 +194,11 @@
                         <div class="form-info-box-title">
                             <i class="fa-solid fa-id-card" style="color:var(--primary);"></i> Valid ID Upload
                         </div>
-                        <div class="form-info-box-desc">Upload a clear photo or take a picture of any valid government ID (front and back). Accepted: JPG, PNG.</div>
+                        <div class="form-info-box-desc">Upload a clear photo or take a picture of any valid government ID (front and selfie while holding the ID). Accepted: JPG, PNG.</div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">ID Front</label>
+                                <label class="form-label">ID Front <span style="color:var(--danger);">*</span></label>
                                 <label class="custom-file-upload" for="id_id_front">
                                     <i class="fa-solid fa-cloud-arrow-up"></i>
                                     <span data-text="Choose Front Image...">Choose Front Image...</span>
@@ -225,8 +225,8 @@
 
                         <!-- NEW: Selfie with ID -->
                         <div class="form-group" style="margin-top: 16px;">
-                            <label class="form-label">Selfie while holding the ID</label>
-                            <div class="selfie-row">
+                            <label class="form-label">Selfie while holding the ID <span style="color:var(--danger);">*</span></label>
+                            <div style="display:flex; gap:10px; align-items:center;">
                                 <label class="custom-file-upload" for="id_id_selfie" style="flex:1;">
                                     <i class="fa-solid fa-cloud-arrow-up"></i>
                                     <span data-text="Choose Selfie Image...">Choose Selfie Image...</span>

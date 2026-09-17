@@ -1,4 +1,4 @@
-function openIdModal(name, email, phone, address, frontUrl, backUrl) {
+function openIdModal(name, email, phone, address, frontUrl, backUrl, selfieUrl) {
     document.getElementById('idModalTitle').textContent = name + ' — ID Verification';
     document.getElementById('idModalInfo').innerHTML = `
         <div><span class="info-label">Email:</span></div><div><span class="info-value">${email}</span></div>
@@ -12,7 +12,10 @@ function openIdModal(name, email, phone, address, frontUrl, backUrl) {
     if (backUrl) {
         imgs += `<div class="id-img-box"><img src="${backUrl}" alt="ID Back"><div class="id-label">Back Side</div></div>`;
     }
-    if (!frontUrl && !backUrl) {
+    if (selfieUrl) {
+        imgs += `<div class="id-img-box"><img src="${selfieUrl}" alt="Selfie with ID"><div class="id-label">Selfie with ID</div></div>`;
+    }
+    if (!frontUrl && !backUrl && !selfieUrl) {
         imgs = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:32px;">No ID photos uploaded.</div>';
     }
     document.getElementById('idModalImages').innerHTML = imgs;

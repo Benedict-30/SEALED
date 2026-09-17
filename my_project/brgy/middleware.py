@@ -9,15 +9,31 @@ from django.contrib.auth import HASH_SESSION_KEY, SESSION_KEY
 from django.contrib.auth.models import AnonymousUser
 from django.utils.functional import SimpleLazyObject
 
+import logging
+
+from . import firestore_db
 from .auth import FirestoreBackend
+
+logger = logging.getLogger(__name__)
 
 
 def _get_user(request):
     user_id = request.session.get(SESSION_KEY)
     if not user_id:
         return AnonymousUser()
-    user = FirestoreBackend().get_user(user_id)
+    try:
+        user = FirestoreBackend().get_user(user_id)
+    except Exception as exc:
+        # A Firestore outage/timeout must not freeze the whole app; treat the
+        # session as anonymous for this request (the session cookie is kept so
+        # the user is restored automatically once Firestore recovers).
+        logger.warning('Unable to resolve session user on %s: %s', request.path, exc)
+        return AnonymousUser()
     if user is None:
+        # Firestore being down degrades get_user() to None.  Keep the session
+        # cookie across an outage and just treat this request as anonymous.
+        if firestore_db.outage_active():
+            return AnonymousUser()
         # Account was deactivated or deleted; discard the stale session.
         request.session.flush()
         return AnonymousUser()

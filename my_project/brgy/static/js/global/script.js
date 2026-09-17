@@ -263,7 +263,7 @@ if (clockEl) {
 }
 
 // ==========================================
-// 11. UNREAD NOTIFICATION COUNT POLLING
+// 10. UNREAD NOTIFICATION COUNT POLLING
 // ==========================================
 var notifWrap = document.getElementById('topbarNotif');
 var notifBadge = notifWrap ? notifWrap.querySelector('.topbar-badge') : null;
@@ -298,7 +298,7 @@ if (notifWrap && pollUrl) {
 }
 
 // ==========================================
-// 12. TOPBAR SCROLL SHADOW
+// 11. TOPBAR SCROLL SHADOW
 // ==========================================
 var topbarEl = document.querySelector('.topbar');
 if (topbarEl) {
@@ -310,7 +310,7 @@ if (topbarEl) {
 }
 
 // ==========================================
-// 13. DROPDOWN KEYBOARD NAVIGATION
+// 12. DROPDOWN KEYBOARD NAVIGATION
 // ==========================================
 function setupDropdownKeys(trigger, dropdown) {
     if (!trigger || !dropdown) return;
@@ -358,7 +358,7 @@ setupDropdownKeys(notifBtn, notifDropdown);
 setupDropdownKeys(userMenuBtn, userDropdown);
 
 // ==========================================
-// 14. SCROLL REVEAL ([data-reveal] elements)
+// 13. SCROLL REVEAL ([data-reveal] elements)
 // ==========================================
 document.documentElement.classList.add('js-reveal');
 

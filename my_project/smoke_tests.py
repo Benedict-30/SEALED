@@ -122,7 +122,7 @@ class AppHealthTests(unittest.TestCase):
     def test_status_workflow_next_transitions(self):
         from brgy.views import _next_statuses, _status_choices_for
         self.assertEqual(_next_statuses('pending'), ['approved', 'rejected'])
-        self.assertEqual(_next_statuses('approved'), ['printed', 'rejected'])
+        self.assertEqual(_next_statuses('approved'), ['printed', 'ready_for_pickup', 'rejected'])
         self.assertEqual(_next_statuses('printed'), ['ready_for_pickup', 'rejected'])
         self.assertEqual(_next_statuses('ready_for_pickup'), ['completed', 'rejected'])
         self.assertEqual(_next_statuses('completed'), [])

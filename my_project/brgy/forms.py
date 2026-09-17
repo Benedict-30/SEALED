@@ -116,11 +116,10 @@ class ResidentRegistrationForm(forms.Form):
             ('Other', 'Other'),
         ],
         widget=forms.Select(attrs={'class': 'form-input'}),
-        required=False
     )
-    id_front = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
+    id_front = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}))
     id_back = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
-    id_selfie = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}), required=False)
+    id_selfie = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}))
     password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': ''}))
     password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': ''}))
 
@@ -588,6 +587,28 @@ class RequestPasswordResetForm(forms.Form):
             attrs={'class': 'form-input', 'placeholder': 'Enter your account email'}
         )
     )
+
+
+class OTPVerificationForm(forms.Form):
+    otp_code = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': '6-digit code',
+            'inputmode': 'numeric',
+            'pattern': '[0-9]*',
+            'autocomplete': 'one-time-code',
+            'maxlength': '6',
+        }),
+        max_length=6,
+        min_length=6,
+        label='One-Time PIN',
+    )
+
+    def clean_otp_code(self):
+        code = (self.cleaned_data.get('otp_code') or '').strip()
+        if not code.isdigit() or len(code) != 6:
+            raise forms.ValidationError('Enter the 6-digit code from your email.')
+        return code
 
 
 class SetNewPasswordForm(forms.Form):

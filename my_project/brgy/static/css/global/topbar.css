@@ -597,6 +597,12 @@
     }
     .topbar-cta { width: auto; padding: 0 12px; }
     .user-menu-btn { width: auto; padding: 0 10px 0 4px; }
+    .pages-dropdown-item,
+    .user-dropdown-item {
+        min-height: 44px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
     /* Solid backgrounds for overlays on mobile (no glass blur) */
     .pages-dropdown,
     .notification-dropdown {

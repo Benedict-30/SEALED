@@ -336,15 +336,41 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     text-decoration: none;
 }
 .table-link:hover { color: var(--primary); }
-.table-doc-name { font-size: 13px; color: var(--text-secondary); }
 .table-date { font-size: 13px; color: var(--text-muted); }
+
+.table-doc-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 5px;
+}
+
+.table-doc-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--primary-50);
+    color: var(--primary-dark);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 3.5px 7px;
+    border-radius: 5px;
+    white-space: nowrap;
+}
+
+.table-doc-name i {
+    font-size: 9px;
+    color: var(--primary-light);
+}
 
 /* ─── Pagination ────────────────────────────────────────────── */
 .pagination {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     gap: 4px;
+    row-gap: 6px;
     padding: 16px 0;
 }
 
@@ -677,6 +703,74 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     .table-cards td:last-child { padding-top: 12px; padding-bottom: 12px; }
 }
 
+/* ─── Resident dashboard: recent requests stacked cards on mobile ──── */
+@media (max-width: 768px) {
+    .table-cards.table-recent tbody {
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .table-cards.table-recent tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        border-radius: 14px;
+    }
+
+    /* Header band: request # (left) + status badge (right) */
+    .table-cards.table-recent td:first-child {
+        flex: 1 1 auto;
+        order: -2;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 14px 14px 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .table-cards.table-recent td:first-child a {
+        font-size: 15px;
+        letter-spacing: -0.2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    .table-cards.table-recent .status-cell {
+        order: -1;
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 14px 14px 12px 0;
+        margin-left: auto;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .table-cards.table-recent .status-cell::before { display: none; }
+
+    /* Body cells: full-width rows below the header strip */
+    .table-cards.table-recent td.docs-cell {
+        flex: 1 1 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        text-align: left;
+    }
+    .table-cards.table-recent td.docs-cell::before { text-align: left; }
+    .table-cards.table-recent .table-doc-list {
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .table-cards.table-recent td:last-child {
+        flex: 1 1 100%;
+    }
+}
+
 /* Mobile-only touch targets (Apple HIG / WCAG 2.5 recommend ~44px) */
 @media (max-width: 768px) {
     .pagination a,
@@ -686,7 +780,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     }
     .btn-xs,
     .btn-sm {
-        min-height: 40px;
+        min-height: 44px;
         display: inline-flex;
         align-items: center;
         justify-content: center;

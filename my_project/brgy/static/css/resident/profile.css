@@ -1387,6 +1387,9 @@
 }
 
 @media (max-width: 768px) {
+    .profile-main { order: -1; }
+    .profile-sidebar { order: 2; }
+
     .profile-layout {
         grid-template-columns: 1fr;
     }
@@ -1458,6 +1461,23 @@
 
     .timeline-item {
         padding: 16px 20px;
+    }
+
+    .hero-content .detail-value {
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .field-label {
+        font-size: 12px;
+    }
+}
+
+/* Make the avatar "Change photo" button visible on touch devices (no hover) */
+@media (max-width: 768px), (hover: none) {
+    .avatar-upload-btn {
+        opacity: 1;
+        transform: scale(1) translateY(0);
     }
 }
 

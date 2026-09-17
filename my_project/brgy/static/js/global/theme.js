@@ -33,7 +33,12 @@
     root.setProperty('--primary-light', light);
     root.setProperty('--primary-dark', dark);
     root.setProperty('--primary-bg', bgLight);
-    root.setProperty('--primary', hex, 'important');
+
+    // Hero banner gradient + shadow tinted to match the theme color
+    root.setProperty('--hero-bg', 'linear-gradient(120deg, ' + dark + ' 0%, ' + hex + ' 100%)');
+    root.setProperty('--hero-shadow', 'rgba(' + dr + ',' + dg + ',' + db + ',0.25)');
+
     root.setProperty('--glass-primary', rgba(0.08));
     root.setProperty('--glass-primary-border', rgba(0.22));
+    root.setProperty('--primary', hex, 'important');
 })();

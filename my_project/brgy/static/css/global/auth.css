@@ -73,14 +73,14 @@
 }
 
 .auth-left-icon {
-    width: 78px;
-    height: 78px;
+    width: 92px;
+    height: 92px;
     background: var(--grad-accent);
     border-radius: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 800;
     color: #fff;
     margin: 0 auto 26px;
@@ -186,8 +186,8 @@
 }
 
 .auth-form-brand .brand-icon {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
     background: var(--grad-accent);
     display: flex;
@@ -205,6 +205,27 @@
     color: var(--text);
     line-height: 1.2;
     letter-spacing: -0.3px;
+}
+
+/* SEALED system logo image (replaces the emoji placeholder tiles) */
+.logo-tile-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 5px;
+    background: #fff;
+    border-radius: inherit;
+    display: block;
+    flex-shrink: 0;
+}
+.auth-left-icon .logo-tile-img,
+.auth-left-icon.brand-icon-img .logo-tile-img {
+    padding: 4px;
+    background: transparent;
+}
+.brand-icon-img .logo-tile-img {
+    background: transparent;
+    padding: 3px;
 }
 
 .auth-form-brand .brand-text small {
@@ -351,7 +372,7 @@
     .auth-right { padding: 24px 16px; }
     .auth-form-wrapper { padding: 28px 22px; border-radius: 18px; }
     .auth-form-wrapper h2 { font-size: 21px; }
-    .auth-left-icon { width: 60px; height: 60px; font-size: 26px; border-radius: 14px; }
+    .auth-left-icon { width: 66px; height: 66px; font-size: 22px; border-radius: 16px; }
 }
 
 @media (max-width: 380px) {

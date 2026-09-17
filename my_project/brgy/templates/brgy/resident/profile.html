@@ -47,7 +47,13 @@
 
                 <div class="hero-info-section">
                     <div class="hero-header">
-                        <h1 class="hero-name">{{ user.get_full_name|default:user.username }}</h1>
+                        <div class="hero-name-row">
+                            <h1 class="hero-name">{{ user.get_full_name|default:user.username }}</h1>
+                            <button type="button" class="btn-hero btn-hero-primary btn-hero-compact" id="editProfileBtn" onclick="toggleEditMode()">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                <span>Edit Profile</span>
+                            </button>
+                        </div>
                         <div class="hero-badges-row">
                             <span class="badge badge-verification status-{{ user.verification_status|default:'pending' }}">
                                 <span class="badge-dot"></span>
@@ -96,13 +102,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="hero-actions-section">
-                    <button type="button" class="btn-hero btn-hero-primary" id="editProfileBtn" onclick="toggleEditMode()">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                        <span>Edit Profile</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -374,10 +373,8 @@
                         </div>
                     </section>
 
-                    <!-- Two Column Layout for ID & Security -->
-                    <div class="content-row">
-                        <!-- ID Verification Card -->
-                        <section class="content-card card-id">
+                    <!-- ID Verification Card -->
+                    <section class="content-card card-id">
                             <div class="card-top">
                                 <div class="card-icon-wrap icon-amber">
                                     <i class="fa-solid fa-id-card-clip"></i>
@@ -445,6 +442,24 @@
                                         </div>
                                         <input type="file" name="id_back" accept="image/*" class="field-input edit-mode" style="display:none;">
                                     </div>
+
+                                    <div class="id-slot">
+                                        <div class="id-slot-header">
+                                            <i class="fa-solid fa-user-shield"></i>
+                                            <span>Selfie with ID</span>
+                                        </div>
+                                        <div class="id-slot-content">
+                                            {% if user.id_selfie %}
+                                                <img src="{{ user.id_selfie.url }}" alt="Selfie with ID" class="id-image">
+                                            {% else %}
+                                                <div class="id-empty">
+                                                    <i class="fa-solid fa-image-slash"></i>
+                                                    <span>No image uploaded</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <input type="file" name="id_selfie" accept="image/*" class="field-input edit-mode" style="display:none;">
+                                    </div>
                                 </div>
 
                                 {% if user.verification_status == 'rejected' %}
@@ -460,54 +475,6 @@
                                 {% endif %}
                             </div>
                         </section>
-
-                        <!-- Security Card -->
-                        <section class="content-card card-security">
-                            <div class="card-top">
-                                <div class="card-icon-wrap icon-rose">
-                                    <i class="fa-solid fa-shield-halved"></i>
-                                </div>
-                                <div class="card-title-group">
-                                    <h2 class="card-title">Account Security</h2>
-                                    <p class="card-subtitle">Password and security settings</p>
-                                </div>
-                            </div>
-                            
-                            <div class="card-content">
-                                <form method="post" action="{% url 'resident_password_change' %}" class="security-change-form">
-                                    {% csrf_token %}
-                                    <div class="security-item">
-                                        <div class="security-icon">
-                                            <i class="fa-solid fa-lock"></i>
-                                        </div>
-                                        <div class="security-info">
-                                            <h4 class="security-title">Password</h4>
-                                            <p class="security-desc">Change your password to keep your account secure</p>
-                                        </div>
-                                    </div>
-                                    <div class="security-form-grid">
-                                        <div class="form-group">
-                                            <label class="form-label" for="id_current_password">Current Password</label>
-                                            {{ password_form.current_password }}
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label" for="id_new_password">New Password</label>
-                                            {{ password_form.new_password }}
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label" for="id_confirm_password">Confirm New Password</label>
-                                            {{ password_form.confirm_password }}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <button type="submit" class="btn btn-primary btn-sm">
-                                            <i class="fa-solid fa-key"></i> Update Password
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </section>
-                    </div>
 
                     <!-- Recent Activity Card -->
                     {% if recent_requests %}
@@ -579,6 +546,53 @@
             </div>
         </div>
     </form>
+
+    <!-- Account Security (visible only in edit mode) -->
+    <section class="content-card card-security" id="securityCard">
+        <div class="card-top">
+            <div class="card-icon-wrap icon-rose">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="card-title-group">
+                <h2 class="card-title">Account Security</h2>
+                <p class="card-subtitle">Password and security settings</p>
+            </div>
+        </div>
+
+        <div class="card-content">
+            <form method="post" action="{% url 'resident_password_change' %}" class="security-change-form">
+                {% csrf_token %}
+                <div class="security-item">
+                    <div class="security-icon">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div class="security-info">
+                        <h4 class="security-title">Password</h4>
+                        <p class="security-desc">Change your password to keep your account secure</p>
+                    </div>
+                </div>
+                <div class="security-form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="id_current_password">Current Password</label>
+                        {{ password_form.current_password }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_new_password">New Password</label>
+                        {{ password_form.new_password }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_confirm_password">Confirm New Password</label>
+                        {{ password_form.confirm_password }}
+                    </div>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-key"></i> Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
 </div>
 {% endblock %}
 

@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileInputs = document.querySelectorAll('input[type="file"]');
     fileInputs.forEach(function(input) {
         input.addEventListener('change', function() {
-            const label = this.previousElementSibling;
+            const label = document.querySelector('label[for="' + this.id + '"]');
             if (label && label.classList.contains('custom-file-upload')) {
                 const span = label.querySelector('span[data-text]');
                 if (span) {

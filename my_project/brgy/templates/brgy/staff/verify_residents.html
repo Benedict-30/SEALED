@@ -121,15 +121,18 @@
                         <td class="text-sm">{{ res.email }}</td>
                         <td class="text-sm">{{ res.phone_number|default:"—" }}</td>
                         <td>
-                            {% if res.id_front or res.id_back %}
+                            {% if res.id_front or res.id_back or res.id_selfie %}
                             <div class="vr-id-thumbs">
                                 {% if res.id_front %}
-                                <img src="{{ res.id_front.url }}" class="id-thumb" alt="Front" title="Click to view" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{{ res.id_front.url }}", "{% if res.id_back %}{{ res.id_back.url }}{% else %}{% endif %}")'>
+                                <img src="{{ res.id_front.url }}" class="id-thumb" alt="ID Front" title="Click to view" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{{ res.id_front.url }}", "{% if res.id_back %}{{ res.id_back.url }}{% else %}{% endif %}", "{% if res.id_selfie %}{{ res.id_selfie.url }}{% else %}{% endif %}")'>
                                 {% endif %}
                                 {% if res.id_back %}
-                                <img src="{{ res.id_back.url }}" class="id-thumb" alt="Back" title="Click to view" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{% if res.id_front %}{{ res.id_front.url }}{% else %}{% endif %}", "{{ res.id_back.url }}")'>
+                                <img src="{{ res.id_back.url }}" class="id-thumb" alt="ID Back" title="Click to view" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{% if res.id_front %}{{ res.id_front.url }}{% else %}{% endif %}", "{{ res.id_back.url }}", "{% if res.id_selfie %}{{ res.id_selfie.url }}{% else %}{% endif %}")'>
                                 {% endif %}
-                                <span class="vr-view-link" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{% if res.id_front %}{{ res.id_front.url }}{% endif %}", "{% if res.id_back %}{{ res.id_back.url }}{% endif %}")'>
+                                {% if res.id_selfie %}
+                                <img src="{{ res.id_selfie.url }}" class="id-thumb" alt="Selfie with ID" title="Click to view" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{% if res.id_front %}{{ res.id_front.url }}{% endif %}", "{% if res.id_back %}{{ res.id_back.url }}{% endif %}", "{{ res.id_selfie.url }}")'>
+                                {% endif %}
+                                <span class="vr-view-link" onclick='openIdModal("{{ res.display_name|escapejs }}", "{{ res.email|escapejs }}", "{{ res.phone_number|default:"-"|escapejs }}", "{{ res.address|default:"-"|escapejs }}", "{% if res.id_front %}{{ res.id_front.url }}{% endif %}", "{% if res.id_back %}{{ res.id_back.url }}{% endif %}", "{% if res.id_selfie %}{{ res.id_selfie.url }}{% endif %}")'>
                                     <i class="fa-solid fa-eye"></i> View
                                 </span>
                             </div>

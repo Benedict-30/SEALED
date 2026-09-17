@@ -1,7 +1,11 @@
+import logging
+
 from django.conf import settings
 
 from . import firestore_db
 from .models import Notification
+
+logger = logging.getLogger(__name__)
 
 _SIDEBAR_MAP = {
     'resident_dashboard': 'res_dashboard',
@@ -59,11 +63,15 @@ def brgy_context(request):
     if request.user.is_authenticated:
         if getattr(request, 'notifications_loaded', False):
             return context
-        notifications = firestore_db.list_notifications(
-            filters=[('user_id', '==', request.user.pk)],
-            order_by='created_at',
-            descending=True,
-        )
+        try:
+            notifications = firestore_db.list_notifications(
+                filters=[('user_id', '==', request.user.pk)],
+                order_by='created_at',
+                descending=True,
+            )
+        except Exception:
+            logger.exception('Failed to load notifications for %s', request.user.pk)
+            notifications = []
         unread_count = sum(1 for n in notifications if not n.get('is_read'))
         context['unread_notification_count'] = unread_count
         context['recent_notifications'] = [Notification(n) for n in notifications[:5]]

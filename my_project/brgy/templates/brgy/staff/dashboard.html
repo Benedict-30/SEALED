@@ -2,7 +2,7 @@
 
 {% block content %}
 {# ─── Page Header ──────────────────────────────────────────────── #}
-<div class="page-hero">
+<div class="page-hero staff-hero">
     <div>
         <div class="page-hero-title">
             <i class="fa-solid fa-user-tie"></i>
@@ -10,33 +10,32 @@
         </div>
         <div class="page-hero-sub">Welcome back, {{ user.first_name|default:user.username }}! Here's your barangay's current activity.</div>
     </div>
-    <div class="page-hero-date"><i class="fa-regular fa-calendar"></i>{% now "l, F j, Y" %}</div>
 </div>
 
 {# ─── Stat Cards ───────────────────────────────────────────────── #}
 <div class="stat-cards stat-cards-4">
-    <div class="stat-card">
+    <div class="stat-card stat-card-viv stat-card-viv-warning">
         <div class="stat-card-icon warning"><i class="fa-solid fa-user-clock"></i></div>
         <div class="stat-card-body">
             <span class="stat-card-value">{{ pending_verifications }}</span>
             <span class="stat-card-label">Pending Verifications</span>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card stat-card-viv stat-card-viv-danger">
         <div class="stat-card-icon danger"><i class="fa-solid fa-file-circle-exclamation"></i></div>
         <div class="stat-card-body">
             <span class="stat-card-value">{{ pending_requests }}</span>
             <span class="stat-card-label">Pending Requests</span>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card-icon accent"><i class="fa-solid fa-box-open"></i></div>
+    <div class="stat-card stat-card-viv stat-card-viv-ready">
+        <div class="stat-card-icon ready"><i class="fa-solid fa-box-open"></i></div>
         <div class="stat-card-body">
             <span class="stat-card-value">{{ ready_requests }}</span>
             <span class="stat-card-label">Ready for Pickup</span>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card stat-card-viv stat-card-viv-success">
         <div class="stat-card-icon success"><i class="fa-solid fa-users"></i></div>
         <div class="stat-card-body">
             <span class="stat-card-value">{{ verified_residents }}</span>
@@ -54,38 +53,47 @@
         <div class="card">
             <div class="card-header">
                 <h3>Request Pipeline</h3>
-                <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm">View All</a>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="pipeline-total"><i class="fa-solid fa-layer-group"></i> {{ total_requests }} total</span>
+                    <a href="{% url 'manage_requests' %}" class="btn btn-ghost btn-sm">View All</a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="bar-chart">
                     <div class="bar-row">
-                        <span class="bar-label">Pending</span>
+                        <span class="bar-label"><span class="status-dot status-dot-pending"></span>Pending</span>
                         <div class="bar-track">
-                            <div class="bar-fill warning" style="width:{% widthratio pending_requests total_requests 100 %}%">{{ pending_requests }}</div>
+                            <div class="bar-fill pending" style="width:{% widthratio pending_requests total_requests 100 %}%">{{ pending_requests }}</div>
                         </div>
                         <span class="bar-value">{{ pending_requests }}</span>
                     </div>
                     <div class="bar-row">
-                        <span class="bar-label">Approved</span>
+                        <span class="bar-label"><span class="status-dot status-dot-approved"></span>Approved</span>
                         <div class="bar-track">
-                            <div class="bar-fill success" style="width:{% widthratio approved_requests total_requests 100 %}%">{{ approved_requests }}</div>
+                            <div class="bar-fill approved" style="width:{% widthratio approved_requests total_requests 100 %}%">{{ approved_requests }}</div>
                         </div>
                         <span class="bar-value">{{ approved_requests }}</span>
                     </div>
                     <div class="bar-row">
-                        <span class="bar-label">Ready</span>
+                        <span class="bar-label"><span class="status-dot status-dot-ready"></span>Ready</span>
                         <div class="bar-track">
-                            <div class="bar-fill" style="width:{% widthratio ready_requests total_requests 100 %}%">{{ ready_requests }}</div>
+                            <div class="bar-fill ready" style="width:{% widthratio ready_requests total_requests 100 %}%">{{ ready_requests }}</div>
                         </div>
                         <span class="bar-value">{{ ready_requests }}</span>
                     </div>
                     <div class="bar-row">
-                        <span class="bar-label">Completed</span>
+                        <span class="bar-label"><span class="status-dot status-dot-completed"></span>Completed</span>
                         <div class="bar-track">
-                            <div class="bar-fill success" style="width:{% widthratio completed_requests total_requests 100 %}%">{{ completed_requests }}</div>
+                            <div class="bar-fill completed" style="width:{% widthratio completed_requests total_requests 100 %}%">{{ completed_requests }}</div>
                         </div>
                         <span class="bar-value">{{ completed_requests }}</span>
                     </div>
+                </div>
+                <div class="pipeline-legend">
+                    <span class="pipeline-legend-item"><span class="status-dot status-dot-pending"></span>Pending</span>
+                    <span class="pipeline-legend-item"><span class="status-dot status-dot-approved"></span>Approved</span>
+                    <span class="pipeline-legend-item"><span class="status-dot status-dot-ready"></span>Ready for Pickup</span>
+                    <span class="pipeline-legend-item"><span class="status-dot status-dot-completed"></span>Completed</span>
                 </div>
             </div>
         </div>

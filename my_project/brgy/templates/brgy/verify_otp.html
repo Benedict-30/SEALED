@@ -1,0 +1,91 @@
+{% extends 'brgy/base_auth.html' %}
+{% load static %}
+
+{% block title %}Verify Login - Barangay Document System{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-left">
+        <div class="auth-shape s1"></div>
+        <div class="auth-shape s2"></div>
+        <div class="auth-shape s3"></div>
+        <div class="auth-shape s4"></div>
+        <div class="auth-left-content">
+            <div class="auth-left-icon">🔐</div>
+            <h1>Almost There</h1>
+            <p>Enter the one-time code we emailed you to finish signing in securely.</p>
+            <ul class="auth-features">
+                <li><i class="fa-solid fa-envelope"></i> Code sent to your email address</li>
+                <li><i class="fa-solid fa-clock"></i> Code expires after 10 minutes</li>
+                <li><i class="fa-solid fa-shield-halved"></i> Adds an extra layer of protection</li>
+            </ul>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-form-wrapper">
+            <div class="auth-form-brand">
+                <div class="brand-icon brand-icon-img"><img src="{% static 'img/sealed-logo.png' %}" alt="SEALED logo" class="logo-tile-img"></div>
+                <div class="brand-text">
+                    SEALED
+                    <small>Document Request System</small>
+                </div>
+            </div>
+            <h2>Enter Login Code</h2>
+            <p class="auth-subtitle">
+                {% if masked_email %}
+                We sent a 6-digit code to <strong>{{ masked_email }}</strong>
+                {% else %}
+                We sent a 6-digit code to your email.
+                {% endif %}
+            </p>
+
+            {% if dev_otp_code %}
+            <div style="display:flex;align-items:center;gap:12px;background:#fef3c7;border:1px solid #fde68a;color:#78350f;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+                <i class="fa-solid fa-flask" style="font-size:16px;"></i>
+                <div>
+                    <strong>Development mode &mdash; email wasn&rsquo;t delivered.</strong>
+                    <div style="margin-top:2px;">Your one-time code: <span style="font-weight:800;letter-spacing:3px;font-size:15px;">{{ dev_otp_code }}</span></div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if form.errors %}
+            <div class="form-error-list">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">One-Time PIN</label>
+                    <div class="password-wrap" style="position:relative;">
+                        <i class="fa-solid fa-shield-halved" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;"></i>
+                        {{ form.otp_code }}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top:8px;">
+                    <i class="fa-solid fa-unlock"></i> Verify &amp; Sign In
+                </button>
+            </form>
+
+            <div class="auth-links" style="display:flex;justify-content:center;gap:18px;margin-top:16px;flex-wrap:wrap;">
+                <form method="post" action="{% url 'resend_otp' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="auth-forgot" style="background:none;border:none;cursor:pointer;font-size:14px;">
+                        <i class="fa-solid fa-rotate-right"></i> Resend Code
+                    </button>
+                </form>
+                <a href="{% url 'login' %}" class="auth-forgot">Back to sign in</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

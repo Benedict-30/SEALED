@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var page = document.getElementById('profilePage');
         var editBtn = document.getElementById('editProfileBtn');
         var saveActions = document.getElementById('saveActions');
-        var editFields = document.querySelectorAll('.edit-mode-field');
+        var editFields = document.querySelectorAll('.edit-mode');
 
         if (isEditing) {
             page.classList.add('editing');

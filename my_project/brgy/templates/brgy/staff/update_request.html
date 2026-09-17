@@ -170,6 +170,15 @@
                     <span>{{ doc_request.paid_at|date:"M d, Y g:i A"|default:"—" }}</span>
                 </div>
             </div>
+            <div class="form-actions-bar">
+                <form method="post" action="{% url 'mark_paid' doc_request.pk %}" onsubmit="return confirm('Mark this payment as unpaid? This will notify the resident.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="payment_action" value="unpaid">
+                    <button type="submit" class="btn btn-danger btn-submit-fill">
+                        <i class="fa-solid fa-rotate-left"></i> Mark as Unpaid
+                    </button>
+                </form>
+            </div>
             {% elif can_pay %}
             <form method="post" action="{% url 'mark_paid' doc_request.pk %}">
                 {% csrf_token %}

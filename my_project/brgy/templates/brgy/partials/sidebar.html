@@ -1,3 +1,4 @@
+{% load static %}
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">
@@ -7,7 +8,7 @@
             {% if user.role != 'admin' and user.barangay and user.barangay.logo %}
             <img src="{{ user.barangay.logo.url }}" alt="{{ user.barangay.name }} logo" class="sidebar-logo-img">
             {% else %}
-            <div class="sidebar-logo-icon">📝</div>
+            <img src="{% static 'img/sealed-logo.png' %}" alt="SEALED logo" class="sidebar-logo-img sidebar-logo-img-system">
             {% endif %}
             <div class="sidebar-logo-text">
                 {% if user.role != 'admin' and user.barangay %}

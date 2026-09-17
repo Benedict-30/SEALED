@@ -1,9 +1,4 @@
 {% extends 'brgy/base.html' %}
-{% load static %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/resident/dashboard.css' %}">
-{% endblock %}
 
 {% block content %}
 
@@ -30,24 +25,14 @@
             <strong>Reason:</strong> {{ rejection_reason }}
         </p>
         {% endif %}
-        <p class="text-muted">You can fix your details and re-submit your ID for review, or contact your barangay office for assistance.</p>
-        <div class="verification-banner-actions">
-            <a href="{% url 'profile' %}" class="btn btn-primary">
-                <i class="fa-solid fa-rotate"></i> Update Profile &amp; Re-submit
-            </a>
-            {% if user.barangay.contact_number %}
-            <a href="tel:{{ user.barangay.contact_number }}" class="btn btn-ghost btn-contact">
-                <i class="fa-solid fa-phone"></i> Contact Barangay
-            </a>
-            {% endif %}
-        </div>
+        <p class="text-muted">Please contact your barangay office for assistance.</p>
     {% endif %}
 </div>
 
 {% else %}
 
 {# ─── Page Header ──────────────────────────────────────────────── #}
-<div class="page-hero">
+<div class="page-hero staff-hero">
     <div>
         <div class="page-hero-title">
             <i class="fa-solid fa-house-user"></i>
@@ -55,47 +40,33 @@
         </div>
         <div class="page-hero-sub">Here's what's happening with your document requests.</div>
     </div>
-    <div class="page-hero-date">
-        <i class="fa-regular fa-calendar"></i>{% now "l, F j, Y" %}
-    </div>
 </div>
 
 {# ─── Stat Cards ───────────────────────────────────────────────── #}
-<div class="stat-cards stat-cards-compact">
-    <div class="stat-card stat-card-total">
-        <div class="stat-card-icon primary">
-            <i class="fa-solid fa-file-lines"></i>
-        </div>
+<div class="stat-cards stat-cards-4">
+    <div class="stat-card stat-card-viv stat-card-viv-success">
+        <div class="stat-card-icon success"><i class="fa-solid fa-file-lines"></i></div>
         <div class="stat-card-body">
             <span class="stat-card-value">{{ total }}</span>
             <span class="stat-card-label">Total Requests</span>
         </div>
     </div>
-
-    <div class="stat-card stat-card-pending">
-        <div class="stat-card-icon warning">
-            <i class="fa-solid fa-clock"></i>
-        </div>
+    <div class="stat-card stat-card-viv stat-card-viv-warning">
+        <div class="stat-card-icon warning"><i class="fa-solid fa-clock"></i></div>
         <div class="stat-card-body">
             <span class="stat-card-value">{{ pending }}</span>
             <span class="stat-card-label">Pending</span>
         </div>
     </div>
-
-    <div class="stat-card stat-card-approved">
-        <div class="stat-card-icon info">
-            <i class="fa-solid fa-circle-check"></i>
-        </div>
+    <div class="stat-card stat-card-viv stat-card-viv-danger">
+        <div class="stat-card-icon danger"><i class="fa-solid fa-file-pen"></i></div>
         <div class="stat-card-body">
             <span class="stat-card-value">{{ approved }}</span>
             <span class="stat-card-label">Approved</span>
         </div>
     </div>
-
-    <div class="stat-card stat-card-ready">
-        <div class="stat-card-icon success">
-            <i class="fa-solid fa-hand-holding"></i>
-        </div>
+    <div class="stat-card stat-card-viv stat-card-viv-ready">
+        <div class="stat-card-icon ready"><i class="fa-solid fa-hand-holding"></i></div>
         <div class="stat-card-body">
             <span class="stat-card-value">{{ ready }}</span>
             <span class="stat-card-label">Ready for Pickup</span>
@@ -113,21 +84,20 @@
         {% with latest_req=recent_requests|first %}
         <a href="{% url 'track_request' latest_req.pk %}" class="track-card">
             <div class="progress-ring-wrapper">
-                <svg class="progress-ring" viewBox="0 0 140 140" aria-hidden="true">
-                    <defs>
-                        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="var(--primary-light, #059669)"/>
-                            <stop offset="100%" stop-color="var(--primary-dark, #047857)"/>
-                        </linearGradient>
-                    </defs>
-                    <circle class="progress-ring__bg" cx="70" cy="70" r="60" stroke-width="12" fill="none"/>
+                <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                    <circle
+                        class="progress-ring__circle"
+                        stroke="var(--border, #e2e8f0)"
+                        stroke-width="12"
+                        fill="transparent"
+                        r="60" cx="70" cy="70"
+                    />
                     <circle
                         class="progress-ring__circle {% if latest_req.status in 'pending,approved,printed,ready_for_pickup' %}active{% endif %}"
-                        cx="70" cy="70" r="60"
-                        stroke="url(#ringGrad)"
+                        stroke="var(--primary)"
                         stroke-width="12"
-                        fill="none"
-                        stroke-linecap="round"
+                        fill="transparent"
+                        r="60" cx="70" cy="70"
                         stroke-dasharray="376.99"
                         stroke-dashoffset="{% if latest_req.status == 'completed' %}0{% elif latest_req.status == 'ready_for_pickup' %}94.25{% elif latest_req.status in 'approved,printed' %}188.5{% elif latest_req.status == 'pending' %}282.74{% else %}376.99{% endif %}"
                     />
@@ -146,15 +116,12 @@
 
             <div class="track-info">
                 <h4>Track Latest Request</h4>
-                <span class="track-ref"><i class="fa-solid fa-hashtag"></i>{{ latest_req.request_number }}</span>
-                <div class="track-status">
-                    <span class="badge badge-{{ latest_req.status_color }}">
-                        {{ latest_req.get_status_display }}
-                    </span>
-                </div>
-                <div class="track-meta">
-                    <span><i class="fa-regular fa-calendar"></i> Submitted {{ latest_req.created_at|date:"M d, Y" }}</span>
-                    <span><i class="fa-regular fa-clock"></i> Updated {{ latest_req.updated_at|date:"M d" }}</span>
+                <p>
+                    <strong>{{ latest_req.request_number }}</strong> &middot;
+                    Submitted {{ latest_req.created_at|date:"M d" }}
+                </p>
+                <div class="track-status-badge {% if latest_req.status == 'pending' %}pending{% endif %}">
+                    {{ latest_req.get_status_display }}
                 </div>
                 <div class="track-cta">
                     Click to view full timeline <i class="fa-solid fa-arrow-right"></i>
@@ -172,7 +139,7 @@
             <div class="card-body-flush">
                 {% if recent_requests %}
                 <div class="table-wrapper">
-                    <table class="table table-cards">
+                    <table class="table table-cards table-recent">
                         <thead>
                             <tr>
                                 <th>Request #</th>
@@ -190,18 +157,21 @@
                                     </a>
                                 </td>
                                 <td class="docs-cell" data-label="Documents">
-                                    <div class="td-doc-list">
+                                    <div class="table-doc-list">
                                         {% for item in req.items.all %}
-                                        <span class="table-doc-name">{{ item.document_type.name }}</span><br>
+                                        <span class="table-doc-name">
+                                            <i class="fa-solid fa-file-lines"></i>
+                                            {{ item.document_type.name }}
+                                        </span>
                                         {% endfor %}
                                     </div>
                                 </td>
-                                <td data-label="Status">
+                                <td class="status-cell" data-label="Status">
                                     <span class="badge badge-{{ req.status_color }}">
                                         {{ req.get_status_display }}
                                     </span>
                                 </td>
-                                <td data-label="Date"><span class="table-date">{{ req.created_at|date:"M d, Y" }}</span></td>
+                                <td class="table-date" data-label="Date">{{ req.created_at|date:"M d, Y" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -274,19 +244,36 @@
         {% if unread_updates %}
         <div class="card">
             <div class="card-header">
-                <h3>Latest Updates</h3>
+                <h3><i class="fa-solid fa-bell"></i> Latest Updates</h3>
+                <a href="{% url 'notifications' %}" class="btn btn-ghost btn-sm">
+                    {% if unread_notification_count %}<span class="quick-action-badge" style="margin-right:6px;">{{ unread_notification_count }}</span>{% endif %}
+                    View All
+                </a>
             </div>
-            <div class="card-body">
+            <div class="card-body-flush">
                 <div class="updates-list">
                     {% for ann in unread_updates %}
-                    <div class="update-item {% if not forloop.last %}update-item-bordered{% endif %}">
-                        <div class="update-title">{{ ann.title }}</div>
-                        <div class="update-excerpt">{{ ann.message|truncatechars:100 }}</div>
-                        <div class="update-meta">
-                            <i class="fa-regular fa-clock"></i> {{ ann.created_at|timesince }} ago
+                    <div class="update-item unread">
+                        <div class="update-icon {% if "request" in ann.title|lower %}info{% elif "verified" in ann.title|lower or "account" in ann.title|lower or "register" in ann.title|lower %}success{% elif "rejected" in ann.title|lower %}danger{% else %}default{% endif %}">
+                            <i class="fa-solid {% if "request" in ann.title|lower %}fa-file-lines{% elif "verified" in ann.title|lower or "register" in ann.title|lower %}fa-user-check{% else %}fa-bell{% endif %}"></i>
+                        </div>
+                        <div class="update-text">
+                            <div class="update-title">
+                                {{ ann.title }}
+                                <span class="update-badge"><i class="fa-solid fa-circle"></i> New</span>
+                            </div>
+                            <div class="update-excerpt">{{ ann.message|truncatechars:110 }}</div>
+                            <div class="update-meta">
+                                <i class="fa-regular fa-clock"></i> {{ ann.created_at|timesince }} ago
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
+                </div>
+                <div class="updates-feed-footer">
+                    <a href="{% url 'notifications' %}">
+                        <i class="fa-regular fa-bell"></i> View All Notifications
+                    </a>
                 </div>
             </div>
         </div>
@@ -297,18 +284,23 @@
             <div class="card-header">
                 <h3><i class="fa-solid fa-bullhorn"></i> Announcements</h3>
             </div>
-            <div class="card-body">
+            <div class="card-body-flush">
                 <div class="updates-list">
                     {% for a in latest_announcements %}
                     <div class="update-item {% if not forloop.last %}update-item-bordered{% endif %}">
-                        <div class="update-title">
-                            {{ a.title }}
-                            {% if a.is_global %}<span class="ann-res-badge">System</span>{% endif %}
+                        <div class="update-icon warning">
+                            <i class="fa-solid fa-bullhorn"></i>
                         </div>
-                        <div class="update-excerpt">{{ a.body|truncatechars:120 }}</div>
-                        <div class="update-meta">
-                            <i class="fa-regular fa-clock"></i> {{ a.published_at|timesince }} ago
-                            {% if a.author %}&middot; {{ a.author.display_name }}{% endif %}
+                        <div class="update-text">
+                            <div class="update-title">
+                                {{ a.title }}
+                                {% if a.is_global %}<span class="update-badge update-badge-system"><i class="fa-solid fa-server"></i> System</span>{% endif %}
+                            </div>
+                            <div class="update-excerpt">{{ a.body|truncatechars:120 }}</div>
+                            <div class="update-meta">
+                                <i class="fa-regular fa-clock"></i> {{ a.published_at|timesince }} ago
+                                {% if a.author %}&middot; <i class="fa-solid fa-user-pen"></i> {{ a.author.display_name }}{% endif %}
+                            </div>
                         </div>
                     </div>
                     {% endfor %}

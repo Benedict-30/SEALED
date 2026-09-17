@@ -211,7 +211,7 @@
 }
 
 .track-step-date {
-    font-size: 10.5px;
+    font-size: 11.5px;
     font-weight: 600;
     color: var(--text-muted);
     white-space: nowrap;
@@ -281,7 +281,7 @@
 }
 
 .detail-label {
-    font-size: 10.5px;
+    font-size: 11.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.6px;
@@ -382,6 +382,11 @@
     .track-step-name { font-size: 12px; }
     .track-doc-select { max-width: 100%; }
     .detail-badge { display: block; margin-left: 0; margin-top: 6px; }
+    .track-step-date { white-space: normal; text-align: right; }
+    .track-ring.progress-ring-wrapper { width: 96px; height: 96px; }
+    .track-ring .progress-ring { width: 96px; height: 96px; }
+    .track-ring .progress-text { width: 54px; height: 54px; }
+    .track-ring .progress-text .percentage { font-size: 18px; }
 }
 
 /* ─── Reduced Motion ─────────────────────────────────────────── */
