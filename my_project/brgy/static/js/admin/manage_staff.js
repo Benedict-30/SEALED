@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const formBody = document.getElementById('createStaffForm');
-    const toggleBtn = document.getElementById('createStaffToggle');
+    const toggleBtn = document.getElementById('createStaffButton');
     if (formBody && toggleBtn) {
         const updateBtn = function(open) {
             toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');

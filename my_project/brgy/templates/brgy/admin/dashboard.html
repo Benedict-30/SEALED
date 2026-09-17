@@ -51,24 +51,31 @@
 <div class="dash-grid dash-grid-2">
     <div class="card">
         <div class="card-header">
-            <h3>Barangay Performance</h3>
+            <h3><i class="fa-solid fa-building-columns"></i> Barangay Performance</h3>
             <a href="{% url 'manage_barangays' %}" class="btn btn-ghost btn-sm">Manage</a>
         </div>
         <div class="card-body-flush">
             {% if barangay_stats %}
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead><tr><th>Barangay</th><th>Residents</th><th>Requests</th></tr></thead>
-                    <tbody>
-                        {% for brgy in barangay_stats %}
-                        <tr>
-                            <td class="fw-600 text-sm">{{ brgy.name }}</td>
-                            <td class="text-sm">{{ brgy.total_residents }}</td>
-                            <td><span class="badge badge-primary">{{ brgy.total_requests }}</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="brgy-performance">
+                {% for brgy in barangay_stats %}
+                <div class="brgy-perf-row">
+                    <div class="brgy-perf-rank">{% if forloop.first %}<i class="fa-solid fa-trophy"></i>{% else %}{{ forloop.counter }}{% endif %}</div>
+                    <div class="brgy-perf-main">
+                        <div class="brgy-perf-top">
+                            <span class="brgy-perf-name">{{ brgy.name }}</span>
+                        </div>
+                        <div class="brgy-perf-track">
+                            {% if barangay_stats.0.total_requests > 0 %}
+                            <div class="brgy-perf-fill{% if forloop.first %} brgy-perf-fill-top{% endif %}" style="width:{% widthratio brgy.total_requests barangay_stats.0.total_requests 100 %}%;">{{ brgy.total_requests }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="brgy-perf-meta">
+                            <span><i class="fa-solid fa-user"></i> {{ brgy.total_residents }} residents</span>
+                            <span><i class="fa-solid fa-file-lines"></i> {{ brgy.total_requests }} requests</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
             {% else %}
             <div class="empty-state" style="padding:24px;">
@@ -88,8 +95,18 @@
             <div class="activity-list">
                 {% if recent_logs %}
                 {% for log in recent_logs %}
-                <div class="activity-item {% if not forloop.last %}activity-item-bordered{% endif %}">
-                    <div class="activity-icon"><i class="fa-solid fa-bolt"></i></div>
+                <div class="activity-item{% if not forloop.last %} activity-item-bordered{% endif %}">
+                    <div class="activity-icon">
+                        {% if 'Registration' in log.action %}<i class="fa-solid fa-user-plus"></i>
+                        {% elif 'Staff Account' in log.action %}<i class="fa-solid fa-user-tie"></i>
+                        {% elif 'Ready' in log.action %}<i class="fa-solid fa-box-archive"></i>
+                        {% elif 'Completed' in log.action %}<i class="fa-solid fa-circle-check"></i>
+                        {% elif 'Approved' in log.action %}<i class="fa-solid fa-check-double"></i>
+                        {% elif 'Rejected' in log.action %}<i class="fa-solid fa-xmark"></i>
+                        {% elif 'Deleted' in log.action or 'Cancelled' in log.action %}<i class="fa-solid fa-trash-can"></i>
+                        {% elif 'Submitted' in log.action %}<i class="fa-solid fa-file-circle-plus"></i>
+                        {% else %}<i class="fa-solid fa-bolt"></i>{% endif %}
+                    </div>
                     <div class="activity-body">
                         <div class="activity-title">{{ log.action }}</div>
                         {% if log.details %}
@@ -116,7 +133,7 @@
 {% if monthly_trend %}
 <div class="card mt-4">
     <div class="card-header">
-        <h3>Request Trend (Last 6 Months)</h3>
+        <h3><i class="fa-solid fa-chart-column"></i> Request Trend (Last 6 Months)</h3>
         <div class="trend-delta {% if trend_delta > 0 %}up{% elif trend_delta < 0 %}down{% else %}neutral{% endif %}">
             {% if trend_delta > 0 %}
             <i class="fa-solid fa-arrow-trend-up"></i> +{{ trend_delta }}
@@ -131,7 +148,7 @@
     <div class="card-body">
         <div class="trend-chart">
             {% for month in monthly_trend %}
-            <div class="trend-col{% if forloop.first %} trend-col-current{% endif %}" title="{{ month.month|date:'F Y' }}: {{ month.count }} request{{ month.count|pluralize }}">
+            <div class="trend-col{% if forloop.first %} trend-col-current{% endif %} {{ month.bar_class }}" title="{{ month.month|date:'F Y' }}: {{ month.count }} request{{ month.count|pluralize }}">
                 <div class="trend-value">{{ month.count }}</div>
                 <div class="trend-bar-area">
                     <div class="trend-bar" style="height:{% widthratio month.count trend_max_count 100 %}%;"></div>

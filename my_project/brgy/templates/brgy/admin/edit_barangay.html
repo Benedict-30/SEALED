@@ -2,14 +2,15 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/global/theme_picker.css' %}">
+<link rel="stylesheet" href="{% static 'css/global/theme_picker.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/admin/edit_staff.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
 <div class="brgy-editor-layout">
 <div class="card">
-    <div class="card-header">
-        <h3>Edit Barangay</h3>
+    <div class="card-header create-staff-head">
+        <h3><i class="fa-solid fa-building-shield"></i> Edit Barangay</h3>
         <a href="{% url 'manage_barangays' %}" class="btn btn-ghost btn-sm">
             <i class="fa-solid fa-arrow-left"></i> Back
         </a>
@@ -22,66 +23,103 @@
         {% endif %}
         <form method="post" id="editBrgyForm" enctype="multipart/form-data">
             {% csrf_token %}
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Barangay Name</label>
-                    {{ form.name }}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Chairman Name</label>
-                    {{ form.chairman_name }}
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Address</label>
-                {{ form.address }}
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Contact Number</label>
-                    {{ form.contact_number }}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    {{ form.email }}
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Logo</label>
-                {% if barangay.logo %}
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-                    <img src="{{ barangay.logo.url }}" alt="{{ barangay.name }} logo"
-                         style="width:64px;height:64px;object-fit:contain;border:1px solid var(--border);border-radius:12px;background:#fff;">
-                    <span class="text-xs text-muted">Current logo. Upload a new image below to replace it.</span>
-                </div>
-                {% else %}
-                <div class="text-xs text-muted" style="margin-bottom:8px;">No logo uploaded yet.</div>
-                {% endif %}
-                {{ form.logo }}
-            </div>
 
-            <!-- Theme Color Picker -->
-            <div class="form-group">
-                <label class="form-label">Theme Color</label>
-                {{ form.theme_color }}
-                <div class="theme-picker" id="editPicker" data-form="editBrgyForm" data-preview-target="editLivePreview">
-                    <div class="color-wheel-section">
-                        <div class="color-input-wrap" title="Open color wheel">
-                            <input type="color" class="color-input" value="{{ form.theme_color.value|default:'#059669' }}">
+            <!-- 01 Identity -->
+            <div class="es-panel es-panel-blue">
+                <div class="es-glow es-glow-blue"></div>
+                <div class="es-panel-head">
+                    <span class="es-step">01</span>
+                    <span class="es-orb es-orb-blue"><i class="fa-solid fa-building-columns"></i></span>
+                    <div><div class="es-panel-title">Identity</div><div class="es-panel-sub">The name &amp; its leader</div></div>
+                </div>
+                <div class="es-fields">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Barangay Name</label>
+                            <div class="es-input-wrap"><i class="fa-solid fa-location-dot es-input-icon"></i>{{ form.name }}</div>
                         </div>
-                        <div class="color-wheel-controls">
-                            <input type="text" class="color-hex-input" value="{{ form.theme_color.value|default:'#059669' }}" maxlength="7" spellcheck="false" aria-label="Hex color value">
-                            <button type="button" class="color-copy-btn" title="Copy hex code"><i class="fa-regular fa-copy"></i></button>
+                        <div class="form-group">
+                            <label class="form-label">Chairman Name</label>
+                            <div class="es-input-wrap"><i class="fa-solid fa-user-tie es-input-icon"></i>{{ form.chairman_name }}</div>
                         </div>
                     </div>
-                    <div class="color-wheel-hint">Click the color swatch to open the color wheel, or type a hex code directly.</div>
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        <div class="es-input-wrap"><i class="fa-solid fa-map es-input-icon"></i>{{ form.address }}</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-group" style="display:flex;align-items:center;gap:8px;">
-                {{ form.is_active }}
-                <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+            <!-- 02 Contact -->
+            <div class="es-panel es-panel-teal">
+                <div class="es-glow es-glow-teal"></div>
+                <div class="es-panel-head">
+                    <span class="es-step">02</span>
+                    <span class="es-orb es-orb-teal"><i class="fa-solid fa-address-book"></i></span>
+                    <div><div class="es-panel-title">Contact</div><div class="es-panel-sub">How to reach this barangay</div></div>
+                </div>
+                <div class="es-fields">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Contact Number</label>
+                            <div class="es-input-wrap"><i class="fa-solid fa-phone es-input-icon"></i>{{ form.contact_number }}</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <div class="es-input-wrap"><i class="fa-solid fa-envelope es-input-icon"></i>{{ form.email }}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- 03 Branding & Settings -->
+            <div class="es-panel es-panel-amber">
+                <div class="es-glow es-glow-amber"></div>
+                <div class="es-panel-head">
+                    <span class="es-step">03</span>
+                    <span class="es-orb es-orb-amber"><i class="fa-solid fa-palette"></i></span>
+                    <div><div class="es-panel-title">Branding &amp; Status</div><div class="es-panel-sub">Logo, theme color &amp; activity</div></div>
+                </div>
+                <div class="es-fields">
+                    <div class="form-group">
+                        <label class="form-label">Logo</label>
+                        {% if barangay.logo %}
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                            <img src="{{ barangay.logo.url }}" alt="{{ barangay.name }} logo"
+                                 style="width:64px;height:64px;object-fit:contain;border:1px solid var(--border);border-radius:12px;background:#fff;">
+                            <span class="text-xs text-muted">Current logo. Upload a new image below to replace it.</span>
+                        </div>
+                        {% else %}
+                        <div class="text-xs text-muted" style="margin-bottom:8px;">No logo uploaded yet.</div>
+                        {% endif %}
+                        <div class="es-input-wrap"><i class="fa-solid fa-image es-input-icon"></i>{{ form.logo }}</div>
+                    </div>
+
+                    <!-- Theme Color Picker -->
+                    <div class="form-group">
+                        <label class="form-label">Theme Color</label>
+                        {{ form.theme_color }}
+                        <div class="theme-picker" id="editPicker" data-form="editBrgyForm" data-preview-target="editLivePreview">
+                            <div class="color-wheel-section">
+                                <div class="color-input-wrap" title="Open color wheel">
+                                    <input type="color" class="color-input" value="{{ form.theme_color.value|default:'#059669' }}">
+                                </div>
+                                <div class="color-wheel-controls">
+                                    <input type="text" class="color-hex-input" value="{{ form.theme_color.value|default:'#059669' }}" maxlength="7" spellcheck="false" aria-label="Hex color value">
+                                    <button type="button" class="color-copy-btn" title="Copy hex code"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                            </div>
+                            <div class="color-wheel-hint">Click the color swatch to open the color wheel, or type a hex code directly.</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                        {{ form.is_active }}
+                        <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+                    </div>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Changes</button>
         </form>
     </div>

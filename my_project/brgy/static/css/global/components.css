@@ -193,6 +193,19 @@
 
 .form-input::placeholder { color: var(--text-muted); }
 
+.otp-input {
+    text-align: center;
+    letter-spacing: 8px;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.otp-input::placeholder {
+    letter-spacing: normal;
+    font-weight: 500;
+    font-size: 13.5px;
+}
+
 .form-input.is-invalid {
     border-color: var(--danger);
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);

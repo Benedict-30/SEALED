@@ -1,10 +1,14 @@
 import os
+import secrets
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm
+from docxtpl import DocxTemplate
 
 from . import firestore_db
+from . import template_tokens
 from .models import CustomUser, DocumentType, DocumentTypeOverride, Barangay
 
 
@@ -34,6 +38,47 @@ def validate_upload(uploaded_file, allowed_extensions, max_size, field_label='fi
         raise ValidationError(
             f'{field_label.capitalize()} is too large (max {max_size // (1024 * 1024)} MB).'
         )
+
+
+def detect_template_variables(source):
+    """Read the Jinja2 placeholder names out of a Word (.docx) template.
+
+    ``source`` may be a filesystem path or a file-like object (e.g. an
+    uploaded file).  Returns the sorted list of variable names found in the
+    document (body, headers and footers).  Raises ValidationError when the
+    template cannot be parsed so the uploader gets a proper form error.
+    """
+    from django.core.exceptions import ValidationError
+
+    try:
+        doc = DocxTemplate(source)
+        return sorted(str(v) for v in doc.get_undeclared_template_variables())
+    except ValidationError:
+        raise
+    except Exception as exc:
+        raise ValidationError(
+            'This template could not be read. Make sure it is a valid .docx file.'
+        ) from exc
+
+
+def _detect_from_saved_template(saved_name):
+    """Detect placeholders from an already-saved template (relative MEDIA name)."""
+    return detect_template_variables(os.path.join(settings.MEDIA_ROOT, saved_name))
+
+
+def clean_template_upload(form, upload):
+    """Shared ``clean_template_file`` body for the document-template forms.
+
+    Validates that the upload parses as a .docx template, rewinds it, and
+    stashes the detected placeholder names on the form for ``save()``.
+    """
+    if not upload:
+        form.detected_template_variables = []
+        return upload
+    upload.seek(0)
+    form.detected_template_variables = detect_template_variables(upload)
+    upload.seek(0)
+    return upload
 
 
 def _save_uploaded_file(uploaded_file, subdir='', allowed_extensions=None, max_size=None, field_label='file'):
@@ -453,6 +498,9 @@ class DocumentTypeForm(forms.Form):
                     self.fields['scope'].initial = 'local'
                     self.fields['barangay'].initial = instance.barangay_id
 
+    def clean_template_file(self):
+        return clean_template_upload(self, self.cleaned_data.get('template_file'))
+
     def save(self, barangay_id=None, instance=None):
         instance = instance or self.instance
         cleaned = self.cleaned_data
@@ -472,10 +520,22 @@ class DocumentTypeForm(forms.Form):
             data['fee'] = float(cleaned['fee']) if cleaned.get('fee') is not None else None
             template = cleaned.get('template_file')
             if template:
-                data['template_file'] = _save_uploaded_file(
+                saved_name = _save_uploaded_file(
                     template, 'document_templates',
                     TEMPLATE_EXTENSIONS, MAX_TEMPLATE_SIZE, 'document template',
                 )
+                data['template_file'] = saved_name
+                detected = getattr(self, 'detected_template_variables', None)
+                raw = (list(detected) if detected is not None
+                       else _detect_from_saved_template(saved_name))
+                salt = (
+                    getattr(instance, 'template_salt', None)
+                    or getattr(instance, 'pk', None)
+                    or secrets.token_hex(4)
+                )
+                data['template_variables'] = template_tokens.canonicalize_variables(raw, salt)
+                if not (instance and getattr(instance, 'pk', None)):
+                    data['template_salt'] = salt
         if instance and getattr(instance, 'pk', None):
             firestore_db.update_document_type(instance.pk, data)
             return instance
@@ -504,6 +564,27 @@ class GlobalTypeOverrideForm(forms.Form):
             if getattr(instance, 'fee', None) is not None:
                 self.fields['fee'].initial = instance.fee
 
+    def clean_template_file(self):
+        return clean_template_upload(self, self.cleaned_data.get('template_file'))
+
+    def _parent_template_salt(self, override, document_type_id):
+        """Secret-token salt shared with the parent document type.
+
+        Overrides reuse the parent type's salt so token sheets, uploads and
+        renders all agree.  Returns '' when the parent cannot be resolved
+        (token translation is then skipped; readable names still work).
+        """
+        parent_id = document_type_id or (
+            getattr(override, 'document_type_id', None) if override else None
+        )
+        if not parent_id:
+            return ''
+        try:
+            parent = DocumentType(firestore_db.get_document_type(parent_id))
+        except Exception:
+            return ''
+        return getattr(parent, 'template_salt', '') or str(parent_id)
+
     def save(self, override=None, document_type_id=None, barangay_id=None):
         override = override or self.instance
         cleaned = self.cleaned_data
@@ -512,9 +593,16 @@ class GlobalTypeOverrideForm(forms.Form):
         }
         template = cleaned.get('template_file')
         if template:
-            data['template_file'] = _save_uploaded_file(
+            saved_name = _save_uploaded_file(
                 template, 'document_templates',
                 TEMPLATE_EXTENSIONS, MAX_TEMPLATE_SIZE, 'document template',
+            )
+            data['template_file'] = saved_name
+            detected = getattr(self, 'detected_template_variables', None)
+            raw = (list(detected) if detected is not None
+                   else _detect_from_saved_template(saved_name))
+            data['template_variables'] = template_tokens.canonicalize_variables(
+                raw, self._parent_template_salt(override, document_type_id)
             )
         if override and getattr(override, 'pk', None):
             firestore_db.update_document_type_override(override.pk, data)
@@ -592,7 +680,8 @@ class RequestPasswordResetForm(forms.Form):
 class OTPVerificationForm(forms.Form):
     otp_code = forms.CharField(
         widget=forms.TextInput(attrs={
-            'class': 'form-input',
+            'class': 'form-input otp-input',
+            'style': 'text-align:center;',
             'placeholder': '6-digit code',
             'inputmode': 'numeric',
             'pattern': '[0-9]*',
@@ -683,6 +772,10 @@ class AnnouncementForm(forms.Form):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if self.user and self.user.role != 'admin':
+            # Staff announcements are always scoped to their own barangay; the
+            # template shows a static label instead of the select, so the field
+            # must not be required.
+            self.fields['scope'].required = False
             self.fields.pop('barangay')
         else:
             self.fields['barangay'].choices = [('', 'Select Barangay')] + [

@@ -2,15 +2,16 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff/reports.css' %}">
-<link rel="stylesheet" href="{% static 'css/admin/reports.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/reports.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/admin/reports.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/admin/edit_staff.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
 <div class="reports-page admin-reports">
 
     <!-- Page header -->
-    <div class="page-hero" style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div class="page-hero">
         <div>
             <div class="page-hero-title">
                 <i class="fa-solid fa-chart-pie"></i>
@@ -18,47 +19,35 @@
             </div>
             <div class="page-hero-sub">System-wide activity and fee summaries across all barangays.</div>
         </div>
-        <a href="{% url 'admin_reports_export' %}?barangay={{ filters.barangay }}&status={{ filters.status }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}" class="btn btn-primary btn-sm">
+        <a href="{% url 'admin_reports_export' %}?barangay={{ filters.barangay }}&status={{ filters.status }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}" class="btn btn-primary">
             <i class="fa-solid fa-file-csv"></i> Export CSV
         </a>
     </div>
 
+    <div class="reports-stack">
+
     <!-- Filters -->
-    <div class="card">
-        <div class="card-body">
-            <form method="get" class="reports-filters filter-bar">
-                <div class="reports-filter-field">
-                    <label class="form-label reports-filter-label" for="filter_barangay">Barangay</label>
-                    <select name="barangay" id="filter_barangay" class="form-input">
-                        <option value="">All Barangays</option>
-                        {% for b in barangays %}
-                        <option value="{{ b.pk }}" {% if filters.barangay == b.pk %}selected{% endif %}>{{ b.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="reports-filter-field">
-                    <label class="form-label reports-filter-label" for="filter_status">Status</label>
-                    <select name="status" id="filter_status" class="form-input">
-                        <option value="">All Statuses</option>
-                        {% for value, label in status_choices %}
-                        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="reports-filter-field">
-                    <label class="form-label reports-filter-label" for="filter_date_from">From</label>
-                    <input type="date" name="date_from" id="filter_date_from" class="form-input" value="{{ filters.date_from }}">
-                </div>
-                <div class="reports-filter-field">
-                    <label class="form-label reports-filter-label" for="filter_date_to">To</label>
-                    <input type="date" name="date_to" id="filter_date_to" class="form-input" value="{{ filters.date_to }}">
-                </div>
-                <div class="reports-filter-actions">
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
-                    {% if filter_summary %}
-                    <a href="{% url 'admin_reports' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-rotate-left"></i> Clear</a>
-                    {% endif %}
-                </div>
+    <div class="card es-list-card">
+        <div class="es-filters">
+            <form method="get" class="reports-filters">
+                <select name="barangay" id="filter_barangay" class="filter-field" title="Barangay">
+                    <option value="">All Barangays</option>
+                    {% for b in barangays %}
+                    <option value="{{ b.pk }}" {% if filters.barangay == b.pk %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="status" id="filter_status" class="filter-field" title="Status">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="date_from" id="filter_date_from" class="filter-field" value="{{ filters.date_from }}" title="From">
+                <input type="date" name="date_to" id="filter_date_to" class="filter-field" value="{{ filters.date_to }}" title="To">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+                {% if filter_summary %}
+                <a href="{% url 'admin_reports' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-rotate-left"></i> Clear</a>
+                {% endif %}
             </form>
 
             {% if filter_summary %}
@@ -74,8 +63,8 @@
     </div>
 
     <!-- Summary Stats -->
-    <div class="stat-cards">
-        <div class="stat-card">
+    <div class="stat-cards stat-cards-4">
+        <div class="stat-card stat-card-viv">
             <div class="stat-card-icon primary"><i class="fa-solid fa-file-lines"></i></div>
             <div class="stat-card-body">
                 <span class="stat-card-value">{{ total_requests }}</span>
@@ -85,21 +74,21 @@
                 {% endif %}
             </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card stat-card-viv stat-card-viv-warning">
             <div class="stat-card-icon warning"><i class="fa-solid fa-hourglass-half"></i></div>
             <div class="stat-card-body">
                 <span class="stat-card-value">{{ pending }}</span>
                 <span class="stat-card-label">Pending</span>
             </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-card-icon info"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-card stat-card-viv stat-card-viv-ready">
+            <div class="stat-card-icon ready"><i class="fa-solid fa-circle-check"></i></div>
             <div class="stat-card-body">
                 <span class="stat-card-value">{{ completed }}</span>
                 <span class="stat-card-label">Completed</span>
             </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card stat-card-viv stat-card-viv-success">
             <div class="stat-card-icon success"><i class="fa-solid fa-coins"></i></div>
             <div class="stat-card-body">
                 <span class="stat-card-value">&#8369;{{ total_fees_fmt }}</span>
@@ -109,15 +98,18 @@
     </div>
 
     <!-- Per-barangay Breakdown -->
-    <div class="card">
+    <div class="card es-list-card">
         <div class="card-header">
-            <h3>Per-Barangay Breakdown</h3>
-            {% if per_barangay %}<span class="reports-total-chip">{{ per_barangay|length }} barangay{{ per_barangay|length|pluralize }}</span>{% endif %}
+            <h3>
+                <span class="es-orb es-orb-blue"><i class="fa-solid fa-building"></i></span>
+                Per-Barangay Breakdown
+                {% if per_barangay %}<span class="es-list-count">{{ per_barangay|length }}</span>{% endif %}
+            </h3>
         </div>
-        <div class="card-body">
+        <div class="es-list-body">
             {% if per_barangay %}
-            <div class="table-wrapper">
-                <table class="table">
+            <div class="es-list-table-wrap">
+                <table class="es-table">
                     <thead>
                         <tr>
                             <th>Barangay</th>
@@ -132,9 +124,17 @@
                     <tbody>
                         {% for row in per_barangay %}
                         <tr>
-                            <td class="fw-600">
-                                {% if row.barangay.logo %}<img src="{{ row.barangay.logo.url }}" alt="" style="width:22px;height:22px;border-radius:6px;margin-right:8px;vertical-align:middle;">{% endif %}
-                                {{ row.barangay.name }}
+                            <td>
+                                <div class="es-td-user">
+                                    {% if row.barangay.logo %}
+                                    <img class="es-td-logo" src="{{ row.barangay.logo.url }}" alt="">
+                                    {% else %}
+                                    <div class="es-td-avatar">{{ row.barangay.name|first|upper }}</div>
+                                    {% endif %}
+                                    <div class="es-td-user-inner">
+                                        <div class="es-td-name">{{ row.barangay.name }}</div>
+                                    </div>
+                                </div>
                             </td>
                             <td><span class="reports-count-pill">{{ row.count }}</span></td>
                             <td>
@@ -143,9 +143,9 @@
                                     <span class="share-pct">{{ row.pct }}%</span>
                                 </div>
                             </td>
-                            <td class="text-sm text-muted">{{ row.pending }}</td>
-                            <td class="text-sm text-muted">{{ row.completed }}</td>
-                            <td class="text-sm text-muted">{{ row.paid }}</td>
+                            <td class="es-td-muted">{{ row.pending }}</td>
+                            <td class="es-td-muted">{{ row.completed }}</td>
+                            <td class="es-td-muted">{{ row.paid }}</td>
                             <td class="text-right"><span class="reports-fee-badge">&#8369;{{ row.fees_fmt }}</span></td>
                         </tr>
                         {% endfor %}
@@ -153,9 +153,10 @@
                 </table>
             </div>
             {% else %}
-            <div class="empty-state" style="padding:24px;">
-                <i class="fa-solid fa-building" style="font-size:32px;"></i>
-                <p class="text-muted text-sm mt-2">No request data available for the selected filters.</p>
+            <div class="es-empty">
+                <div class="es-empty-icon"><i class="fa-solid fa-building"></i></div>
+                <h4>No Data</h4>
+                <p>No request data available for the selected filters.</p>
             </div>
             {% endif %}
         </div>
@@ -163,9 +164,12 @@
 
     <!-- Status Breakdown -->
     {% if status_breakdown %}
-    <div class="card">
+    <div class="card es-list-card">
         <div class="card-header">
-            <h3>Status Breakdown</h3>
+            <h3>
+                <span class="es-orb es-orb-amber"><i class="fa-solid fa-layer-group"></i></span>
+                Status Breakdown
+            </h3>
         </div>
         <div class="card-body">
             <div class="status-pills">
@@ -185,9 +189,12 @@
 
     <!-- Main Charts Grid -->
     <div class="reports-grid">
-        <div class="card">
+        <div class="card es-list-card">
             <div class="card-header">
-                <h3>Requests by Document Type</h3>
+                <h3>
+                    <span class="es-orb es-orb-teal"><i class="fa-solid fa-chart-bar"></i></span>
+                    Requests by Document Type
+                </h3>
             </div>
             <div class="card-body">
                 {% if doc_type_breakdown %}
@@ -205,19 +212,22 @@
                 </div>
                 {% endwith %}
                 {% else %}
-                <div class="empty-state" style="padding:24px;">
-                    <i class="fa-solid fa-chart-bar" style="font-size:32px;"></i>
-                    <p class="text-muted text-sm mt-2">No data available.</p>
+                <div class="es-empty" style="padding:28px 16px;">
+                    <div class="es-empty-icon"><i class="fa-solid fa-chart-bar"></i></div>
+                    <p>No data available.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
 
         <!-- Monthly Trend -->
-        <div class="card">
+        <div class="card es-list-card">
             <div class="card-header">
-                <h3>Monthly Trend (Last 12 Months)</h3>
-                {% if monthly_total %}<span class="reports-total-chip">{{ monthly_total }} requests</span>{% endif %}
+                <h3>
+                    <span class="es-orb es-orb-navy"><i class="fa-solid fa-chart-line"></i></span>
+                    Monthly Trend (Last 12 Months)
+                    {% if monthly_total %}<span class="es-list-count">{{ monthly_total }}</span>{% endif %}
+                </h3>
             </div>
             <div class="card-body">
                 {% if monthly_stats %}
@@ -255,14 +265,15 @@
                     </div>
                 </div>
                 {% else %}
-                <div class="empty-state" style="padding:24px;">
-                    <i class="fa-solid fa-chart-line" style="font-size:32px;"></i>
-                    <p class="text-muted text-sm mt-2">No monthly data available.</p>
+                <div class="es-empty" style="padding:28px 16px;">
+                    <div class="es-empty-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <p>No monthly data available.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
+    </div>
 </div>
 {% endblock %}

@@ -37,18 +37,11 @@ LOGIN_OTP_TTL_MINUTES = 10
 # and the user must start again from the login page.
 MAX_OTP_ATTEMPTS = 5
 
-# Notifications are auto-deleted once they are older than this many days.
-NOTIFICATION_TTL_DAYS = 7
-
 # Login brute-force protection: after MAX_LOGIN_ATTEMPTS consecutive failures
 # for the same key (username+IP), further attempts are blocked for the lockout
 # window.
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_LOCKOUT_MINUTES = 15
-
-# Lazy purge is debounced so notification reads don't scan+delete on every request.
-_NOTIFICATION_CLEANUP_INTERVAL = timedelta(minutes=30)
-_last_notification_cleanup = None
 
 # Low-volatility lookups (document types, barangays) are memoized for a short
 # window to avoid re-fetching the same list on every page load.  Writes clear
@@ -475,41 +468,12 @@ def update_notification(notification_id, data):
 
 
 def list_notifications(filters=None, order_by='created_at', descending=True, limit=None):
-    _cleanup_expired_notifications()
     return list_docs('notification', filters=filters, order_by=order_by, descending=descending, limit=limit)
 
 
-def delete_expired_notifications():
-    """Delete notifications older than NOTIFICATION_TTL_DAYS.
-
-    Uses the stored ``expires_at`` timestamp when present; falls back to
-    ``created_at + TTL`` for records created before ``expires_at`` existed.
-    Returns the number of notifications deleted.
-    """
-    now = utcnow()
-    fallback_cutoff = now - timedelta(days=NOTIFICATION_TTL_DAYS)
-    deleted = 0
-    for notif in list_docs('notification'):
-        expires_at = notif.get('expires_at')
-        if expires_at is None:
-            created_at = notif.get('created_at')
-            if created_at is None or created_at >= fallback_cutoff:
-                continue
-        elif expires_at >= now:
-            continue
-        delete_doc('notification', notif['id'])
-        deleted += 1
-    return deleted
-
-
-def _cleanup_expired_notifications():
-    """Run the expired-notification purge at most once per interval."""
-    global _last_notification_cleanup
-    now = utcnow()
-    if _last_notification_cleanup is not None and (now - _last_notification_cleanup) < _NOTIFICATION_CLEANUP_INTERVAL:
-        return
-    _last_notification_cleanup = now
-    delete_expired_notifications()
+def delete_notification(notification_id):
+    """Permanently remove a notification (user-initiated)."""
+    delete_doc('notification', notification_id)
 
 
 # ─────────────────────── Activity log helpers ───────────────────────

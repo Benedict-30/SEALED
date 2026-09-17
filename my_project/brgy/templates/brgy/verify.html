@@ -32,6 +32,16 @@
                 <p>This document has been officially issued by the barangay and is verified in our system.</p>
                 
                 <div class="verify-details">
+                    {% if doc_type %}
+                    <div class="verify-detail-row">
+                        <span class="label"><i class="fa-solid fa-file-lines text-muted"></i> Document</span>
+                        <span class="value">{{ doc_type.name }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="verify-detail-row">
+                        <span class="label"><i class="fa-solid fa-hashtag text-muted"></i> Request No.</span>
+                        <span class="value">{{ doc_request.request_number }}</span>
+                    </div>
                     <div class="verify-detail-row">
                         <span class="label"><i class="fa-solid fa-user text-muted"></i> Issued To</span>
                         <span class="value">{{ doc_request.resident.display_name }}</span>
@@ -42,11 +52,11 @@
                     </div>
                     <div class="verify-detail-row">
                         <span class="label"><i class="fa-solid fa-calendar-day text-muted"></i> Date Issued</span>
-                        <span class="value">{{ doc_request.completed_at|date:"M d, Y" }}</span>
+                        <span class="value">{% if doc_item and doc_item.printed_at %}{{ doc_item.printed_at|date:"M d, Y" }}{% elif doc_request.completed_at %}{{ doc_request.completed_at|date:"M d, Y" }}{% else %}—{% endif %}</span>
                     </div>
                     <div class="verify-detail-row">
                         <span class="label"><i class="fa-solid fa-barcode text-muted"></i> Verification Code</span>
-                        <span class="value" style="font-family: monospace; letter-spacing: 2px; color: var(--primary);">{{ doc_request.verification_code }}</span>
+                        <span class="value" style="font-family: monospace; letter-spacing: 2px; color: var(--primary);">{{ verification_code }}</span>
                     </div>
                 </div>
                 <div class="verify-form">

@@ -5,7 +5,7 @@
 {% block title %}{{ page_title|default:title }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff/document_type_form.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/staff/document_type_form.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -115,6 +115,12 @@
                         </a>
                     </div>
                     {% endif %}
+                    {% if form.instance.template_variables %}
+                    <div class="dtf-hint" style="margin-bottom: 10px;">
+                        <i class="fa-solid fa-code"></i> Detected placeholders (auto-filled on print):
+                        {% for var in form.instance.template_variables %}<code>{{ var }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </div>
+                    {% endif %}
                     <div class="file-upload-area" id="uploadArea">
                         <input type="file" name="template_file" id="id_template_file" accept=".docx,.doc">
                         <div class="dtf-upload-icon"><i class="fa-solid fa-cloud-arrow-up" id="uploadIcon"></i></div>
@@ -124,43 +130,18 @@
                 </div>
             </section>
 
-            <!-- ══════ AVAILABILITY ══════ -->
-            <section class="dtf-card">
-                <div class="dtf-card-head">
-                    <div class="dtf-card-icon"><i class="fa-solid fa-toggle-on"></i></div>
-                    <div>
-                        <h3>Availability</h3>
-                        <p>Decide whether residents can request this document right now.</p>
-                    </div>
-                </div>
-                <div class="dtf-card-body">
-                    <label class="dtf-toggle-row" for="id_is_active">
-                        <span class="dtf-toggle-text">
-                            <strong>Actively available for residents</strong>
-                            <small>When on, residents of {{ brgy.name }} can see and request it.</small>
-                        </span>
-                        <span class="dtf-toggle">
-                            {{ form.is_active }}
-                            <span class="dtf-toggle-slider"></span>
-                        </span>
-                    </label>
-                    <div class="dtf-barangay-row">
-                        <i class="fa-solid fa-location-dot"></i>
-                        <span class="dtf-barangay-text">
-                            <strong>Assigned Barangay</strong>
-                            <small>{{ brgy.name }}</small>
-                        </span>
-                    </div>
-                    <input type="hidden" name="barangay" value="{{ brgy.pk }}">
-                </div>
-            </section>
-
             <!-- ══════ ACTIONS ══════ -->
             <div class="dtf-actions">
                 <button type="submit" class="btn btn-primary">
                     <i class="fa-solid fa-floppy-disk"></i> Save Changes
                 </button>
                 <a href="{% url 'staff_manage_document_types' %}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-danger dtf-delete-btn"
+                        formaction="{% url 'staff_delete_document_type' doc_type.pk %}"
+                        formnovalidate
+                        onclick="return confirm('Delete {{ doc_type.name }}? This cannot be undone.');">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
             </div>
 
         </div>

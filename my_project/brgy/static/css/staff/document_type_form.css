@@ -398,6 +398,12 @@
     padding: 13px 22px;
     font-size: 15px;
 }
+.dtf-actions .dtf-delete-btn {
+    padding: 13px 20px;
+    font-size: 15px;
+    border-radius: 11px;
+    margin-left: auto;
+}
 
 /* ═══════════ LIVE PREVIEW (SIDE) ═══════════ */
 .dtf-side { position: sticky; top: 96px; }

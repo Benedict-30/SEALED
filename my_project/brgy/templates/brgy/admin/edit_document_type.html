@@ -3,58 +3,141 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/admin/document_types.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin/edit_staff.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
-<div style="max-width:640px;">
-    <div class="card">
-        <div class="card-header">
-            <h3>Edit Document Type</h3>
-            <a href="{% url 'manage_document_types' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Back</a>
-        </div>
-        <div class="card-body">
-            {% if form.errors %}
-            <div class="form-error-list" style="margin-bottom:16px;">
-                {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+<div class="edit-staff-layout">
+
+    <!-- MAIN 2-COL GRID -->
+    <div class="es-main-grid">
+
+        <!-- FORM COLUMN -->
+        <div class="es-main-col">
+            <div class="card edit-staff-form-card">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-pen-to-square"></i> Edit Document Type</h3>
+                    <a href="{% url 'manage_document_types' %}" class="btn btn-ghost btn-sm">
+                        <i class="fa-solid fa-arrow-left"></i> Back
+                    </a>
+                </div>
+                <div class="card-body edit-staff-card-body">
+                    {% if form.errors %}
+                    <div class="form-error-list" style="margin-bottom:20px;">
+                        {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" id="editDocTypeForm">
+                        {% csrf_token %}
+
+                        <!-- 01 Identity -->
+                        <div class="es-panel es-panel-blue">
+                            <div class="es-glow es-glow-blue"></div>
+                            <div class="es-panel-head">
+                                <span class="es-step">01</span>
+                                <span class="es-orb es-orb-blue"><i class="fa-solid fa-file-lines"></i></span>
+                                <div><div class="es-panel-title">Identity</div><div class="es-panel-sub">The name &amp; where it applies</div></div>
+                            </div>
+                            <div class="es-fields">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Document Name</label>
+                                        <div class="es-input-wrap"><i class="fa-solid fa-heading es-input-icon"></i>{{ form.name }}</div>
+                                    </div>
+                                    <div class="form-group" style="min-width:180px;">
+                                        <label class="form-label">Scope</label>
+                                        <div class="es-input-wrap"><i class="fa-solid fa-globe es-input-icon"></i>{{ form.scope }}</div>
+                                    </div>
+                                </div>
+                                <div class="form-group" id="barangayGroup">
+                                    <label class="form-label">Barangay</label>
+                                    <div class="es-input-wrap"><i class="fa-solid fa-building es-input-icon"></i>{{ form.barangay }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 02 Description -->
+                        <div class="es-panel es-panel-teal">
+                            <div class="es-glow es-glow-teal"></div>
+                            <div class="es-panel-head">
+                                <span class="es-step">02</span>
+                                <span class="es-orb es-orb-teal"><i class="fa-solid fa-align-left"></i></span>
+                                <div><div class="es-panel-title">Description</div><div class="es-panel-sub">What this document is for</div></div>
+                            </div>
+                            <div class="es-fields">
+                                <div class="form-group">
+                                    <label class="form-label">Description</label>
+                                    <div class="es-input-wrap"><i class="fa-solid fa-align-left es-input-icon"></i>{{ form.description }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 03 Requirements & Status -->
+                        <div class="es-panel es-panel-amber">
+                            <div class="es-glow es-glow-amber"></div>
+                            <div class="es-panel-head">
+                                <span class="es-step">03</span>
+                                <span class="es-orb es-orb-amber"><i class="fa-solid fa-list-check"></i></span>
+                                <div><div class="es-panel-title">Requirements &amp; Status</div><div class="es-panel-sub">What residents must bring &amp; if it&apos;s live</div></div>
+                            </div>
+                            <div class="es-fields">
+                                <div class="form-group">
+                                    <label class="form-label">Requirements (one per line)</label>
+                                    <div class="es-input-wrap"><i class="fa-solid fa-clipboard-list es-input-icon"></i>{{ form.requirements }}</div>
+                                </div>
+                                <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                                    {{ form.is_active }}
+                                    <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
-            {% endif %}
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Document Name</label>
-                        {{ form.name }}
-                    </div>
-                    <div class="form-group" style="min-width:180px;">
-                        <label class="form-label">Scope</label>
-                        {{ form.scope }}
-                    </div>
-                </div>
-                <div class="form-group" id="barangayGroup">
-                    <label class="form-label">Barangay</label>
-                    {{ form.barangay }}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Description</label>
-                    {{ form.description }}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Requirements (one per line)</label>
-                    {{ form.requirements }}
-                </div>
-                <div class="form-group" style="display:flex;align-items:center;gap:8px;">
-                    {{ form.is_active }}
-                    <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
-                </div>
-                <div class="form-info" style="padding:12px 14px;border-radius:10px;background:var(--bg,#f8fafc);border:1px dashed var(--border,#e9ecef);margin-bottom:16px;">
-                    <i class="fa-solid fa-circle-info" style="color:var(--info);margin-right:6px;"></i>
-                    <span style="font-size:13px;color:var(--text-muted);">Price and template are managed by each barangay&apos;s staff. They are not editable here.</span>
-                </div>
-                <div style="display:flex;gap:10px;margin-top:20px;">
-                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Changes</button>
-                    <a href="{% url 'manage_document_types' %}" class="btn btn-ghost">Cancel</a>
-                </div>
-            </form>
+        </div>
+
+        <!-- SIDEBAR COLUMN -->
+        <aside class="es-side-col">
+            <div class="card es-side-card es-actions-card">
+                <div class="es-side-head"><i class="fa-solid fa-bolt-lightning"></i> Quick Actions</div>
+                <a href="{% url 'manage_document_types' %}" class="es-action-row">
+                    <div class="es-action-icon"><i class="fa-solid fa-list"></i></div>
+                    <div class="es-action-text"><span class="es-action-title">View All Document Types</span><span class="es-action-desc">Back to the list</span></div>
+                    <i class="fa-solid fa-arrow-right es-action-arrow"></i>
+                </a>
+                <form method="post" action="{% url 'delete_document_type' doc_type.pk %}"
+                      onsubmit="return confirm('Delete {{ doc_type.name }}? This cannot be undone.');"
+                      class="es-action-row es-action-form">
+                    {% csrf_token %}
+                    <div class="es-action-icon es-action-icon-rose"><i class="fa-solid fa-trash"></i></div>
+                    <div class="es-action-text"><span class="es-action-title">Delete Document Type</span><span class="es-action-desc">Remove permanently</span></div>
+                    <button type="submit" class="es-action-arrow es-action-btn"><i class="fa-solid fa-arrow-right"></i></button>
+                </form>
+            </div>
+
+            <div class="card es-side-card es-summary-card">
+                <div class="es-side-head"><i class="fa-solid fa-id-badge"></i> Summary</div>
+                <div class="es-summary-row"><span class="es-summary-label">Scope</span><span class="es-summary-value es-summary-badge">{% if doc_type.is_global %}Global{% else %}Local{% endif %}</span></div>
+                <div class="es-summary-row"><span class="es-summary-label">Status</span><span class="es-summary-value">{% if doc_type.is_active %}<span class="es-dot-green"></span> Active{% else %}<span class="es-dot-red"></span> Inactive{% endif %}</span></div>
+                <div class="es-summary-row"><span class="es-summary-label">Barangay</span><span class="es-summary-value">{{ doc_type.barangay.name|default:"All" }}</span></div>
+                <div class="es-summary-row"><span class="es-summary-label">Requirements</span><span class="es-summary-value">{{ doc_type.requirements_list|length }}</span></div>
+                {% if doc_type.template_variables %}
+                <div class="es-summary-row"><span class="es-summary-label">Placeholders</span><span class="es-summary-value">{% for var in doc_type.template_variables %}<span class="es-badge es-badge-muted" style="margin:2px;">{{ var }}</span>{% endfor %}</span></div>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+
+    <!-- STICKY SAVE BAR -->
+    <div class="es-sticky-bar">
+        <div class="es-bar-info">
+            <span class="es-bar-indicator"></span>
+            <span>Editing <strong>{{ doc_type.name }}</strong></span>
+        </div>
+        <div class="es-bar-buttons">
+            <a href="{% url 'manage_document_types' %}" class="btn btn-ghost btn-sm es-cancel-btn"><i class="fa-solid fa-xmark"></i> Cancel</a>
+            <button type="submit" form="editDocTypeForm" class="btn btn-primary btn-sm es-save-btn"><i class="fa-solid fa-check"></i> Save Changes</button>
         </div>
     </div>
 </div>
