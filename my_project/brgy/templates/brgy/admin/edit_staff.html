@@ -1,77 +1,209 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin/edit_staff.css' %}?v=6">
+{% endblock %}
 
 {% block content %}
-<div style="max-width:640px;">
-    <div class="card">
-        <div class="card-header">
-            <h3>Edit Staff Account</h3>
-            <a href="{% url 'manage_staff' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Back</a>
+<div class="edit-staff-layout">
+
+    <!-- HERO BANNER -->
+    <div class="es-hero">
+        <div class="es-hero-bg"></div>
+        <div class="es-hero-pattern"></div>
+        <div class="es-hero-glow es-hero-glow-1"></div>
+        <div class="es-hero-glow es-hero-glow-2"></div>
+        <div class="es-hero-top">
+            <div class="es-hero-identity">
+                <div class="es-avatar-ring">
+                    <div class="es-avatar">
+                        {% if staff.profile_picture %}
+                        <img src="{{ staff.profile_picture.url }}" alt="Avatar" class="es-avatar-img">
+                        {% else %}
+                        <span class="es-avatar-initials">{{ staff.initials|default:"ST" }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="es-avatar-status {% if staff.is_active %}es-status-on{% else %}es-status-off{% endif %}">
+                        <i class="fa-solid {% if staff.is_active %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                    </div>
+                </div>
+                <div class="es-hero-titles">
+                    <h1 class="es-hero-name">{{ staff.display_name }}</h1>
+                    <div class="es-hero-badges">
+                        <span class="es-badge es-badge-role"><i class="fa-solid fa-user-tie"></i> Staff</span>
+                        <span class="es-badge {% if staff.is_active %}es-badge-on{% else %}es-badge-off{% endif %}">
+                            <span class="es-badge-dot"></span>
+                            {% if staff.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <a href="{% url 'manage_staff' %}" class="btn btn-ghost btn-sm es-back-btn">
+                <i class="fa-solid fa-arrow-left"></i> Back to Staff
+            </a>
         </div>
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                {% if form.errors %}
-                <ul class="form-error-list">
-                    {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
-                </ul>
-                {% endif %}
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="{{ form.first_name.id_for_label }}">First Name</label>
-                        {{ form.first_name }}
-                        {% for error in form.first_name.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
+        <div class="es-hero-details">
+            <div class="es-detail-item"><i class="fa-solid fa-at"></i><div><span class="es-detail-label">Username</span><span class="es-detail-value">@{{ staff.username }}</span></div></div>
+            <div class="es-detail-item"><i class="fa-solid fa-envelope"></i><div><span class="es-detail-label">Email</span><span class="es-detail-value">{{ staff.email }}</span></div></div>
+            <div class="es-detail-item"><i class="fa-solid fa-phone"></i><div><span class="es-detail-label">Phone</span><span class="es-detail-value">{{ staff.phone_number|default:"Not set" }}</span></div></div>
+            <div class="es-detail-item"><i class="fa-solid fa-building"></i><div><span class="es-detail-label">Barangay</span><span class="es-detail-value">{{ staff.barangay.name|default:"No barangay" }}</span></div></div>
+            <div class="es-detail-item"><i class="fa-regular fa-calendar"></i><div><span class="es-detail-label">Member Since</span><span class="es-detail-value">{{ staff.date_joined|date:"M d, Y" }}</span></div></div>
+        </div>
+    </div>
+
+    <!-- MAIN 2-COL GRID -->
+    <div class="es-main-grid">
+
+        <!-- FORM COLUMN -->
+        <div class="es-main-col">
+            <div class="card edit-staff-form-card">
+                <div class="card-header"><h3><i class="fa-solid fa-pen-to-square"></i> Edit Account Details</h3></div>
+                <div class="card-body edit-staff-card-body">
+                    {% if form.errors %}
+                    <div class="form-error-list" style="margin-bottom:20px;">
+                        {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="{{ form.last_name.id_for_label }}">Last Name</label>
-                        {{ form.last_name }}
-                        {% for error in form.last_name.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
-                        {{ form.email }}
-                        {% for error in form.email.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="{{ form.phone_number.id_for_label }}">Phone Number</label>
-                        {{ form.phone_number }}
-                        {% for error in form.phone_number.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="{{ form.barangay.id_for_label }}">Barangay</label>
-                    {{ form.barangay }}
-                    {% for error in form.barangay.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="{{ form.password.id_for_label }}">New Password</label>
-                        <div class="password-wrap">
-                            {{ form.password }}
-                            <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
+                    {% endif %}
+
+                    <form method="post" id="editStaffForm">
+                        {% csrf_token %}
+
+                        <!-- 01 Personal -->
+                        <div class="es-panel es-panel-blue">
+                            <div class="es-glow es-glow-blue"></div>
+                            <div class="es-panel-head">
+                                <span class="es-step">01</span>
+                                <span class="es-orb es-orb-blue"><i class="fa-solid fa-id-card"></i></span>
+                                <div><div class="es-panel-title">Personal Information</div><div class="es-panel-sub">Basic identity details</div></div>
+                            </div>
+                            <div class="es-fields">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label" for="{{ form.first_name.id_for_label }}">First Name</label>
+                                        <div class="es-input-wrap"><i class="fa-solid fa-user es-input-icon"></i>{{ form.first_name }}</div>
+                                        {% for error in form.first_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="{{ form.last_name.id_for_label }}">Last Name</label>
+                                        <div class="es-input-wrap"><i class="fa-solid fa-user es-input-icon"></i>{{ form.last_name }}</div>
+                                        {% for error in form.last_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        {% for error in form.password.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
-                        <div class="form-helptext">{% if creating %}Leave blank to auto-generate a strong temporary password.{% else %}Leave blank to keep current password.{% endif %}</div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="{{ form.password_confirm.id_for_label }}">Confirm New Password</label>
-                        <div class="password-wrap">
-                            {{ form.password_confirm }}
-                            <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
+
+                        <!-- 02 Contact -->
+                        <div class="es-panel es-panel-teal">
+                            <div class="es-glow es-glow-teal"></div>
+                            <div class="es-panel-head">
+                                <span class="es-step">02</span>
+                                <span class="es-orb es-orb-teal"><i class="fa-solid fa-address-book"></i></span>
+                                <div><div class="es-panel-title">Contact &amp; Assignment</div><div class="es-panel-sub">How to reach them &amp; where they serve</div></div>
+                            </div>
+                            <div class="es-fields">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label" for="{{ form.email.id_for_label }}">Email Address</label>
+                                        <div class="es-input-wrap"><i class="fa-solid fa-envelope es-input-icon"></i>{{ form.email }}</div>
+                                        {% for error in form.email.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="{{ form.phone_number.id_for_label }}">Phone Number</label>
+                                        <div class="es-input-wrap"><i class="fa-solid fa-phone es-input-icon"></i>{{ form.phone_number }}</div>
+                                        {% for error in form.phone_number.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="{{ form.barangay.id_for_label }}">Assigned Barangay</label>
+                                    <div class="es-input-wrap"><i class="fa-solid fa-building es-input-icon"></i>{{ form.barangay }}</div>
+                                    {% for error in form.barangay.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                                </div>
+                            </div>
                         </div>
-                        {% for error in form.password_confirm.errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
+
+                        <!-- 03 Security -->
+                        <div class="es-panel es-panel-amber">
+                            <div class="es-glow es-glow-amber"></div>
+                            <div class="es-panel-head">
+                                <span class="es-step">03</span>
+                                <span class="es-orb es-orb-amber"><i class="fa-solid fa-shield-halved"></i></span>
+                                <div><div class="es-panel-title">Security</div><div class="es-panel-sub">Leave blank to keep the current password</div></div>
+                            </div>
+                            <div class="es-fields">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label" for="{{ form.password.id_for_label }}">New Password</label>
+                                        <div class="password-wrap es-password-wrap">
+                                            <i class="fa-solid fa-lock es-input-icon"></i>{{ form.password }}
+                                            <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password"><i class="fa-regular fa-eye"></i></button>
+                                        </div>
+                                        {% for error in form.password.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="{{ form.password_confirm.id_for_label }}">Confirm New Password</label>
+                                        <div class="password-wrap es-password-wrap">
+                                            <i class="fa-solid fa-lock es-input-icon"></i>{{ form.password_confirm }}
+                                            <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password"><i class="fa-regular fa-eye"></i></button>
+                                        </div>
+                                        {% for error in form.password_confirm.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR COLUMN -->
+        <aside class="es-side-col">
+            <div class="card es-side-card es-actions-card">
+                <div class="es-side-head"><i class="fa-solid fa-bolt-lightning"></i> Quick Actions</div>
+                <a href="{% url 'manage_staff' %}" class="es-action-row">
+                    <div class="es-action-icon"><i class="fa-solid fa-list"></i></div>
+                    <div class="es-action-text"><span class="es-action-title">View All Staff</span><span class="es-action-desc">Back to staff list</span></div>
+                    <i class="fa-solid fa-arrow-right es-action-arrow"></i>
+                </a>
+                <form method="post" action="{% url 'reset_staff_password' staff.pk %}" onsubmit="return confirm('Generate a new temporary password for {{ staff.display_name }}?');" class="es-action-row es-action-form">
+                    {% csrf_token %}
+                    <div class="es-action-icon es-action-icon-amber"><i class="fa-solid fa-key"></i></div>
+                    <div class="es-action-text"><span class="es-action-title">Reset Password</span><span class="es-action-desc">Generate a new temp password</span></div>
+                    <button type="submit" class="es-action-arrow es-action-btn"><i class="fa-solid fa-arrow-right"></i></button>
+                </form>
+                <form method="post" action="{% url 'toggle_staff_active' staff.pk %}" onsubmit="return confirm('{% if staff.is_active %}Deactivate{% else %}Activate{% endif %} {{ staff.display_name }}?');" class="es-action-row es-action-form">
+                    {% csrf_token %}
+                    <div class="es-action-icon {% if staff.is_active %}es-action-icon-rose{% else %}es-action-icon-green{% endif %}">
+                        <i class="fa-solid {% if staff.is_active %}fa-ban{% else %}fa-check{% endif %}"></i>
                     </div>
-                </div>
-                <div style="display:flex;gap:10px;margin-top:20px;">
-                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Changes</button>
-                    <a href="{% url 'manage_staff' %}" class="btn btn-ghost">Cancel</a>
-                </div>
-            </form>
+                    <div class="es-action-text">
+                        <span class="es-action-title">{% if staff.is_active %}Deactivate{% else %}Activate{% endif %} Account</span>
+                        <span class="es-action-desc">{% if staff.is_active %}Disable login access{% else %}Restore login access{% endif %}</span>
+                    </div>
+                    <button type="submit" class="es-action-arrow es-action-btn"><i class="fa-solid fa-arrow-right"></i></button>
+                </form>
+            </div>
+
+            <div class="card es-side-card es-summary-card">
+                <div class="es-side-head"><i class="fa-solid fa-id-badge"></i> Account Summary</div>
+                <div class="es-summary-row"><span class="es-summary-label">Role</span><span class="es-summary-value es-summary-badge">Staff</span></div>
+                <div class="es-summary-row"><span class="es-summary-label">Status</span><span class="es-summary-value">{% if staff.is_active %}<span class="es-dot-green"></span> Active{% else %}<span class="es-dot-red"></span> Inactive{% endif %}</span></div>
+                <div class="es-summary-row"><span class="es-summary-label">Username</span><span class="es-summary-value">@{{ staff.username }}</span></div>
+                <div class="es-summary-row"><span class="es-summary-label">Barangay</span><span class="es-summary-value">{{ staff.barangay.name|default:"None" }}</span></div>
+                <div class="es-summary-row"><span class="es-summary-label">Joined</span><span class="es-summary-value">{{ staff.date_joined|date:"M d, Y" }}</span></div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- STICKY SAVE BAR -->
+    <div class="es-sticky-bar">
+        <div class="es-bar-info">
+            <span class="es-bar-indicator"></span>
+            <span>Editing <strong>{{ staff.display_name }}</strong></span>
+        </div>
+        <div class="es-bar-buttons">
+            <a href="{% url 'manage_staff' %}" class="btn btn-ghost btn-sm es-cancel-btn"><i class="fa-solid fa-xmark"></i> Cancel</a>
+            <button type="submit" form="editStaffForm" class="btn btn-primary btn-sm es-save-btn"><i class="fa-solid fa-check"></i> Save Changes</button>
         </div>
     </div>
 </div>

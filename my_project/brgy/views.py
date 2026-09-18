@@ -2,6 +2,7 @@ import csv
 import io
 import logging
 import os
+import random
 import re
 import secrets
 import string
@@ -26,6 +27,7 @@ from docxtpl import DocxTemplate
 import mammoth
 
 from . import firestore_db, report_exports
+from . import template_tokens
 from .auth import login_user, logout_user
 from .security import hash_sensitive
 
@@ -85,7 +87,6 @@ def notify(user_id, title, message, link=''):
         'message': message,
         'link': link,
         'is_read': False,
-        'expires_at': firestore_db.utcnow() + timedelta(days=firestore_db.NOTIFICATION_TTL_DAYS),
     })
 
 
@@ -132,6 +133,367 @@ def _absolute_url(request, path):
         return request.build_absolute_uri(path)
     base = getattr(settings, 'SITE_URL', '') or ''
     return base + path
+
+
+def announcement_recipients(barangay_id):
+    """Active residents who have an email address and should get the notice.
+
+    A barangay-scoped announcement (``barangay_id`` set) goes only to residents
+    of that barangay; a system-wide announcement (``None``) reaches every
+    active resident with an email on file.
+    """
+    recipients = []
+    for data in firestore_db.list_users():
+        if data.get('role') != 'resident':
+            continue
+        if not data.get('is_active', True):
+            continue
+        if not (data.get('email') or '').strip():
+            continue
+        if barangay_id and data.get('barangay_id') != barangay_id:
+            continue
+        recipients.append(CustomUser(data))
+    return recipients
+
+
+def send_announcement_emails(announcement, request=None):
+    """Email a published announcement to its audience exactly once.
+
+    Returns the number of emails delivered. The announcement is flagged
+    ``email_notified`` so re-publishing or repeated toggles never resend.
+    """
+    if not announcement or not announcement.is_published:
+        return 0
+    if announcement._data.get('email_notified'):
+        return 0
+
+    try:
+        recipients = announcement_recipients(announcement._data.get('barangay_id'))
+        subject = f'Barangay announcement: {announcement.title}'
+        body = (
+            f'{announcement.title}\n\n'
+            f'{announcement.body}\n\n'
+            f'View this announcement in the Barangay Document System: '
+            f'{_absolute_url(request, "/dashboard/")}'
+        )
+
+        sent = 0
+        for user in recipients:
+            if send_user_email(user, subject, body):
+                sent += 1
+
+        firestore_db.update_announcement(announcement.pk, {
+            'email_notified': True,
+            'email_notified_at': firestore_db.utcnow(),
+            'email_sent_count': sent,
+        })
+        return sent
+    except Exception:
+        logger.exception('Announcement email broadcast failed for "%s".',
+                         getattr(announcement, 'title', ''))
+        return 0
+
+
+def _make_verification_code(length=12):
+    """Generate a cryptographically secure public verification reference code."""
+    alphabet = string.ascii_uppercase + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+def _normalize_template_var(name):
+    """Normalize a placeholder name for matching (case/punctuation insensitive)."""
+    return re.sub(r'[^a-z0-9]', '', str(name or '').lower())
+
+
+# Ambiguous short placeholder names (normalized) mapped to canonical keys.
+TEMPLATE_VAR_ALIASES = {
+    'name': 'resident_name',
+    'fullname': 'resident_name',
+    'resident': 'resident_name',
+    'date': 'date_today',
+    'today': 'date_today',
+    'datetoday': 'date_today',
+    'address': 'resident_address',
+    'requestno': 'request_number',
+    'requestnum': 'request_number',
+    'ref': 'verification_code',
+    'refno': 'verification_code',
+    'referenceno': 'verification_code',
+    'reference': 'verification_code',
+    'referencecode': 'verification_code',
+    'referencenumber': 'verification_code',
+    'verification': 'verification_code',
+    'verifycode': 'verification_code',
+    'code': 'verification_code',
+    'verifyurl': 'verify_url',
+    'verificationlink': 'verify_url',
+    'verifylink': 'verify_url',
+    'docname': 'document_name',
+    'document': 'document_name',
+    'doctype': 'document_name',
+    'documenttype': 'document_name',
+    'chairman': 'chairman_name',
+    'barangaychairman': 'chairman_name',
+    'barangay': 'barangay_name',
+    'age': 'resident_age',
+    'dayofweek': 'date_day_of_week',
+    'weekday': 'date_day_of_week',
+}
+
+
+def _format_template_date(value, fmt='%B %d, %Y'):
+    if value is None:
+        return ''
+    if hasattr(value, 'strftime'):
+        try:
+            return value.strftime(fmt)
+        except Exception:
+            return ''
+    return value
+
+
+def _as_template_date(value):
+    """Normalize a value to a ``date`` best-effort (or None).
+
+    Accepts ``date``/``datetime`` and common string forms; anything else
+    (missing/garbled birth dates) yields None so placeholders render blank.
+    """
+    if value is None or value == '':
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        text = value.strip()
+        for fmt in ('%Y-%m-%d', '%Y/%m/%d', '%B %d, %Y', '%b %d, %Y',
+                    '%d/%m/%Y', '%m/%d/%Y'):
+            try:
+                return datetime.strptime(text, fmt).date()
+            except (ValueError, TypeError):
+                pass
+    return None
+
+
+def _precise_age(birth_value):
+    """Whole years lived as of today; '' when the birth date is unknown."""
+    born = _as_template_date(birth_value)
+    if born is None:
+        return ''
+    today = timezone.localdate()
+    years = today.year - born.year - (
+        (today.month, today.day) < (born.month, born.day)
+    )
+    return str(years) if years >= 0 else ''
+
+
+def _build_template_context(resident=None, barangay=None, doc_req=None, item=None,
+                            doc_type=None, purpose='', request_number='',
+                            verification_code='', verify_url=''):
+    """Build the flat value namespace used to render document templates.
+
+    Canonical placeholder values (``resident_name``, ``purpose``,
+    ``date_today``, ``verification_code``, …) are keyed by their exact
+    names; ``_resolve_template_context`` additionally maps any custom
+    placeholder a template may use (exact or aliased).
+    """
+    if doc_req is not None:
+        request_number = request_number or getattr(doc_req, 'request_number', '') or ''
+        purpose = purpose or getattr(doc_req, 'purpose', '') or ''
+    contact = ''
+    if resident is not None:
+        contact = getattr(resident, 'phone_number', '') or ''
+    if not contact and doc_req is not None:
+        contact = getattr(doc_req, 'contact_number', '') or ''
+    fee_value = None
+    if item is not None:
+        fee_value = getattr(item, 'fee_per_unit', None)
+    if fee_value is None and doc_type is not None:
+        fee_value = getattr(doc_type, 'fee', None)
+    quantity = getattr(item, 'quantity', '') if item is not None else ''
+    try:
+        total_fee = float(fee_value) * int(quantity or 0) if fee_value not in (None, '') else ''
+    except (TypeError, ValueError):
+        total_fee = ''
+    chairman = getattr(barangay, 'chairman_name', '') or '' if barangay is not None else ''
+    full_name = getattr(resident, 'display_name', '') or '' if resident is not None else ''
+    today = timezone.localdate()
+    birth = _as_template_date(
+        getattr(resident, 'birth_date', None) if resident is not None else None
+    )
+    return {
+        # Request
+        'request_number': request_number or '',
+        'request_status': getattr(doc_req, 'status', '') or '' if doc_req is not None else '',
+        'purpose': purpose or '',
+        # Verification reference
+        'verification_code': verification_code or '',
+        'verify_url': verify_url or '',
+        # Dates (issuance)
+        'date_today': today.strftime('%B %d, %Y'),
+        'date_day': today.strftime('%d'),
+        'date_month': today.strftime('%m'),
+        'date_month_name': today.strftime('%B'),
+        'date_year': today.strftime('%Y'),
+        'date_day_of_week': today.strftime('%A'),
+        # Resident
+        'resident_name': full_name,
+        'resident_full_name': full_name,
+        'resident_first_name': getattr(resident, 'first_name', '') or '' if resident is not None else '',
+        'resident_middle_name': getattr(resident, 'middle_name', '') or '' if resident is not None else '',
+        'resident_last_name': getattr(resident, 'last_name', '') or '' if resident is not None else '',
+        'resident_address': getattr(resident, 'address', '') or '' if resident is not None else '',
+        'resident_phone_number': getattr(resident, 'phone_number', '') or '' if resident is not None else '',
+        'resident_contact_number': contact,
+        'resident_email': getattr(resident, 'email', '') or '' if resident is not None else '',
+        'resident_username': getattr(resident, 'username', '') or '' if resident is not None else '',
+        'resident_gender': getattr(resident, 'gender', '') or '' if resident is not None else '',
+        'resident_civil_status': getattr(resident, 'civil_status', '') or '' if resident is not None else '',
+        'resident_occupation': getattr(resident, 'occupation', '') or '' if resident is not None else '',
+        'resident_id_type': getattr(resident, 'id_type', '') or '' if resident is not None else '',
+        'resident_birth_date': birth.strftime('%B %d, %Y') if birth else '',
+        'resident_birth_day': birth.strftime('%d') if birth else '',
+        'resident_birth_month': birth.strftime('%m') if birth else '',
+        'resident_birth_month_name': birth.strftime('%B') if birth else '',
+        'resident_birth_year': birth.strftime('%Y') if birth else '',
+        'resident_age': _precise_age(birth),
+        # Barangay
+        'barangay_name': getattr(barangay, 'name', '') or '' if barangay is not None else '',
+        'barangay_address': getattr(barangay, 'address', '') or '' if barangay is not None else '',
+        'barangay_contact_number': getattr(barangay, 'contact_number', '') or '' if barangay is not None else '',
+        'barangay_email': getattr(barangay, 'email', '') or '' if barangay is not None else '',
+        'chairman_name': chairman,
+        'barangay_chairman_name': chairman,
+        # Document / item
+        'document_name': getattr(doc_type, 'name', '') or '' if doc_type is not None else '',
+        'document_description': getattr(doc_type, 'description', '') or '' if doc_type is not None else '',
+        'quantity': quantity or '',
+        'fee': fee_value if fee_value is not None else '',
+        'total_fee': total_fee,
+    }
+
+
+def _resolve_template_context(namespace, variables, token_salt=''):
+    """Resolve every detected template placeholder to a value.
+
+    Starts from the full canonical namespace (so legacy placeholders keep
+    working) and adds alias/exact matches for any custom placeholder the
+    template uses.  Secret tokens (see ``brgy.template_tokens``) are
+    translated to their canonical field when ``token_salt`` is given.
+    Unmappable placeholders render blank (lenient Jinja).
+    """
+    context = dict(namespace)
+    by_norm = {_normalize_template_var(key): value for key, value in namespace.items()}
+    for var in (variables or []):
+        key = _normalize_template_var(var)
+        if key in by_norm:
+            context[var] = by_norm[key]
+            continue
+        target = TEMPLATE_VAR_ALIASES.get(key)
+        if target:
+            context[var] = namespace.get(target, '')
+            continue
+        if token_salt:
+            canonical = template_tokens.resolve_token(var, token_salt)
+            if canonical and canonical in namespace:
+                context[var] = namespace[canonical]
+    return context
+
+
+def _doc_template_salt(doc_type):
+    """Per-document-type salt used for secret placeholder tokens."""
+    salt = getattr(doc_type, 'template_salt', '') or ''
+    if not salt:
+        salt = str(getattr(doc_type, 'pk', '') or '')
+    return salt
+
+
+def _sheet_variables(doc_type, override=None):
+    """Canonical placeholder names for display: stored, else live-detected.
+
+    Legacy document types predate upload-time detection, so their stored
+    ``template_variables`` may be empty even though a template file exists;
+    in that case detect from the file directly.
+    """
+    stored = _template_detected_variables(doc_type, override)
+    if stored:
+        return stored
+    holder = override if (
+        override is not None and getattr(override, 'has_template', False)
+    ) else doc_type
+    template_path = None
+    tpl = getattr(holder, 'template_file', None)
+    if tpl is not None:
+        try:
+            template_path = tpl.path
+        except Exception:
+            template_path = None
+    if not template_path or not os.path.exists(template_path):
+        return []
+    return _live_template_variables(template_path, _doc_template_salt(doc_type))
+
+
+def _token_sheet(doc_type, override=None):
+    """[(token, canonical)] reference sheet for a type's placeholders.
+
+    Uses the override's variables when it has its own template, otherwise
+    the parent type's.  Tokens are computed under the parent type's salt.
+    """
+    stored = _sheet_variables(doc_type, override)
+    salt = _doc_template_salt(doc_type)
+    if not stored or not salt:
+        return []
+    return template_tokens.token_sheet(stored, salt)
+
+
+def _inject_token_values(context, namespace, doc_type, override=None):
+    """Add every secret-token placeholder to the render context.
+
+    The stored ``template_variables`` are canonical names, but a template
+    may be authored with the raw tokens themselves (``{{ aB3xQ9Zk }}``).
+    Injecting the whole sheet guarantees both spellings fill, regardless
+    of which list ``variables`` carried.
+    """
+    for tok, field in _token_sheet(doc_type, override):
+        if tok not in context:
+            context[tok] = namespace.get(field, '')
+    return context
+
+
+def _live_template_variables(template_path, token_salt=''):
+    """Detect placeholder names in a saved template file (best effort).
+
+    Returns the raw names found plus their canonical translations, so both
+    readable and secret-token spellings can be resolved at render time.
+    """
+    try:
+        raw = sorted(
+            str(v) for v in DocxTemplate(template_path).get_undeclared_template_variables()
+        )
+        return sorted(set(raw) | set(
+            template_tokens.canonicalize_variables(raw, token_salt)
+        ))
+    except Exception:
+        return []
+
+
+def _template_detected_variables(doc_type, override=None):
+    """Stored placeholder list, or None when unknown (caller live-detects)."""
+    for obj in (override, doc_type):
+        if obj is None:
+            continue
+        stored = getattr(obj, 'template_variables', None)
+        if stored:
+            return list(stored)
+    return None
+
+
+def _item_verification_code(item, doc_req):
+    """Per-document verification reference: item code, then legacy request code."""
+    code = getattr(item, 'verification_code', None) if item is not None else None
+    if not code and doc_req is not None:
+        code = getattr(doc_req, 'verification_code', None)
+    return code or ''
 
 
 # Password-reset links expire after 30 minutes and are bound to the user's
@@ -301,6 +663,12 @@ def _apply_status_transition(doc_request, new_status, user, request=None, notes=
             updates['pickup_slot'] = pickup_slot
         if pickup_date is not None:
             updates['pickup_date'] = pickup_date
+    if new_status == 'completed' and not doc_request.is_paid:
+        total_fee = sum(item.total_fee for item in doc_request.items.all())
+        if total_fee > 0:
+            updates['payment_status'] = 'paid'
+            updates['paid_at'] = now
+            updates['payment_method'] = 'cash'
     firestore_db.update_document_request(doc_request.pk, updates)
 
     doc_names = ', '.join(
@@ -414,25 +782,49 @@ def about_page(request):
     })
 
 
+# A verification reference is accepted once the document has been printed.
+_VERIFY_OK_STATUSES = ('printed', 'ready_for_pickup', 'completed')
+
+
 def verify_document_view(request):
     code = request.GET.get('code', '').strip().upper()
     doc_request = None
+    doc_item = None
+    doc_type = None
     error = None
-    
+
     if code:
-        matches = firestore_db.list_document_requests(
+        matches = firestore_db.list_document_request_items(
             filters=[('verification_code', '==', code)]
         )
         if matches:
-            doc_request = DocumentRequest(matches[0])
-            if doc_request.status != 'completed':
-                error = "This document exists but has not been fully processed/issued yet."
-        else:
+            doc_item = DocumentRequestItem(matches[0])
+            request_data = firestore_db.get_document_request(doc_item.request_id)
+            doc_request = DocumentRequest(request_data) if request_data else None
+        if doc_request is None:
+            # Legacy fallback: request-level codes issued before per-document codes.
+            requests = firestore_db.list_document_requests(
+                filters=[('verification_code', '==', code)]
+            )
+            if requests:
+                doc_request = DocumentRequest(requests[0])
+        if doc_request is None:
             error = "Invalid verification code. This document is not recognized by the system."
+        elif doc_request.status in ('cancelled', 'rejected'):
+            error = "This document is no longer valid (it was cancelled or rejected)."
+        elif doc_request.status not in _VERIFY_OK_STATUSES and not (
+            doc_item is not None and doc_item.is_printed
+        ):
+            error = "This document exists but has not been printed/issued yet."
+        elif doc_item is not None:
+            doc_type = doc_item.document_type
 
     return render(request, 'brgy/verify.html', {
         'page_title': 'Verify Document',
         'doc_request': doc_request,
+        'doc_item': doc_item,
+        'doc_type': doc_type,
+        'verification_code': code,
         'query': code,
         'error': error,
     })
@@ -1039,13 +1431,75 @@ def request_document(request):
             dt._data['fee'] = float(dt.fee if dt.fee is not None else 0)
             dt._data['has_template_effective'] = dt.has_template
         doc_types.append(dt)
+    doc_types_data = [
+        {
+            'id': dt.pk,
+            'name': dt.name,
+            'fee': float(dt.fee or 0),
+            'requirements': dt.requirements_list,
+        }
+        for dt in doc_types
+    ]
     today = timezone.localdate()
     return render(request, 'brgy/resident/request_document.html', {
         'doc_types': doc_types,
+        'doc_types_data': doc_types_data,
         'today': today.isoformat(),
         'max_pickup': (today + timedelta(days=60)).isoformat(),
         'page_title': 'Request Documents',
     })
+
+
+def _preview_image_handler(max_dim=1024):
+    """Downscale embedded images in the preview HTML so it stays light.
+
+    The printed .docx is unaffected (images are only re-encoded for the
+    browser preview). Large/full-resolution scans would otherwise balloon the
+    HTML into megabytes of base64 and freeze the resident preview modal.
+    """
+    def convert_image(image):
+        import base64
+        from io import BytesIO
+        from PIL import Image as PilImage
+
+        raw = None
+        with image.open() as fh:
+            raw = fh.read()
+        mime = image.content_type or 'image/png'
+        try:
+            img = PilImage.open(BytesIO(raw))
+            img.load()
+            fmt = (img.format or 'PNG').upper()
+            scale = min(1.0, max_dim / max(img.size))
+            if scale < 1.0:
+                img = img.resize(
+                    (round(img.width * scale), round(img.height * scale)),
+                    PilImage.LANCZOS,
+                )
+            use_jpeg = max(img.size) > 640
+            if use_jpeg:
+                fmt, mime = 'JPEG', 'image/jpeg'
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    rgba = img.convert('RGBA') if img.mode != 'RGBA' else img
+                    bg = PilImage.new('RGB', rgba.size, (255, 255, 255))
+                    bg.paste(rgba, mask=rgba.split()[-1])
+                    img = bg
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+            out = BytesIO()
+            img.save(out, format=fmt, optimize=True, quality=65)
+            payload = out.getvalue()
+        except Exception:
+            payload = raw
+            mime = image.content_type or 'image/png'
+        return {
+            'src': 'data:{0};base64,{1}'.format(
+                mime, base64.b64encode(payload).decode('ascii')
+            )
+        }
+
+    from mammoth.images import img_element
+    return img_element(convert_image)
 
 
 @login_required
@@ -1074,16 +1528,27 @@ def document_preview(request, pk):
         return JsonResponse({'error': 'No template available.'}, status=404)
 
     barangay = user.barangay
-    context = {
-        'resident_name': user.display_name or '',
-        'resident_address': getattr(user, 'address', '') or '',
-        'purpose': 'N/A',
-        'date_today': timezone.now().strftime('%B %d, %Y'),
-        'barangay_name': barangay.name if barangay else '',
-        'chairman_name': getattr(barangay, 'chairman_name', '') if barangay else '',
-        'request_number': 'BRG-XXXXXXXX-XXXX',
-        'verification_code': 'XXXXXXXXXXXX',
-    }
+    sample_verify_url = _absolute_url(
+        request, reverse('verify_document') + '?code=XXXXXXXXXXXX'
+    )
+    namespace = _build_template_context(
+        resident=user, barangay=barangay, doc_type=doc_type,
+        purpose='N/A', request_number='BRG-XXXXXXXX-XXXX',
+        verification_code='XXXXXXXXXXXX', verify_url=sample_verify_url,
+    )
+    if doc_type.is_global:
+        override = get_override_for(doc_type.pk, barangay.pk if barangay else None)
+        variables = _template_detected_variables(doc_type, override)
+    else:
+        variables = _template_detected_variables(doc_type)
+    token_salt = _doc_template_salt(doc_type)
+    if variables is None:
+        variables = _live_template_variables(template_path, token_salt)
+    context = _resolve_template_context(namespace, variables, token_salt=token_salt)
+    _inject_token_values(
+        context, namespace, doc_type,
+        override if doc_type.is_global else None,
+    )
 
     doc = DocxTemplate(template_path)
     doc.render(context)
@@ -1092,7 +1557,9 @@ def document_preview(request, pk):
     doc.save(file_stream)
     file_stream.seek(0)
 
-    result = mammoth.convert_to_html(file_stream)
+    result = mammoth.convert_to_html(
+        file_stream, convert_image=_preview_image_handler()
+    )
     html = result.value
 
     return JsonResponse({
@@ -1190,13 +1657,22 @@ def submit_bulk_request(request):
                     return redirect('request_document')
             requirement_files[doc_id] = files
 
+        # Documents that define requirements cannot be submitted without them.
+        for doc_id, item in items.items():
+            required = [r for r in (item['doc_type'].requirements_list or []) if r.strip()]
+            if required and not requirement_files.get(doc_id):
+                messages.error(
+                    request,
+                    f"Please upload the required documents for '{item['doc_type'].name}' "
+                    "before submitting your request.",
+                )
+                return redirect('request_document')
+
         request_data = {
             'resident_id': user.pk,
             'request_number': firestore_db.next_request_number(),
-            'verification_code': ''.join(
-                # Cryptographically secure random for the public verification code.
-                secrets.choice(string.ascii_uppercase + string.digits) for _ in range(12)
-            ),
+            # Cryptographically secure random for the public verification code.
+            'verification_code': _make_verification_code(),
             'purpose': purpose,
             'contact_number': contact_number,
             'pickup_date': parsed_pickup,
@@ -1240,7 +1716,11 @@ def submit_bulk_request(request):
             link=reverse('request_history'),
         )
         log_activity(user, 'Document Request Submitted',
-                     f'Submitted document request {doc_req.request_number}.', request)
+                     f'Submitted document request {doc_req.request_number}. Requested: '
+                     + ', '.join(
+                         f"{item['doc_type'].name} x{item['qty']}"
+                         for item in items.values()
+                     ) + '.', request)
 
         messages.success(
             request,
@@ -1317,10 +1797,11 @@ def notifications_view(request):
         descending=True,
     )
     notifications = [Notification(n) for n in notifications]
+    unread_count = sum(1 for n in notifications if not n.is_read)
     paginator = Paginator(notifications, 15)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
-    return render(request, 'brgy/resident/notifications.html', {'page_obj': page_obj, 'page_title': 'Notifications'})
+    return render(request, 'brgy/resident/notifications.html', {'page_obj': page_obj, 'page_title': 'Notifications', 'unread_count': unread_count})
 
 
 @login_required
@@ -1332,10 +1813,11 @@ def staff_notifications(request):
         descending=True,
     )
     notifications = [Notification(n) for n in notifications]
+    unread_count = sum(1 for n in notifications if not n.is_read)
     paginator = Paginator(notifications, 15)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
-    return render(request, 'brgy/resident/notifications.html', {'page_obj': page_obj, 'page_title': 'Notifications'})
+    return render(request, 'brgy/resident/notifications.html', {'page_obj': page_obj, 'page_title': 'Notifications', 'unread_count': unread_count})
 
 
 @login_required
@@ -1350,6 +1832,35 @@ def mark_notification_read(request, pk):
     link = data.get('link') or ''
     if link and url_has_allowed_host_and_scheme(link, allowed_hosts={request.get_host()}):
         return redirect(link)
+    return redirect(notifications_url_name(request.user))
+
+
+@login_required
+@role_required('resident', 'staff', 'admin')
+def set_notification_read(request, pk):
+    """Mark a notification read or unread (3-dot menu). POST ``read=1|0``."""
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request.')
+        return redirect(notifications_url_name(request.user))
+    data = firestore_db.get_notification(pk)
+    if not data or data.get('user_id') != request.user.pk:
+        raise Http404
+    is_read = request.POST.get('read') in ('1', 'true', 'True', 'on', 'yes')
+    firestore_db.update_notification(pk, {'is_read': is_read})
+    return redirect(notifications_url_name(request.user))
+
+
+@login_required
+@role_required('resident', 'staff', 'admin')
+def delete_notification(request, pk):
+    """Permanently remove a notification (3-dot menu). POST only."""
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request.')
+        return redirect(notifications_url_name(request.user))
+    data = firestore_db.get_notification(pk)
+    if not data or data.get('user_id') != request.user.pk:
+        raise Http404
+    firestore_db.delete_notification(pk)
     return redirect(notifications_url_name(request.user))
 
 
@@ -1392,7 +1903,7 @@ def cancel_request(request, pk):
                     'Request Cancelled',
                     f'{doc_req.resident.display_name} cancelled their document request '
                     f'({doc_req.request_number}).',
-                    link=reverse('staff_requests'),
+                    link=reverse('manage_requests'),
                 )
         new_display = _apply_status_transition(
             doc_req, 'cancelled', request.user, request=request,
@@ -1970,12 +2481,12 @@ def manage_announcements(request):
 
     form = AnnouncementForm(request.POST or None, user=user)
     if request.method == 'POST' and form.is_valid():
-        scope = form.cleaned_data['scope']
+        scope = form.cleaned_data.get('scope') or 'barangay'
         barangay_id = None
         if scope == 'barangay':
             barangay_id = form.cleaned_data.get('barangay') or user.barangay_id
         is_published = bool(form.cleaned_data.get('is_published'))
-        firestore_db.create_announcement({
+        announcement_id = firestore_db.create_announcement({
             'title': form.cleaned_data['title'],
             'body': form.cleaned_data['body'],
             'author_id': user.pk,
@@ -1985,6 +2496,8 @@ def manage_announcements(request):
         })
         log_activity(user, 'Announcement Created',
                      f'Announcement "{form.cleaned_data["title"]}" created.', request)
+        if is_published:
+            send_announcement_emails(get_announcement(announcement_id), request)
         messages.success(request, 'Announcement created.')
         return redirect('manage_announcements')
 
@@ -2012,6 +2525,8 @@ def toggle_announcement(request, pk):
         'is_published': new_published,
         'published_at': firestore_db.utcnow() if new_published else None,
     })
+    if new_published:
+        send_announcement_emails(get_announcement(pk), request)
     log_activity(request.user,
                  'Announcement Published' if new_published else 'Announcement Unpublished',
                  f'Announcement "{announcement.title}" {"published" if new_published else "unpublished"}.', request)
@@ -2073,6 +2588,23 @@ def manage_requests(request):
             ]
         except ValueError:
             pass
+    action_meta = {
+        'approved': ('Approve', 'fa-check'),
+        'printed': ('Mark as Printed', 'fa-print'),
+        'ready_for_pickup': ('Mark Ready for Pickup', 'fa-box-open'),
+        'completed': ('Mark as Completed', 'fa-flag-checkered'),
+        'rejected': ('Reject', 'fa-ban'),
+    }
+    for req in doc_requests:
+        actions = []
+        for value, label in _status_choices_for(req.status):
+            display, icon = action_meta.get(value, (label, 'fa-circle'))
+            actions.append({
+                'value': value,
+                'label': display,
+                'icon': icon,
+            })
+        req.action_choices = actions
     paginator = Paginator(doc_requests, 10)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
@@ -2100,8 +2632,6 @@ def update_request_status(request, pk):
     if not doc_request.barangay or doc_request.barangay.pk != request.user.barangay_id:
         raise Http404
     choices = _status_choices_for(doc_request.status)
-    if not doc_request.is_paid:
-        choices = [c for c in choices if c[0] != 'completed']
     if not choices:
         messages.info(
             request,
@@ -2114,12 +2644,6 @@ def update_request_status(request, pk):
             new_status = form.cleaned_data['status']
             notes = form.cleaned_data.get('staff_notes', '')
             rejection_reason = form.cleaned_data.get('rejection_reason', '')
-            if new_status == 'completed' and not doc_request.is_paid:
-                messages.error(
-                    request,
-                    'Payment must be recorded before this request can be completed.'
-                )
-                return redirect('update_request_status', pk=doc_request.pk)
             if new_status not in [c for c, _ in choices]:
                 messages.error(request, 'That status transition is not allowed.')
                 return redirect('update_request_status', pk=doc_request.pk)
@@ -2492,6 +3016,8 @@ def staff_manage_document_types(request):
         # clean.
         object.__setattr__(dt, 'override', overrides.get(dt.pk))
         object.__setattr__(dt, 'effective_fee', float(dt.override.fee or 0) if dt.override else 0)
+    for dt in local_types + global_types:
+        object.__setattr__(dt, 'tokens', _token_sheet(dt, getattr(dt, 'override', None)))
 
     if request.method == 'POST':
         form = DocumentTypeForm(request.POST, request.FILES)
@@ -2541,6 +3067,8 @@ def staff_edit_document_type(request, pk):
         form = DocumentTypeForm(request.POST, request.FILES, instance=doc_type)
         
         if form.is_valid():
+            # Availability is managed from the document list switch, not this form.
+            form.cleaned_data['is_active'] = doc_type.is_active
             form.save(barangay_id=brgy.pk)
             log_activity(request.user, 'Document Type Updated',
                          f'Updated document type "{doc_type.name}".', request)
@@ -2549,9 +3077,10 @@ def staff_edit_document_type(request, pk):
         messages.error(request, 'Please correct the errors below.')
     else:
         form = DocumentTypeForm(instance=doc_type)
+    object.__setattr__(doc_type, 'tokens', _token_sheet(doc_type))
     return render(request, 'brgy/staff/document_type_form.html', {
-        'form': form, 'title': f'Edit - {doc_type.name}', 'brgy': brgy,
-        'page_title': f'Edit - {doc_type.name}',
+        'form': form, 'doc_type': doc_type, 'title': f'Edit - {doc_type.name}',
+        'brgy': brgy, 'page_title': f'Edit - {doc_type.name}',
     })
 
 
@@ -2585,6 +3114,28 @@ def staff_delete_document_type(request, pk):
 
 @login_required
 @role_required('staff')
+def staff_toggle_document_type(request, pk):
+    """Flip a local document type's availability for the staff member's barangay."""
+    brgy = request.user.barangay
+    doc_type = _doc_type_or_404(pk)
+    if doc_type.is_global or doc_type.barangay_id != brgy.pk:
+        raise Http404
+    if request.method == 'POST':
+        new_active = not doc_type.is_active
+        firestore_db.update_document_type(doc_type.pk, {'is_active': new_active})
+        state = 'available' if new_active else 'unavailable'
+        log_activity(
+            request.user, 'Document Type Updated',
+            f'Marked document type "{doc_type.name}" as {state}.', request,
+        )
+        messages.success(request, f'"{doc_type.name}" is now {state}.')
+    else:
+        messages.error(request, 'Invalid request.')
+    return redirect('staff_manage_document_types')
+
+
+@login_required
+@role_required('staff')
 def staff_edit_global_type(request, pk):
     """Staff configures the price/template of a global type for their own barangay."""
     brgy = request.user.barangay
@@ -2607,6 +3158,7 @@ def staff_edit_global_type(request, pk):
         messages.error(request, 'Please correct the errors below.')
     else:
         form = GlobalTypeOverrideForm(instance=override)
+    object.__setattr__(doc_type, 'tokens', _token_sheet(doc_type, override))
     return render(request, 'brgy/staff/global_type_form.html', {
         'form': form, 'doc_type': doc_type, 'override': override, 'brgy': brgy,
         'page_title': f'Configure - {doc_type.name}',
@@ -2633,16 +3185,27 @@ def mark_printed(request, req_pk, item_pk):
 
     if doc_req.status == 'approved':
         _apply_status_transition(doc_req, 'printed', request.user, request=request)
+    item_code = getattr(item, 'verification_code', None)
     if not item.is_printed:
-        firestore_db.update_document_request_item(item.pk, {'printed_at': firestore_db.utcnow()})
+        # Mint a unique per-document verification reference on first print.
+        if not item_code:
+            item_code = _make_verification_code()
+        firestore_db.update_document_request_item(item.pk, {
+            'printed_at': firestore_db.utcnow(),
+            'verification_code': item_code,
+        })
         log_activity(
             request.user,
             'Document Printed',
             f'Printed document "{getattr(item.document_type, "name", "document")}" '
-            f'for request {doc_req.request_number}.',
+            f'for request {doc_req.request_number}. Verification: {item_code}.',
             request,
             subject_user_id=doc_req.resident_id,
         )
+    elif not item_code:
+        # Item was printed before per-document codes existed; backfill one.
+        item_code = _make_verification_code()
+        firestore_db.update_document_request_item(item.pk, {'verification_code': item_code})
     return redirect('print_document', req_pk=doc_req.pk, item_pk=item.pk)
 
 
@@ -2678,17 +3241,29 @@ def print_document(request, req_pk, item_pk):
         messages.error(request, f'Template file for {doc_type.name} is missing.')
         return redirect('manage_requests')
 
+    item_code = _item_verification_code(item, doc_req)
+    verify_url = _absolute_url(
+        request, reverse('verify_document') + '?code=' + item_code
+    ) if item_code else ''
+    namespace = _build_template_context(
+        resident=doc_req.resident, barangay=doc_req.barangay, doc_req=doc_req,
+        item=item, doc_type=doc_type, verification_code=item_code or 'N/A',
+        verify_url=verify_url,
+    )
+    if doc_type.is_global:
+        variables = _template_detected_variables(doc_type, override)
+    else:
+        variables = _template_detected_variables(doc_type)
+    token_salt = _doc_template_salt(doc_type)
+    if variables is None:
+        variables = _live_template_variables(template_path, token_salt)
+    context = _resolve_template_context(namespace, variables, token_salt=token_salt)
+    _inject_token_values(
+        context, namespace, doc_type,
+        override if doc_type.is_global else None,
+    )
+
     doc = DocxTemplate(template_path)
-    context = {
-        'resident_name': doc_req.resident.display_name if doc_req.resident else '',
-        'resident_address': doc_req.resident.address if doc_req.resident else '',
-        'purpose': doc_req.purpose,
-        'date_today': timezone.now().strftime('%B %d, %Y'),
-        'barangay_name': doc_req.barangay.name if doc_req.barangay else '',
-        'chairman_name': doc_req.barangay.chairman_name if doc_req.barangay else '',
-        'request_number': doc_req.request_number,
-        'verification_code': doc_req.verification_code or 'N/A', 
-    }
     doc.render(context)
 
     file_stream = io.BytesIO()
@@ -2731,7 +3306,61 @@ def requirement_file(request, req_pk, item_pk, index):
         request,
         subject_user_id=doc_req.resident_id,
     )
-    return FileResponse(open(file_path, 'rb'), as_attachment=True)
+    inline = request.GET.get('inline') in ('1', 'true', 'yes')
+    return FileResponse(open(file_path, 'rb'), as_attachment=not inline)
+
+
+@login_required
+@role_required('staff')
+def requirement_detail(request, req_pk, item_pk):
+    """JSON with an HTML fragment showing an item's required documents and the
+    resident's uploaded files, for the staff requirements popup."""
+    from django.utils.html import escape
+
+    doc_req = _request_or_404(req_pk)
+    if not doc_req.barangay or doc_req.barangay.pk != request.user.barangay_id:
+        raise Http404
+    item = _item_or_404(item_pk)
+    if item.request_id != doc_req.pk:
+        raise Http404
+
+    doc_type = item.document_type
+    requirements = doc_type.requirements_list if doc_type else []
+
+    if requirements:
+        req_items = ''.join(f'<li>{escape(r)}</li>' for r in requirements)
+    else:
+        req_items = '<li class="reqf-none">No specific documents required.</li>'
+
+    files_html = ''
+    for entry in item.requirement_file_entries:
+        is_image = entry['is_image']
+        url = reverse('requirement_file', kwargs={
+            'req_pk': req_pk, 'item_pk': item_pk, 'index': entry['index'],
+        })
+        if is_image:
+            url += '?inline=1'
+        action = 'View' if is_image else 'Download'
+        icon = 'fa-image' if is_image else 'fa-file-pdf'
+        files_html += (
+            f'<a class="reqf-file" href="{url}" target="_blank" rel="noopener" '
+            f'title="{action} {escape(entry["name"])}">'
+            f'<i class="fa-solid {icon}"></i><span>{escape(entry["name"])}</span></a>'
+        )
+    if not files_html:
+        files_html = '<p class="reqf-empty">No files uploaded by the resident.</p>'
+
+    html = (
+        '<div class="reqf-section">'
+        '<h4><i class="fa-solid fa-list-check"></i> Required Documents</h4>'
+        f'<ul class="reqf-reqlist">{req_items}</ul>'
+        '</div>'
+        '<div class="reqf-section">'
+        '<h4><i class="fa-solid fa-paperclip"></i> Resident Uploads</h4>'
+        f'<div class="reqf-files">{files_html}</div>'
+        '</div>'
+    )
+    return JsonResponse({'html': html})
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -2791,6 +3420,12 @@ def admin_dashboard(request):
             continue
         key = (req.created_at.year, req.created_at.month)
         monthly_counts[key] = monthly_counts.get(key, 0) + 1
+
+    # Random starting point for the trend-bar color palette so each
+    # dashboard load cycles the bars to a fresh set of gradients.
+    trend_palette = ['trend-c1', 'trend-c2', 'trend-c3', 'trend-c4', 'trend-c5', 'trend-c6']
+    palette_offset = random.randrange(len(trend_palette))
+
     monthly_trend = []
     today = timezone.localdate()
     year, month = today.year, today.month
@@ -2801,7 +3436,11 @@ def admin_dashboard(request):
             m += 12
             y -= 1
         key = (y, m)
-        monthly_trend.append({'month': date(y, m, 1), 'count': monthly_counts.get(key, 0)})
+        monthly_trend.append({
+            'month': date(y, m, 1),
+            'count': monthly_counts.get(key, 0),
+            'bar_class': trend_palette[(palette_offset + i) % len(trend_palette)],
+        })
 
     trend_counts = [m['count'] for m in monthly_trend]
     trend_max_count = max(trend_counts) or 1
@@ -3237,6 +3876,10 @@ def manage_document_types(request):
     paginator = Paginator(doc_types, 10)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
+    for dt in doc_types:
+        # Same underscore-guard pattern as the staff list: real attributes so
+        # the wrapper's _data dict stays clean for Firestore writes.
+        object.__setattr__(dt, 'tokens', _token_sheet(dt))
     if request.method == 'POST':
         form = DocumentTypeForm(request.POST, metadata_only=True)
         if form.is_valid():
@@ -3278,6 +3921,7 @@ def edit_document_type(request, pk):
         messages.error(request, 'Please correct the errors below.')
     else:
         form = DocumentTypeForm(instance=doc_type, metadata_only=True)
+    object.__setattr__(doc_type, 'tokens', _token_sheet(doc_type))
     return render(request, 'brgy/admin/edit_document_type.html', {'doc_type': doc_type, 'form': form, 'page_title': f'Edit Document Type - {doc_type.name}'})
 
 

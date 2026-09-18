@@ -221,6 +221,25 @@
     margin-bottom: 22px;
 }
 
+.hero-name-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.hero-name-row .hero-name {
+    margin: 0;
+}
+
+.btn-hero-compact {
+    padding: 9px 16px;
+    font-size: 12.5px;
+    border-radius: 10px;
+    gap: 8px;
+}
+
 .hero-name {
     font-size: 30px;
     font-weight: 800;
@@ -907,6 +926,16 @@
     display: none !important;
 }
 
+/* Account Security card only appears in edit mode */
+.card-security {
+    display: none;
+}
+
+.profile-page.editing .card-security {
+    display: block;
+    animation: fieldSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
 .profile-page.editing .edit-mode {
     animation: fieldSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
@@ -925,7 +954,7 @@
 /* ID Preview Grid */
 .id-preview-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin-top: 22px;
 }
@@ -1424,6 +1453,14 @@
     .btn-hero {
         width: 100%;
         justify-content: center;
+    }
+
+    .hero-name-row {
+        justify-content: center;
+    }
+
+    .hero-name-row .btn-hero {
+        width: auto;
     }
 
     .info-grid {

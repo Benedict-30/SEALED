@@ -205,24 +205,44 @@
    ═══════════════════════════════════════════════════════════ */
 
 .brgy-editor-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
-    gap: 24px;
-    align-items: start;
-    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 1560px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
+.brgy-editor-layout > .card { min-width: 0; width: 100%; }
+
 .brgy-editor-layout .brgy-preview-panel {
-    position: sticky;
-    top: 16px;
+    max-width: 400px;
+    width: 100%;
+    margin-left: auto;
+}
+
+/* Form fields fill the wider card using a 2-column grid */
+.brgy-editor-layout .es-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: start;
+    position: relative;
+    z-index: 1;
+}
+
+.brgy-editor-layout .es-fields .form-row {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 700px) {
+    .brgy-editor-layout .es-fields { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px) {
-    .brgy-editor-layout {
-        grid-template-columns: 1fr;
-    }
     .brgy-editor-layout .brgy-preview-panel {
-        position: static;
+        max-width: 100%;
     }
 }
 

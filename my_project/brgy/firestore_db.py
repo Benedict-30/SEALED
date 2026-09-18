@@ -49,15 +49,16 @@ MAX_OTP_ATTEMPTS = 5
 # Notifications are auto-deleted once they are older than this many days.
 NOTIFICATION_TTL_DAYS = 7
 
+# Expired-notification purge runs at most once per interval (see
+# ``_cleanup_expired_notifications``).
+_NOTIFICATION_CLEANUP_INTERVAL = timedelta(minutes=30)
+_last_notification_cleanup = None
+
 # Login brute-force protection: after MAX_LOGIN_ATTEMPTS consecutive failures
 # for the same key (username+IP), further attempts are blocked for the lockout
 # window.
 MAX_LOGIN_ATTEMPTS = 5
-LOGIN_LOCKOUT_MINUTES = 15
-
-# Lazy purge is debounced so notification reads don't scan+delete on every request.
-_NOTIFICATION_CLEANUP_INTERVAL = timedelta(minutes=30)
-_last_notification_cleanup = None
+LOGIN_LOCKOUT_MINUTES = 3
 
 # Low-volatility lookups (document types, barangays) are memoized for a short
 # window to avoid re-fetching the same list on every page load.  Writes clear
@@ -715,6 +716,11 @@ def _cleanup_expired_notifications():
         return
     _last_notification_cleanup = now
     delete_expired_notifications()
+
+
+def delete_notification(notification_id):
+    """Permanently remove a notification (user-initiated)."""
+    delete_doc('notification', notification_id)
 
 
 # ─────────────────────── Activity log helpers ───────────────────────

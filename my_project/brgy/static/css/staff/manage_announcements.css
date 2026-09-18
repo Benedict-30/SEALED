@@ -1,6 +1,6 @@
 /* Announcements page */
 
-.ann-form-card { margin-bottom: var(--spacing-lg); border-top: 3px solid var(--primary); }
+.ann-form-card { margin-bottom: 28px; border-top: 3px solid var(--primary); }
 
 .ann-form-grid {
     display: grid;
@@ -8,18 +8,24 @@
     gap: 16px;
     margin-bottom: 16px;
 }
+.ann-form-grid-staff {
+    grid-template-columns: 2fr 1fr;
+}
 @media (max-width: 768px) {
-    .ann-form-grid { grid-template-columns: 1fr; }
+    .ann-form-grid,
+    .ann-form-grid-staff { grid-template-columns: 1fr; }
 }
 
 .ann-scope-static {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    height: 42px;
     padding: 10px 14px;
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--surface-muted);
+    border-radius: var(--radius-sm);
+    background: var(--bg-alt, #f1f5f9);
     color: var(--text-secondary);
     font-weight: 600;
 }
@@ -45,7 +51,7 @@
     display: flex;
     justify-content: space-between;
     gap: 16px;
-    padding: 18px 0;
+    padding: 18px 24px;
     align-items: flex-start;
 }
 .ann-item.ann-item-system { opacity: .85; }

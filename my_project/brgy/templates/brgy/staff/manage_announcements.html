@@ -2,7 +2,8 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff/manage_announcements.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/manage_announcements.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/admin/edit_staff.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
@@ -25,8 +26,8 @@
     </div>
 
     <!-- Create form -->
-    <div class="card ann-form-card" id="annForm">
-        <div class="card-header">
+    <div class="card mb-4 ann-form-card" id="annForm">
+        <div class="card-header create-staff-head">
             <h3><i class="fa-solid fa-pen-to-square"></i> New Announcement</h3>
         </div>
         <div class="card-body">
@@ -35,35 +36,60 @@
                 {% if form.non_field_errors %}
                 <div class="alert alert-danger">{{ form.non_field_errors }}</div>
                 {% endif %}
-                <div class="ann-form-grid">
-                    <div class="form-group ann-title-field">
-                        {{ form.title.label_tag }}
-                        {{ form.title }}
-                        {% for error in form.title.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+
+                <!-- 01 Details -->
+                <div class="es-panel es-panel-blue">
+                    <div class="es-glow es-glow-blue"></div>
+                    <div class="es-panel-head">
+                        <span class="es-step">01</span>
+                        <span class="es-orb es-orb-blue"><i class="fa-solid fa-circle-info"></i></span>
+                        <div><div class="es-panel-title">Details</div><div class="es-panel-sub">Title &amp; where it applies</div></div>
                     </div>
-                    {% if user.role == 'admin' %}
-                    <div class="form-group">
-                        {{ form.scope.label_tag }}
-                        {{ form.scope }}
-                        {% for error in form.scope.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                    <div class="es-fields">
+                        <div class="ann-form-grid {% if user.role != 'admin' %}ann-form-grid-staff{% endif %}">
+                            <div class="form-group ann-title-field">
+                                {{ form.title.label_tag }}
+                                <div class="es-input-wrap"><i class="fa-solid fa-heading es-input-icon"></i>{{ form.title }}</div>
+                                {% for error in form.title.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                            </div>
+                            {% if user.role == 'admin' %}
+                            <div class="form-group">
+                                {{ form.scope.label_tag }}
+                                <div class="es-input-wrap"><i class="fa-solid fa-globe es-input-icon"></i>{{ form.scope }}</div>
+                                {% for error in form.scope.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="form-group ann-barangay-field" id="annBarangayField">
+                                {{ form.barangay.label_tag }}
+                                <div class="es-input-wrap"><i class="fa-solid fa-location-dot es-input-icon"></i>{{ form.barangay }}</div>
+                                {% for error in form.barangay.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="form-group">
+                                <label>Scope</label>
+                                <div class="ann-scope-static"><i class="fa-solid fa-location-dot"></i> My Barangay</div>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="form-group ann-barangay-field" id="annBarangayField">
-                        {{ form.barangay.label_tag }}
-                        {{ form.barangay }}
-                        {% for error in form.barangay.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="form-group">
-                        <label>Scope</label>
-                        <div class="ann-scope-static"><i class="fa-solid fa-location-dot"></i> My Barangay</div>
-                    </div>
-                    {% endif %}
                 </div>
-                <div class="form-group">
-                    {{ form.body.label_tag }}
-                    {{ form.body }}
-                    {% for error in form.body.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+
+                <!-- 02 Message -->
+                <div class="es-panel es-panel-teal">
+                    <div class="es-glow es-glow-teal"></div>
+                    <div class="es-panel-head">
+                        <span class="es-step">02</span>
+                        <span class="es-orb es-orb-teal"><i class="fa-solid fa-message"></i></span>
+                        <div><div class="es-panel-title">Message</div><div class="es-panel-sub">What you want residents to know</div></div>
+                    </div>
+                    <div class="es-fields">
+                        <div class="form-group">
+                            {{ form.body.label_tag }}
+                            <div class="es-input-wrap es-input-textarea"><i class="fa-solid fa-align-left es-input-icon"></i>{{ form.body }}</div>
+                            {% for error in form.body.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
                 </div>
+
                 <div class="ann-form-footer">
                     <label class="form-check">
                         {{ form.is_published }}
@@ -76,11 +102,15 @@
     </div>
 
     <!-- List -->
-    <div class="card">
+    <div class="card es-list-card">
         <div class="card-header">
-            <h3><i class="fa-solid fa-list"></i> Your Announcements</h3>
+            <h3>
+                <span class="es-orb es-orb-teal"><i class="fa-solid fa-list"></i></span>
+                Your Announcements
+                <span class="es-list-count">{{ announcements|length }}</span>
+            </h3>
         </div>
-        <div class="card-body">
+        <div class="es-list-body">
             {% if announcements %}
             <div class="ann-list">
                 {% for a in announcements %}
@@ -89,11 +119,13 @@
                         <div class="ann-item-top">
                             <span class="ann-title">{{ a.title }}</span>
                             {% if a.is_global %}
-                            <span class="ann-badge ann-badge-global"><i class="fa-solid fa-earth-asia"></i> System-Wide</span>
+                            <span class="es-badge es-badge-navy"><i class="fa-solid fa-earth-asia"></i> System-Wide</span>
                             {% else %}
-                            <span class="ann-badge ann-badge-barangay"><i class="fa-solid fa-location-dot"></i> {{ a.barangay.name|default:'Barangay' }}</span>
+                            <span class="es-badge es-badge-teal"><i class="fa-solid fa-location-dot"></i> {{ a.barangay.name|default:'Barangay' }}</span>
                             {% endif %}
-                            <span class="ann-status {% if a.is_published %}published{% else %}draft{% endif %}">{{ a.get_status_display }}</span>
+                            <span class="es-badge {% if a.is_published %}es-badge-on{% else %}es-badge-off{% endif %}">
+                                <span class="es-badge-dot"></span>{{ a.get_status_display }}
+                            </span>
                         </div>
                         <div class="ann-body">{{ a.body|linebreaksbr }}</div>
                         <div class="ann-meta">
@@ -108,21 +140,21 @@
                     <div class="ann-actions">
                         <form method="post" action="{% url 'toggle_announcement' a.pk %}" onsubmit="return confirm('{% if a.is_published %}Unpublish{% else %}Publish{% endif %} "{{ a.title }}"?');">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-ghost btn-sm" title="{% if a.is_published %}Unpublish{% else %}Publish{% endif %}">
+                            <button type="submit" class="es-action-chip {% if a.is_published %}es-chip-edit{% else %}es-chip-success{% endif %}" title="{% if a.is_published %}Unpublish{% else %}Publish{% endif %}">
                                 <i class="fa-solid {% if a.is_published %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
                                 {% if a.is_published %}Unpublish{% else %}Publish{% endif %}
                             </button>
                         </form>
                         <form method="post" action="{% url 'delete_announcement' a.pk %}" onsubmit="return confirm('Delete "{{ a.title }}"? This cannot be undone.');">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-danger btn-sm" title="Delete"><i class="fa-solid fa-trash"></i> Delete</button>
+                            <button type="submit" class="es-action-chip es-chip-danger" title="Delete"><i class="fa-solid fa-trash"></i> Delete</button>
                         </form>
                     </div>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
-            <div class="empty-state" style="padding:24px;">
+            <div class="empty-state" style="padding:40px 24px;">
                 <div class="empty-state-icon"><i class="fa-solid fa-bullhorn"></i></div>
                 <h4>No Announcements Yet</h4>
                 <p>Create your first announcement above.</p>
@@ -133,19 +165,25 @@
 
     <!-- System-wide announcements (staff reference) -->
     {% if system_announcements %}
-    <div class="card">
+    <div class="card es-list-card">
         <div class="card-header">
-            <h3><i class="fa-solid fa-earth-asia"></i> System-Wide Announcements</h3>
+            <h3>
+                <span class="es-orb es-orb-navy"><i class="fa-solid fa-earth-asia"></i></span>
+                System-Wide Announcements
+                <span class="es-list-count">{{ system_announcements|length }}</span>
+            </h3>
         </div>
-        <div class="card-body">
+        <div class="es-list-body">
             <div class="ann-list">
                 {% for a in system_announcements %}
                 <div class="ann-item ann-item-system">
                     <div class="ann-item-main">
                         <div class="ann-item-top">
                             <span class="ann-title">{{ a.title }}</span>
-                            <span class="ann-badge ann-badge-global"><i class="fa-solid fa-earth-asia"></i> System-Wide</span>
-                            <span class="ann-status {% if a.is_published %}published{% else %}draft{% endif %}">{{ a.get_status_display }}</span>
+                            <span class="es-badge es-badge-navy"><i class="fa-solid fa-earth-asia"></i> System-Wide</span>
+                            <span class="es-badge {% if a.is_published %}es-badge-on{% else %}es-badge-off{% endif %}">
+                                <span class="es-badge-dot"></span>{{ a.get_status_display }}
+                            </span>
                         </div>
                         <div class="ann-body">{{ a.body|linebreaksbr }}</div>
                         <div class="ann-meta">

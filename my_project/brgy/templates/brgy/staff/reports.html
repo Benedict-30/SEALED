@@ -2,14 +2,15 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff/reports.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/reports.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/admin/edit_staff.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
 <div class="reports-page">
 
     <!-- Page header -->
-    <div class="page-hero" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px;">
+    <div class="page-hero">
         <div>
             <div class="page-hero-title">
                 <i class="fa-solid fa-chart-column"></i>
@@ -25,92 +26,41 @@
         </a>
     </div>
 
-    <!-- Filters -->
-    <div class="card">
-        <div class="card-body">
-            <form method="get" class="reports-filters filter-bar">
-                <div class="reports-filter-field">
-                    <label class="form-label reports-filter-label" for="filter_status">Status</label>
-                    <select name="status" id="filter_status" class="form-input">
-                        <option value="">All Statuses</option>
-                        {% for value, label in status_choices %}
-                        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="reports-filter-field">
-                    <label class="form-label reports-filter-label" for="filter_date_from">From</label>
-                    <input type="date" name="date_from" id="filter_date_from" class="form-input" value="{{ filters.date_from }}">
-                </div>
-                <div class="reports-filter-field">
-                    <label class="form-label reports-filter-label" for="filter_date_to">To</label>
-                    <input type="date" name="date_to" id="filter_date_to" class="form-input" value="{{ filters.date_to }}">
-                </div>
-                <div class="reports-filter-actions">
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
-                    {% if filter_summary %}
-                    <a href="{% url 'staff_reports' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-rotate-left"></i> Clear</a>
-                    {% endif %}
-                </div>
-            </form>
-
-            {% if filter_summary %}
-            <div class="active-filters">
-                <span class="active-filters-title"><i class="fa-solid fa-sliders"></i> Active filters:</span>
-                {% for term in filter_summary %}
-                <span class="active-filter-chip">{{ term }}</span>
-                {% endfor %}
-                <a href="{% url 'staff_reports' %}" class="active-filter-clear"><i class="fa-solid fa-rotate-left"></i> Clear all</a>
-            </div>
-            {% endif %}
-        </div>
-    </div>
+    <div class="reports-stack">
 
     <!-- Summary Stats -->
-    <div class="reports-stats-grid">
-        <div class="card">
-            <div class="card-body reports-stat">
-                <div class="reports-stat-icon primary"><i class="fa-solid fa-file-lines"></i></div>
-                <div class="reports-stat-body">
-                    <div class="reports-stat-value primary">{{ total_requests }}</div>
-                    <div class="reports-stat-label">Total Requests</div>
-                </div>
+    <div class="stat-cards stat-cards-3">
+        <div class="stat-card stat-card-viv stat-card-viv-success">
+            <div class="stat-card-icon success"><i class="fa-solid fa-coins"></i></div>
+            <div class="stat-card-body">
+                <span class="stat-card-value">&#8369;{{ total_fees|floatformat:2 }}</span>
+                <span class="stat-card-label">Total Fees Collected ({{ paid_count|default:0 }} paid)</span>
             </div>
         </div>
-        <div class="card">
-            <div class="card-body reports-stat">
-                <div class="reports-stat-icon pending"><i class="fa-solid fa-hourglass-half"></i></div>
-                <div class="reports-stat-body">
-                    <div class="reports-stat-value pending">{{ pending }}</div>
-                    <div class="reports-stat-label">Pending</div>
-                </div>
+        <div class="stat-card stat-card-viv">
+            <div class="stat-card-icon primary"><i class="fa-solid fa-calendar-days"></i></div>
+            <div class="stat-card-body">
+                <span class="stat-card-value">{{ daily_stats|length }}</span>
+                <span class="stat-card-label">Days Tracked</span>
             </div>
         </div>
-        <div class="card">
-            <div class="card-body reports-stat">
-                <div class="reports-stat-icon info"><i class="fa-solid fa-circle-check"></i></div>
-                <div class="reports-stat-body">
-                    <div class="reports-stat-value info">{{ completed }}</div>
-                    <div class="reports-stat-label">Completed{% if total_requests %} &middot; {{ completion_rate }}%{% endif %}</div>
-                </div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-body reports-stat">
-                <div class="reports-stat-icon success"><i class="fa-solid fa-coins"></i></div>
-                <div class="reports-stat-body">
-                    <div class="reports-stat-value success">&#8369;{{ total_fees|floatformat:2 }}</div>
-                    <div class="reports-stat-label">Total Fees Collected ({{ paid_count|default:0 }} paid)</div>
-                </div>
+        <div class="stat-card stat-card-viv stat-card-viv-ready">
+            <div class="stat-card-icon ready"><i class="fa-solid fa-file-lines"></i></div>
+            <div class="stat-card-body">
+                <span class="stat-card-value">{{ doc_type_breakdown|length }}</span>
+                <span class="stat-card-label">Document Types</span>
             </div>
         </div>
     </div>
 
     <!-- Status Breakdown -->
     {% if status_breakdown %}
-    <div class="card">
+    <div class="card es-list-card">
         <div class="card-header">
-            <h3><i class="fa-solid fa-list-check"></i> Status Breakdown</h3>
+            <h3>
+                <span class="es-orb es-orb-amber"><i class="fa-solid fa-layer-group"></i></span>
+                Status Breakdown
+            </h3>
         </div>
         <div class="card-body">
             <div class="status-pills">
@@ -130,9 +80,12 @@
     <div class="reports-grid">
 
         <!-- Document Type Breakdown -->
-        <div class="card">
+        <div class="card es-list-card">
             <div class="card-header">
-                <h3><i class="fa-solid fa-file-lines"></i> Requests by Document Type</h3>
+                <h3>
+                    <span class="es-orb es-orb-teal"><i class="fa-solid fa-chart-bar"></i></span>
+                    Requests by Document Type
+                </h3>
             </div>
             <div class="card-body">
                 {% if doc_type_breakdown %}
@@ -152,18 +105,21 @@
                 </div>
                 {% endwith %}
                 {% else %}
-                <div class="empty-state">
-                    <i class="fa-solid fa-chart-bar"></i>
-                    <p class="text-muted text-sm mt-2">No data available.</p>
+                <div class="es-empty" style="padding:28px 16px;">
+                    <div class="es-empty-icon"><i class="fa-solid fa-chart-bar"></i></div>
+                    <p>No data available.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
 
         <!-- Daily Activity -->
-        <div class="card">
+        <div class="card es-list-card">
             <div class="card-header">
-                <h3><i class="fa-solid fa-calendar-days"></i> Daily Activity (Last 30 Days)</h3>
+                <h3>
+                    <span class="es-orb es-orb-blue"><i class="fa-solid fa-chart-simple"></i></span>
+                    Daily Activity (Last 30 Days)
+                </h3>
             </div>
             <div class="card-body">
                 {% if daily_stats %}
@@ -180,9 +136,9 @@
                 </div>
                 {% endwith %}
                 {% else %}
-                <div class="empty-state">
-                    <i class="fa-solid fa-chart-line"></i>
-                    <p class="text-muted text-sm mt-2">No daily data available.</p>
+                <div class="es-empty" style="padding:28px 16px;">
+                    <div class="es-empty-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <p>No daily data available.</p>
                 </div>
                 {% endif %}
             </div>
@@ -241,9 +197,12 @@
 
     <!-- Monthly Trend -->
     {% if monthly_stats %}
-    <div class="card">
+    <div class="card es-list-card">
         <div class="card-header">
-            <h3><i class="fa-solid fa-arrow-trend-up"></i> Monthly Trend (Last 12 Months)</h3>
+            <h3>
+                <span class="es-orb es-orb-navy"><i class="fa-solid fa-chart-line"></i></span>
+                Monthly Trend
+            </h3>
         </div>
         <div class="card-body">
             {% with max_count=monthly_max|default:1 %}
@@ -260,5 +219,6 @@
     </div>
     {% endif %}
 
+    </div>
 </div>
 {% endblock %}

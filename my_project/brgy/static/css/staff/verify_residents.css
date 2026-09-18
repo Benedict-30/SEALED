@@ -553,7 +553,7 @@
 
 .id-images {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
     margin-top: 16px;
     border-top: 1px solid var(--border-light);
@@ -602,7 +602,6 @@
     .vr-search-field { flex: auto; width: 100%; }
     .vr-legend-wrap { align-items: flex-start; }
 }
-
 .vr-inactive-tag {
     display: inline-block;
     margin-left: 6px;

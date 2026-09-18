@@ -3,13 +3,14 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/admin/document_types.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin/edit_staff.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
 <!-- Create Form -->
 <div class="card mb-4">
-    <div class="card-header">
-        <h3>Add New Document Type</h3>
+    <div class="card-header create-staff-head">
+        <h3><i class="fa-solid fa-file-circle-plus"></i> Add New Document Type</h3>
         <button type="button" class="btn btn-primary btn-sm" id="createDocTypeToggle" aria-expanded="false">
             <i class="fa-solid fa-plus"></i> Add Document Type
         </button>
@@ -22,33 +23,70 @@
         {% endif %}
         <form method="post">
             {% csrf_token %}
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Document Name</label>
-                    {{ form.name }}
+
+            <!-- 01 Identity -->
+            <div class="es-panel es-panel-blue">
+                <div class="es-glow es-glow-blue"></div>
+                <div class="es-panel-head">
+                    <span class="es-step">01</span>
+                    <span class="es-orb es-orb-blue"><i class="fa-solid fa-file-lines"></i></span>
+                    <div><div class="es-panel-title">Identity</div><div class="es-panel-sub">The name &amp; where it applies</div></div>
                 </div>
-                <div class="form-group" style="min-width:200px;">
-                    <label class="form-label">Scope</label>
-                    {{ form.scope }}
+                <div class="es-fields">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Document Name</label>
+                            <div class="es-input-wrap"><i class="fa-solid fa-heading es-input-icon"></i>{{ form.name }}</div>
+                        </div>
+                        <div class="form-group" style="min-width:200px;">
+                            <label class="form-label">Scope</label>
+                            <div class="es-input-wrap"><i class="fa-solid fa-globe es-input-icon"></i>{{ form.scope }}</div>
+                        </div>
+                    </div>
+                    <div class="form-group" id="barangayGroup">
+                        <label class="form-label">Barangay</label>
+                        <div class="es-input-wrap"><i class="fa-solid fa-building es-input-icon"></i>{{ form.barangay }}</div>
+                        <small style="color:var(--text-muted); font-size:12px; display:block; margin-top:6px;">Required when scope is set to a specific barangay.</small>
+                    </div>
                 </div>
             </div>
-            <div class="form-group" id="barangayGroup">
-                <label class="form-label">Barangay</label>
-                {{ form.barangay }}
-                <small style="color:var(--text-muted); font-size:12px; display:block; margin-top:6px;">Required when scope is set to a specific barangay.</small>
+
+            <!-- 02 Description -->
+            <div class="es-panel es-panel-teal">
+                <div class="es-glow es-glow-teal"></div>
+                <div class="es-panel-head">
+                    <span class="es-step">02</span>
+                    <span class="es-orb es-orb-teal"><i class="fa-solid fa-align-left"></i></span>
+                    <div><div class="es-panel-title">Description</div><div class="es-panel-sub">What this document is for</div></div>
+                </div>
+                <div class="es-fields">
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <div class="es-input-wrap"><i class="fa-solid fa-align-left es-input-icon"></i>{{ form.description }}</div>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Description</label>
-                {{ form.description }}
+
+            <!-- 03 Requirements & Status -->
+            <div class="es-panel es-panel-amber">
+                <div class="es-glow es-glow-amber"></div>
+                <div class="es-panel-head">
+                    <span class="es-step">03</span>
+                    <span class="es-orb es-orb-amber"><i class="fa-solid fa-list-check"></i></span>
+                    <div><div class="es-panel-title">Requirements &amp; Status</div><div class="es-panel-sub">What residents must bring &amp; if it&apos;s live</div></div>
+                </div>
+                <div class="es-fields">
+                    <div class="form-group">
+                        <label class="form-label">Requirements (one per line)</label>
+                        <div class="es-input-wrap"><i class="fa-solid fa-clipboard-list es-input-icon"></i>{{ form.requirements }}</div>
+                    </div>
+                    <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                        {{ form.is_active }}
+                        <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Requirements (one per line)</label>
-                {{ form.requirements }}
-            </div>
-            <div class="form-group" style="display:flex;align-items:center;gap:8px;">
-                {{ form.is_active }}
-                <label for="id_is_active" class="form-label" style="margin-bottom:0;">Active</label>
-            </div>
+
             <div class="form-info" style="padding:12px 14px;border-radius:10px;background:var(--bg,#f8fafc);border:1px dashed var(--border,#e9ecef);margin-bottom:16px;">
                 <i class="fa-solid fa-circle-info" style="color:var(--info);margin-right:6px;"></i>
                 <span style="font-size:13px;color:var(--text-muted);">Price and template are configured by each barangay&apos;s staff after this document type is created.</span>
@@ -59,17 +97,22 @@
 </div>
 
 <!-- List -->
-<div class="card">
+<div class="card es-list-card">
     <div class="card-header">
-        <h3>Document Types</h3>
-        <div class="filter-bar" style="margin:0;flex-wrap:wrap;">
-            <form method="get" class="search-input-wrapper">
+        <h3>
+            <span class="es-orb es-orb-amber"><i class="fa-solid fa-file-circle-check"></i></span>
+            Document Types
+            <span class="es-list-count">{{ page_obj.paginator.count|default:0 }}</span>
+        </h3>
+        <div class="es-list-head-right">
+            <form method="get" class="es-list-search">
                 <i class="fa-solid fa-search"></i>
-                <input type="text" name="search" class="form-input" placeholder="Search..." value="{{ search }}" style="width:auto;">
+                <input type="text" name="search" class="form-input" placeholder="Search..." value="{{ search }}">
             </form>
-            <form method="get" style="display:flex;gap:0;">
+            <form method="get" class="es-list-search" style="gap:0;background:transparent;border:0;">
                 <input type="hidden" name="search" value="{{ search }}">
-                <select name="barangay" class="form-input" style="width:auto;" onchange="this.form.submit()">
+                <i class="fa-solid fa-filter"></i>
+                <select name="barangay" class="form-input" style="min-width:140px;" onchange="this.form.submit()">
                     <option value="">All Barangays</option>
                     {% for b in barangays %}
                     <option value="{{ b.pk }}" {% if brgy_filter|stringformat:"s" == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
@@ -78,16 +121,17 @@
             </form>
         </div>
     </div>
-    <div class="card-body-flush">
+    <div class="es-list-body">
         {% if page_obj %}
-        <div class="table-wrapper">
-            <table class="table">
+        <div class="es-list-table-wrap">
+            <table class="es-table">
                 <thead>
                     <tr>
                         <th>Name</th>
                         <th>Scope</th>
                         <th>Barangay</th>
                         <th>Requirements</th>
+                        <th>Template</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -95,41 +139,53 @@
                 <tbody>
                     {% for dt in page_obj %}
                     <tr>
-                        <td class="fw-600">{{ dt.name }}</td>
+                        <td><div class="es-badge es-badge-on"><span class="es-badge-dot"></span>{{ dt.name }}</div></td>
                         <td>
                             {% if dt.is_global %}
-                            <span class="badge badge-info"><i class="fa-solid fa-globe"></i> Global</span>
+                            <span class="es-badge es-badge-teal"><i class="fa-solid fa-globe"></i> Global</span>
                             {% else %}
-                            <span class="badge badge-muted">Local</span>
+                            <span class="es-badge es-badge-navy"><i class="fa-solid fa-location-dot"></i> Local</span>
                             {% endif %}
                         </td>
-                        <td class="text-sm">
-                            {% if dt.is_global %}All Barangays{% else %}{{ dt.barangay.name }}{% endif %}
-                        </td>
-                        <td class="text-sm" style="max-width:200px;">
+                        <td><span class="es-td-barangay"><i class="fa-solid fa-location-dot"></i>{% if dt.is_global %}All Barangays{% else %}{{ dt.barangay.name }}{% endif %}</span></td>
+                        <td class="es-td-muted" style="max-width:220px;">
                             {% for req in dt.requirements_list %}
-                            <span class="badge badge-muted" style="margin:2px;">{{ req }}</span>
+                            <span class="es-badge es-badge-muted" style="margin:2px;">{{ req }}</span>
                             {% empty %}
                             <span class="text-muted">None specified</span>
                             {% endfor %}
                         </td>
-                        <td>
-                            {% if dt.is_active %}
-                            <span class="badge badge-success">Active</span>
+                        <td class="es-td-muted" style="max-width:220px;">
+                            {% if dt.has_template %}
+                                {% if dt.tokens %}
+                                <span class="text-muted">{{ dt.tokens|length }} placeholder{{ dt.tokens|length|pluralize }}</span>
+                                {% else %}
+                                <span class="text-muted">Template uploaded</span>
+                                {% endif %}
                             {% else %}
-                            <span class="badge badge-danger">Inactive</span>
+                            <span class="text-muted">No template</span>
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'edit_document_type' dt.pk %}" class="btn btn-ghost btn-xs">
-                                <i class="fa-solid fa-pen"></i> Edit
-                            </a>
-                            <form method="post" action="{% url 'delete_document_type' dt.pk %}" style="display:inline;" onsubmit="return confirm('Delete {{ dt.name }}? This cannot be undone.');">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-danger btn-xs">
-                                    <i class="fa-solid fa-trash"></i> Delete
-                                </button>
-                            </form>
+                            {% if dt.is_active %}
+                            <span class="es-badge es-badge-on"><span class="es-badge-dot"></span> Active</span>
+                            {% else %}
+                            <span class="es-badge es-badge-off"><span class="es-badge-dot"></span> Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="es-td-actions">
+                                <a href="{% url 'edit_document_type' dt.pk %}" class="es-action-chip es-chip-edit" title="Edit {{ dt.name }}">
+                                    <i class="fa-solid fa-pen"></i> Edit
+                                </a>
+                                <form method="post" action="{% url 'delete_document_type' dt.pk %}" class="es-chip-form"
+                                      onsubmit="return confirm('Delete {{ dt.name }}? This cannot be undone.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="es-action-chip es-chip-danger" title="Delete">
+                                        <i class="fa-solid fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

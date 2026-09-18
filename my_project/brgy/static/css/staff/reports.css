@@ -287,3 +287,39 @@
     white-space: nowrap;
     flex-shrink: 0;
 }
+
+/* ─── es-* design integration ─────────────────────────────────── */
+.reports-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.reports-stack > * { margin: 0; }
+
+.reports-stack .reports-grid { margin: 0; }
+
+.reports-page .es-list-card { margin-top: 0; }
+.reports-page .reports-grid .es-list-card { margin-top: 0; }
+.reports-page .es-list-card .card-body { padding: 20px 24px; }
+
+/* Stat cards rendered exactly like the dashboard (vivid variant) */
+.reports-stack .stat-cards { margin-bottom: 0; }
+
+.es-filters .active-filters {
+    flex-basis: 100%;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border, #e2e8f0);
+}
+
+.es-filters .active-filters .active-filter-clear { margin-left: auto; }
+
+/* Keep report charts comfortable inside es-list-card bodies */
+.reports-page .card-body .bar-chart,
+.reports-page .card-body .doc-type-chart { margin: 0; }
+
+@media (max-width: 640px) {
+    .reports-page .es-list-card .card-body { padding: 16px; }
+}
+

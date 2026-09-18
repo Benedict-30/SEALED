@@ -3,7 +3,7 @@
 
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff/document_types.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/document_types.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
@@ -34,23 +34,24 @@
             {% else %}
             <a href="{% url 'staff_edit_document_type' dt.pk %}" class="doc-card-hitarea" aria-label="Edit {{ dt.name }}" title="Edit {{ dt.name }}"></a>
             {% endif %}
-            <!-- Edit Button on hover -->
-            <div class="doc-card-actions">
+
+            <!-- Upper-corner tools: availability switch + icon-only edit + delete -->
+            <div class="doc-card-tools">
                 {% if dt.is_global %}
-                <a href="{% url 'staff_edit_global_type' dt.pk %}" class="btn-edit-card">
+                <a href="{% url 'staff_edit_global_type' dt.pk %}" class="doc-tool-edit" title="Configure {{ dt.name }}" aria-label="Configure {{ dt.name }}">
                     <i class="fa-solid fa-gear"></i>
-                    {% if dt.override %}Manage{% else %}Configure{% endif %}
                 </a>
                 {% else %}
-                <a href="{% url 'staff_edit_document_type' dt.pk %}" class="btn-edit-card">
-                    <i class="fa-solid fa-pen"></i> Edit
-                </a>
-                <form method="post" action="{% url 'staff_delete_document_type' dt.pk %}" class="doc-card-delete-form" onsubmit="return confirm('Delete {{ dt.name }}? This cannot be undone.');">
+                <form method="post" action="{% url 'staff_toggle_document_type' dt.pk %}" class="doc-switch-form">
                     {% csrf_token %}
-                    <button type="submit" class="btn-edit-card danger" title="Delete">
-                        <i class="fa-solid fa-trash"></i> Delete
-                    </button>
+                    <span class="doc-switch" title="{% if dt.is_active %}Available — click to disable{% else %}Unavailable — click to enable{% endif %}">
+                        <input type="checkbox" id="doc-switch-{{ dt.pk }}" {% if dt.is_active %}checked{% endif %} aria-label="Toggle availability for {{ dt.name }}" onchange="this.form.submit()">
+                        <label for="doc-switch-{{ dt.pk }}"></label>
+                    </span>
                 </form>
+                <a href="{% url 'staff_edit_document_type' dt.pk %}" class="doc-tool-edit" title="Edit {{ dt.name }}" aria-label="Edit {{ dt.name }}">
+                    <i class="fa-solid fa-pen"></i>
+                </a>
                 {% endif %}
             </div>
 
@@ -97,6 +98,15 @@
             {% if dt.requirements_list %}
             <div class="doc-card-req" title="{{ dt.requirements_list|join:', ' }}">
                 <i class="fa-solid fa-list-check"></i> {{ dt.requirements_list|length }} requirement{{ dt.requirements_list|length|pluralize }}
+            </div>
+            {% endif %}
+            {% if dt.is_global and dt.override and dt.override.template_variables %}
+            <div class="doc-card-req" title="Auto-filled on print: {{ dt.override.template_variables|join:', ' }}">
+                <i class="fa-solid fa-code"></i> {{ dt.override.template_variables|length }} placeholder{{ dt.override.template_variables|length|pluralize }}
+            </div>
+            {% elif not dt.is_global and dt.template_variables %}
+            <div class="doc-card-req" title="Auto-filled on print: {{ dt.template_variables|join:', ' }}">
+                <i class="fa-solid fa-code"></i> {{ dt.template_variables|length }} placeholder{{ dt.template_variables|length|pluralize }}
             </div>
             {% endif %}
         </div>

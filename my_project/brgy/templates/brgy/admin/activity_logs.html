@@ -1,39 +1,59 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin/edit_staff.css' %}?v=6">
+{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h3>System Activity Logs</h3>
-        <a href="{% url 'activity_logs_export' %}?search={{ search }}&action={{ action_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&barangay={{ barangay_filter }}" class="btn btn-primary btn-sm">
-            <i class="fa-solid fa-file-csv"></i> Export CSV
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="filter-bar mb-4">
-            <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;">
-                <div class="search-input-wrapper">
-                    <i class="fa-solid fa-search"></i>
-                    <input type="text" name="search" class="form-input" placeholder="Search actions, details, users..." value="{{ search }}">
-                </div>
-                <select name="barangay" class="form-input" style="width:auto;">
-                    <option value="">All Barangays</option>
-                    {% for b in barangays %}
-                    <option value="{{ b.pk }}" {% if barangay_filter == b.pk %}selected{% endif %}>{{ b.name }}</option>
-                    {% endfor %}
-                </select>
-                <input type="text" name="action" class="form-input" style="width:auto;" placeholder="Filter by action..." value="{{ action_filter }}">
-                <input type="date" name="date_from" class="form-input" style="width:auto;" value="{{ date_from }}" title="From">
-                <input type="date" name="date_to" class="form-input" style="width:auto;" value="{{ date_to }}" title="To">
-                {% if search or action_filter or date_from or date_to or barangay_filter %}
-                <a href="{% url 'activity_logs' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i> Clear</a>
-                {% endif %}
-                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
-            </form>
+<div class="page-hero">
+    <div>
+        <div class="page-hero-title">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            Activity Logs
         </div>
+        <div class="page-hero-sub">A complete audit trail of every action taken across the system.</div>
+    </div>
+    <a href="{% url 'activity_logs_export' %}?search={{ search }}&action={{ action_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&barangay={{ barangay_filter }}" class="btn btn-primary">
+        <i class="fa-solid fa-file-csv"></i> Export CSV
+    </a>
+</div>
 
-        {% if page_obj %}
-        <div class="table-wrapper">
-            <table class="table">
+<div class="card es-list-card">
+    <div class="card-header">
+        <h3>
+            <span class="es-orb es-orb-amber"><i class="fa-solid fa-clipboard-list"></i></span>
+            System Activity
+            <span class="es-list-count">{{ page_obj.paginator.count|default:0 }}</span>
+        </h3>
+    </div>
+
+    <div class="es-filters">
+        <form method="get">
+            <div class="es-list-search">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" name="search" class="form-input" placeholder="Search actions, details, users..." value="{{ search }}">
+            </div>
+            <select name="barangay" class="filter-field">
+                <option value="">All Barangays</option>
+                {% for b in barangays %}
+                <option value="{{ b.pk }}" {% if barangay_filter == b.pk %}selected{% endif %}>{{ b.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="action" class="filter-field" placeholder="Filter by action..." value="{{ action_filter }}">
+            <input type="date" name="date_from" class="filter-field" value="{{ date_from }}" title="From">
+            <input type="date" name="date_to" class="filter-field" value="{{ date_to }}" title="To">
+            {% if search or action_filter or date_from or date_to or barangay_filter %}
+            <a href="{% url 'activity_logs' %}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i> Clear</a>
+            {% endif %}
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+        </form>
+    </div>
+
+    <div class="es-list-body">
+        {% if page_obj.paginator.count %}
+        <div class="es-list-table-wrap">
+            <table class="es-table">
                 <thead>
                     <tr>
                         <th>Timestamp</th>
@@ -47,21 +67,44 @@
                 <tbody>
                     {% for log in page_obj %}
                     <tr>
-                        <td class="text-sm text-muted" style="white-space:nowrap;">{{ log.created_at|date:"M d, Y h:i A" }}</td>
+                        <td>
+                            <div class="es-td-time">{{ log.created_at|date:"M d, Y" }}</div>
+                            <div class="es-td-time-sec">{{ log.created_at|date:"h:i A" }}</div>
+                        </td>
                         <td>
                             {% if log.user %}
-                            <div class="text-sm fw-600">{{ log.user.display_name }}</div>
-                            <div class="text-xs text-muted">{{ log.user.get_role_display }}</div>
+                            <div class="es-td-user">
+                                <div class="es-td-avatar">{{ log.user.initials }}</div>
+                                <div class="es-td-user-inner">
+                                    <div class="es-td-name">{{ log.user.display_name }}</div>
+                                    <div class="es-td-username">{{ log.user.get_role_display }}</div>
+                                </div>
+                            </div>
                             {% else %}
-                            <span class="text-sm text-muted">System</span>
+                            <div class="es-td-user">
+                                <div class="es-td-avatar es-td-avatar-off"><i class="fa-solid fa-robot"></i></div>
+                                <div class="es-td-user-inner">
+                                    <div class="es-td-name">System</div>
+                                    <div class="es-td-username">Automated</div>
+                                </div>
+                            </div>
                             {% endif %}
                         </td>
-                        <td class="text-sm text-muted">
-                            {% if log.barangay %}{{ log.barangay.name }}{% else %}-{% endif %}
+                        <td>
+                            {% if log.barangay %}
+                            <span class="es-td-barangay"><i class="fa-solid fa-location-dot"></i>{{ log.barangay.name }}</span>
+                            {% else %}
+                            <span class="es-td-muted">—</span>
+                            {% endif %}
                         </td>
-                        <td class="text-sm fw-600">{{ log.action }}</td>
-                        <td class="text-sm" style="max-width:300px;" title="{{ log.details }}">{{ log.details|truncatechars:80|default:"-" }}</td>
-                        <td class="text-sm text-muted" title="Hashed for privacy">{{ log.ip_hash|truncatechars:16|default:"-" }}</td>
+                        <td>
+                            <span class="es-td-action">
+                                <span class="es-action-dot dot-{{ log.action_category }}"><i class="fa-solid {{ log.action_icon }}"></i></span>
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td class="es-td-details" title="{{ log.details }}">{{ log.details|truncatechars:90|default:"—" }}</td>
+                        <td><span class="es-td-ip" title="Hashed for privacy">{{ log.ip_hash|truncatechars:16|default:"—" }}</span></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -81,8 +124,8 @@
         {% endif %}
 
         {% else %}
-        <div class="empty-state">
-            <i class="fa-solid fa-list-check"></i>
+        <div class="es-empty">
+            <div class="es-empty-icon"><i class="fa-solid fa-clipboard-list"></i></div>
             <h4>No Activity Logs</h4>
             <p>{% if search or action_filter or barangay_filter or date_from or date_to %}No logs match your filters.{% else %}No activity has been recorded yet.{% endif %}</p>
         </div>

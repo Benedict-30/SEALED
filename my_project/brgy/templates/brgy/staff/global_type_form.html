@@ -51,6 +51,12 @@
                             <i class="fa-solid fa-eye"></i> View Current
                         </a>
                     </div>
+                    {% if form.instance.template_variables %}
+                    <p style="font-size: 12px; margin: 8px 0 0; color: var(--text-muted);">
+                        <i class="fa-solid fa-code"></i> Detected placeholders (auto-filled on print):
+                        {% for var in form.instance.template_variables %}<code>{{ var }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </p>
+                    {% endif %}
                 {% endif %}
 
                 <div class="file-upload-area">

@@ -1,64 +1,117 @@
 {% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin/edit_staff.css' %}?v=6">
+{% endblock %}
 
 {% block content %}
 <div class="notif-banner">
     <i class="fa-solid fa-triangle-exclamation"></i>
     <span>Notifications are automatically deleted after 7 days.</span>
 </div>
-<div class="card">
-    <div class="card-header">
-        <h3>All Notifications</h3>
-        {% if unread_notification_count > 0 %}
+<div class="notif-page">
+
+    <!-- Page header -->
+    <div class="page-hero">
+        <div>
+            <div class="page-hero-title">
+                <i class="fa-solid fa-bell"></i>
+                Notifications
+            </div>
+            <div class="page-hero-sub">Stay up to date with your latest activity.</div>
+        </div>
+        {% if unread_count %}
         <form method="post" action="{% url 'mark_all_notifications_read' %}" style="margin:0;">
             {% csrf_token %}
-            <button type="submit" class="btn btn-ghost btn-sm">
+            <button type="submit" class="btn btn-primary">
                 <i class="fa-solid fa-check-double"></i> Mark All Read
             </button>
         </form>
         {% endif %}
     </div>
-    <div class="card-body-flush">
-        {% if page_obj %}
-        {% for notif in page_obj %}
-        <form class="notif-form" method="post" action="{% url 'mark_notification_read' notif.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="notif-row-btn">
-                <div class="notif-row {% if not notif.is_read %}is-unread{% endif %}">
-                    <div class="notif-icon {% if "request" in notif.title|lower %}is-request{% elif "account" in notif.title|lower or "verified" in notif.title|lower or "register" in notif.title|lower %}is-account{% elif "rejected" in notif.title|lower %}is-rejected{% else %}is-default{% endif %} {% if notif.is_read %}is-muted{% endif %}">
-                        <i class="fa-solid {% if "request" in notif.title|lower %}fa-file-lines{% elif "verified" in notif.title|lower or "register" in notif.title|lower %}fa-user-check{% else %}fa-bell{% endif %}"></i>
+<div class="card es-list-card">
+        <div class="card-header">
+            <h3>
+                <span class="es-orb es-orb-teal"><i class="fa-solid fa-bell"></i></span>
+                All Notifications
+                <span class="es-list-count">{{ page_obj.paginator.count|default:0 }}</span>
+            </h3>
+            {% if unread_count %}
+            <div class="es-list-head-right">
+                <span class="es-badge es-badge-on es-notif-unread-badge"><span class="es-badge-dot"></span> {{ unread_count }} unread</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="es-list-body">
+            {% if page_obj %}
+            <div class="es-notif-list">
+                {% for notif in page_obj %}
+                <div class="es-notif-row{% if not notif.is_read %} unread{% endif %}">
+                    <form method="post" action="{% url 'mark_notification_read' notif.pk %}" class="es-notif-form">
+                        {% csrf_token %}
+                        <button type="submit" class="es-notif-item" title="{% if notif.is_read %}Notification is read.{% else %}Click to open.{% endif %}">
+                            <span class="es-notif-icon tone-{{ notif.tone }}"><i class="fa-solid {{ notif.icon }}"></i></span>
+                            <span class="es-notif-main">
+                                <span class="es-notif-title">{{ notif.title }}</span>
+                                <span class="es-notif-msg">{{ notif.message }}</span>
+                                <span class="es-notif-time"><i class="fa-regular fa-clock"></i> {{ notif.created_at|date:"M d, Y h:i A" }}</span>
+                            </span>
+                            {% if not notif.is_read %}<span class="es-notif-dot"></span>{% endif %}
+                        </button>
+                    </form>
+                    <div class="es-notif-menu" data-notif-menu>
+                        <button type="button" class="es-notif-menu-btn" data-notif-menu-toggle aria-haspopup="menu" aria-expanded="false" aria-label="Notification options">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <div class="es-notif-dropdown" data-notif-dropdown hidden>
+                            {% if not notif.is_read %}
+                            <form method="post" action="{% url 'set_notification_read' notif.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" name="read" value="1"><i class="fa-solid fa-circle-check"></i> Mark as read</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'set_notification_read' notif.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" name="read" value="0"><i class="fa-solid fa-circle"></i> Mark as unread</button>
+                            </form>
+                            {% endif %}
+                            <form method="post" action="{% url 'delete_notification' notif.pk %}" onsubmit="return confirm('Delete this notification? This cannot be undone.');">
+                                {% csrf_token %}
+                                <button type="submit" class="danger"><i class="fa-solid fa-trash-can"></i> Delete notification</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="notif-body">
-                        <div class="notif-title">{{ notif.title }}</div>
-                        <div class="notif-message">{{ notif.message }}</div>
-                        <div class="notif-time"><i class="fa-regular fa-clock"></i> {{ notif.created_at|date:"M d, Y h:i A" }}</div>
-                    </div>
-                    {% if not notif.is_read %}
-                    <span class="notif-dot"></span>
-                    {% endif %}
                 </div>
-            </button>
-        </form>
-        {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
 
-        {% if page_obj.has_other_pages %}
-        <div class="pagination">
-            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">&laquo;</a>{% endif %}
-            {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}<span class="active">{{ num }}</span>
-                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <a href="?page={{ num }}">{{ num }}</a>{% endif %}
-            {% endfor %}
-            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">&raquo;</a>{% endif %}
-        </div>
-        {% endif %}
+            {% if page_obj.has_other_pages %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">&laquo;</a>{% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}<span class="active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}">{{ num }}</a>{% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">&raquo;</a>{% endif %}
+            </div>
+            {% endif %}
 
-        {% else %}
-        <div class="empty-state">
-            <i class="fa-solid fa-bell-slash"></i>
-            <h4>No Notifications</h4>
-            <p>You're all caught up. No notifications to show.</p>
+            {% else %}
+            <div class="es-empty">
+                <div class="es-empty-icon"><i class="fa-solid fa-bell-slash"></i></div>
+                <h4>No Notifications</h4>
+                <p>You're all caught up. No notifications to show.</p>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notifications.js' %}?v=2"></script>
 {% endblock %}

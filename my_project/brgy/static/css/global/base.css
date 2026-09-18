@@ -14,9 +14,9 @@
     --accent-dark: #B45309;
     --accent-50: #FFFBEB;
     --accent-100: #FEF3C7;
-    --bg: #F8FAFC;
-    --bg-alt: #F1F5F9;
-    --bg-body: #F8FAFC;
+    --bg: #E6EBF1;
+    --bg-alt: #DCE3EA;
+    --bg-body: #E6EBF1;
     --primary-bg: #ECFDF5;
     --card: #FFFFFF;
     --text: #0F172A;
@@ -92,12 +92,14 @@ a, button, input, select, textarea { touch-action: manipulation; }
 .main-content {
     flex: 1;
     min-height: 100vh;
+    min-width: 0;
     display: flex;
     flex-direction: column;
 }
 
 .page-content {
     flex: 1;
+    min-width: 0;
     padding: 28px 32px;
     animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }

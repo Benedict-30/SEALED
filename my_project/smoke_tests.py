@@ -252,7 +252,7 @@ class AppHealthTests(unittest.TestCase):
             'create_document_request_item', 'update_document_request_item',
             'delete_document_request_item',
             'create_notification', 'get_notification', 'update_notification',
-            'list_notifications', 'delete_expired_notifications',
+            'list_notifications', 'delete_notification',
             'create_announcement', 'get_announcement', 'update_announcement',
             'delete_announcement', 'list_announcements',
             'create_activity_log', 'list_activity_logs',

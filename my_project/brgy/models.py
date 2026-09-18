@@ -438,6 +438,21 @@ class DocumentRequestItem(Base):
     def requirement_files(self):
         return self._data.get('requirement_files') or []
 
+    @property
+    def requirement_file_entries(self):
+        """Metadata for each attached file (index, display name, image flag)."""
+        image_exts = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+        entries = []
+        for index, path in enumerate(self.requirement_files):
+            name = os.path.basename(str(path))
+            ext = os.path.splitext(name)[1].lower()
+            entries.append({
+                'index': index,
+                'name': name,
+                'is_image': ext in image_exts,
+            })
+        return entries
+
 
 class DocumentRequest(Base):
     _collection_key = 'document_request'
@@ -548,6 +563,20 @@ class DocumentRequest(Base):
         return ItemsManager(self)
 
     @property
+    def all_requirement_file_entries(self):
+        """All uploaded requirement files across the request's items."""
+        entries = []
+        for item in self.items.all():
+            for entry in item.requirement_file_entries:
+                entries.append({
+                    'item_pk': item.pk,
+                    'index': entry['index'],
+                    'name': entry['name'],
+                    'is_image': entry['is_image'],
+                })
+        return entries
+
+    @property
     def status_color(self):
         colors = {
             'pending': 'warning',
@@ -577,6 +606,41 @@ class Notification(Base):
             return None
         return self._cached('user', lambda: get_user(user_id))
 
+    @property
+    def is_read(self):
+        return bool(self._data.get('is_read'))
+
+    @property
+    def icon(self):
+        title = (self._data.get('title') or '').lower()
+        for key, icon in (
+            ('payment', 'fa-coins'),
+            ('request', 'fa-file-circle-plus'),
+            ('announcement', 'fa-bullhorn'),
+            ('account', 'fa-user-gear'),
+            ('verified', 'fa-user-check'),
+            ('register', 'fa-user-plus'),
+            ('rejection', 'fa-circle-xmark'),
+            ('password', 'fa-key'),
+            ('profile', 'fa-id-card'),
+        ):
+            if key in title:
+                return icon
+        return 'fa-bell'
+
+    @property
+    def tone(self):
+        title = (self._data.get('title') or '').lower()
+        if any(w in title for w in ('rejected', 'blocked', 'deactivat', 'failed')):
+            return 'danger'
+        if any(w in title for w in ('payment', 'verified', 'approved', 'confirmed', 'completed', 'register')):
+            return 'success'
+        if any(w in title for w in ('request', 'print', 'pickup', 'announcement', 'new ')):
+            return 'info'
+        if any(w in title for w in ('password', 'account', 'profile', 'security')):
+            return 'warning'
+        return 'default'
+
 
 class ActivityLog(Base):
     _collection_key = 'activity_log'
@@ -594,6 +658,51 @@ class ActivityLog(Base):
         if not barangay_id:
             return None
         return self._cached('barangay', lambda: get_barangay(barangay_id))
+
+    @property
+    def action_category(self):
+        """Coarse category used to colour-code the action badge."""
+        action = (self._data.get('action') or '').lower()
+        if any(w in action for w in (
+            'delete', 'reject', 'failed', 'blocked', 'cancel',
+            'revert', 'deactivat', 'unpublish', 'error',
+        )):
+            return 'danger'
+        if any(w in action for w in (
+            'login', 'logout', 'created', 'collected', 'approved',
+            'verified', 'confirm', 'reactivat', 'published', 'printed',
+        )):
+            return 'success'
+        if any(w in action for w in (
+            'updated', 'changed', 'reset', 'configured', 'edit', 'requested',
+        )):
+            return 'info'
+        return 'neutral'
+
+    @property
+    def action_icon(self):
+        action = (self._data.get('action') or '').lower()
+        for key, icon in (
+            ('login', 'fa-right-to-bracket'),
+            ('logout', 'fa-right-from-bracket'),
+            ('password', 'fa-key'),
+            ('document printed', 'fa-print'),
+            ('document type', 'fa-file-circle-check'),
+            ('document request', 'fa-file-circle-plus'),
+            ('request status', 'fa-arrows-rotate'),
+            ('request', 'fa-file-lines'),
+            ('payment', 'fa-peso-sign'),
+            ('announcement', 'fa-bullhorn'),
+            ('staff', 'fa-user-tie'),
+            ('barangay logo', 'fa-image'),
+            ('barangay', 'fa-building'),
+            ('resident', 'fa-user-check'),
+            ('profile', 'fa-id-card'),
+            ('registration', 'fa-user-plus'),
+        ):
+            if key in action:
+                return icon
+        return 'fa-circle-info'
 
 
 class Announcement(Base):
