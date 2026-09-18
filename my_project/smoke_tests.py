@@ -260,6 +260,8 @@ class AppHealthTests(unittest.TestCase):
             'login_attempts_remaining', 'clear_failed_logins',
             'get_users_bulk', 'count_users', 'list_document_type_overrides',
             'create_document_type_override', 'delete_document_type_override',
+            'create_otp', 'get_pending_otp', 'get_otp_resend_cooldown',
+            'verify_otp', 'delete_otp', 'hash_otp_code', 'otp_matches',
         ):
             self.assertTrue(hasattr(db, name), f'firestore_db.{name} missing')
 
@@ -296,6 +298,84 @@ class AppHealthTests(unittest.TestCase):
         self.assertNotEqual(k1, _login_rate_key(other, 'alice'))
         self.assertTrue(k1)
         self.assertNotIn('alice', k1)
+
+    def test_otp_hash_helpers(self):
+        from brgy.firestore_db import hash_otp_code, otp_matches
+        code = '123456'
+        self.assertEqual(hash_otp_code(code), hash_otp_code(code))
+        self.assertEqual(len(hash_otp_code(code)), 64)
+        self.assertNotEqual(hash_otp_code(code), hash_otp_code('123457'))
+        self.assertTrue(otp_matches({'code_hash': hash_otp_code(code)}, code))
+        self.assertFalse(otp_matches({'code_hash': hash_otp_code(code)}, '654321'))
+        self.assertTrue(otp_matches({'code': '000123'}, '000123'))
+        self.assertFalse(otp_matches({'code': '000123'}, '000999'))
+        self.assertFalse(otp_matches({}, '123456'))
+
+    def test_otp_resend_cooldown_math(self):
+        from unittest.mock import patch
+        from datetime import datetime, timedelta, timezone
+        from brgy import firestore_db
+
+        now = datetime.now(timezone.utc)
+        with patch.object(firestore_db, 'get_pending_otp', return_value=None):
+            self.assertEqual(firestore_db.get_otp_resend_cooldown('u1'), 0)
+        with patch.object(
+            firestore_db, 'get_pending_otp',
+            return_value={'last_sent_at': now},
+        ):
+            self.assertGreaterEqual(firestore_db.get_otp_resend_cooldown('u1'), 29)
+        with patch.object(
+            firestore_db, 'get_pending_otp',
+            return_value={'last_sent_at': now - timedelta(seconds=39)},
+        ):
+            self.assertEqual(firestore_db.get_otp_resend_cooldown('u1'), 0)
+        with patch.object(
+            firestore_db, 'get_pending_otp',
+            return_value={'last_sent_at': now - timedelta(seconds=28)},
+        ):
+            self.assertGreater(firestore_db.get_otp_resend_cooldown('u1'), 0)
+
+    def test_otp_flow_surface(self):
+        from brgy import firestore_db as db
+        from brgy import views
+        from brgy.forms import OTPVerificationForm
+        for name in ('verify_otp_view', 'resend_otp_view', '_send_login_otp', '_generate_otp'):
+            self.assertTrue(hasattr(views, name), f'views.{name} missing')
+        self.assertTrue(hasattr(db, 'get_otp_resend_cooldown'))
+        self.assertTrue(hasattr(OTPVerificationForm(), 'clean_otp_code'))
+
+    def test_email_error_messages(self):
+        import smtplib
+        import socket
+        from brgy.email_errors import friendly_email_error
+
+        self.assertIn('EMAIL_HOST', friendly_email_error(None, missing_config=True))
+        self.assertIn(
+            'credentials',
+            friendly_email_error(smtplib.SMTPAuthenticationError(535, b'bad')),
+        )
+        self.assertIn(
+            'refused',
+            friendly_email_error(smtplib.SMTPConnectError(421, b'no')),
+        )
+        self.assertIn('timed out', friendly_email_error(socket.timeout('slow')))
+        self.assertIn('unexpected', friendly_email_error(ValueError('weird')))
+
+    def test_email_send_result_no_config(self):
+        from unittest.mock import patch
+        from django.conf import settings
+        from brgy import views
+        from brgy.models import CustomUser
+
+        user = CustomUser({
+            'id': 'uuuuuuuu-uuuu-uuuu-uuuu-uuuuuuuuuuuu',
+            'email': 'resident@example.com',
+            'display_name': 'Resident',
+        })
+        with patch.object(settings, 'EMAIL_HOST', ''):
+            sent, reason = views._email_send_result(user, 's', 'b')
+        self.assertFalse(sent)
+        self.assertIn('EMAIL_HOST', reason)
 
 
 if __name__ == '__main__':

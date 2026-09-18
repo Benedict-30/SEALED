@@ -9,6 +9,8 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.core.management.base import BaseCommand, CommandError
 
+from brgy.email_errors import friendly_email_error
+
 
 class Command(BaseCommand):
     help = 'Send a test email via the configured SMTP server.'
@@ -39,7 +41,10 @@ class Command(BaseCommand):
         try:
             count = send_mail(subject, body, from_email, [to], fail_silently=False)
         except Exception as exc:
-            raise CommandError('SMTP error: %s' % exc)
+            raise CommandError(
+                'SMTP error: %s\nOriginal error: %s'
+                % (friendly_email_error(exc), exc)
+            )
         if count:
             self.stdout.write(self.style.SUCCESS('Test email sent to %s.' % to))
         else:

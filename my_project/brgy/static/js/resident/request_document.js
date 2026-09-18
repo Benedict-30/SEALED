@@ -367,7 +367,11 @@
 
         fetch(previewUrl)
             .then(function (res) {
-                if (!res.ok) throw new Error('No template');
+                if (!res.ok) {
+                    return res.json().catch(function () { return null; }).then(function (err) {
+                        throw new Error(err && err.error ? err.error : 'Preview not available for this document.');
+                    });
+                }
                 return res.json();
             })
             .then(function (data) {
@@ -375,8 +379,9 @@
                 loading.hidden = true;
                 content.hidden = false;
             })
-            .catch(function () {
-                content.innerHTML = '<div class="preview-empty"><i class="fa-solid fa-file-circle-xmark"></i><p>Preview not available for this document.</p></div>';
+            .catch(function (err) {
+                var msg = (err && err.message) ? err.message : 'Preview not available for this document.';
+                content.innerHTML = '<div class="preview-empty"><i class="fa-solid fa-file-circle-xmark"></i><p>' + escHtml(msg) + '</p></div>';
                 loading.hidden = true;
                 content.hidden = false;
             });

@@ -10,8 +10,10 @@ single-field equality operators where useful, and any remaining filtering and
 sorting happens in Python. This is fine for a barangay-scale application.
 """
 import functools
+import hashlib
 import logging
 import queue
+import secrets
 import sys
 import threading
 import time as _time
@@ -40,19 +42,14 @@ _COLLECTION_NAMES = {
 }
 
 # Login OTP: verified via the user's email, valid for this many minutes.
-LOGIN_OTP_TTL_MINUTES = 10
+LOGIN_OTP_TTL_MINUTES = 5
 
 # Number of failed OTP attempts allowed before the pending login is discarded
 # and the user must start again from the login page.
 MAX_OTP_ATTEMPTS = 5
 
-# Notifications are auto-deleted once they are older than this many days.
-NOTIFICATION_TTL_DAYS = 7
-
-# Expired-notification purge runs at most once per interval (see
-# ``_cleanup_expired_notifications``).
-_NOTIFICATION_CLEANUP_INTERVAL = timedelta(minutes=30)
-_last_notification_cleanup = None
+# Minimum wait between OTP resends for the same user (abuse/spam guard).
+OTP_RESEND_COOLDOWN_SECONDS = 30
 
 # Login brute-force protection: after MAX_LOGIN_ATTEMPTS consecutive failures
 # for the same key (username+IP), further attempts are blocked for the lockout
@@ -675,47 +672,7 @@ def update_notification(notification_id, data):
 
 
 def list_notifications(filters=None, order_by='created_at', descending=True, limit=None):
-    _cleanup_expired_notifications()
     return list_docs('notification', filters=filters, order_by=order_by, descending=descending, limit=limit)
-
-
-def delete_expired_notifications():
-    """Delete notifications older than NOTIFICATION_TTL_DAYS.
-
-    Uses the stored ``expires_at`` timestamp when present; falls back to
-    ``created_at + TTL`` for records created before ``expires_at`` existed.
-    Returns the number of notifications deleted.
-
-    Best-effort by design: a Firestore outage or a single failing delete is
-    logged and ignored so it can never break the notification read path.
-    """
-    now = utcnow()
-    fallback_cutoff = now - timedelta(days=NOTIFICATION_TTL_DAYS)
-    deleted = 0
-    for notif in list_docs('notification'):
-        expires_at = notif.get('expires_at')
-        if expires_at is None:
-            created_at = notif.get('created_at')
-            if created_at is None or created_at >= fallback_cutoff:
-                continue
-        elif expires_at >= now:
-            continue
-        try:
-            delete_doc('notification', notif['id'])
-            deleted += 1
-        except Exception:
-            logger.exception('Failed to delete expired notification %s', notif.get('id'))
-    return deleted
-
-
-def _cleanup_expired_notifications():
-    """Run the expired-notification purge at most once per interval."""
-    global _last_notification_cleanup
-    now = utcnow()
-    if _last_notification_cleanup is not None and (now - _last_notification_cleanup) < _NOTIFICATION_CLEANUP_INTERVAL:
-        return
-    _last_notification_cleanup = now
-    delete_expired_notifications()
 
 
 def delete_notification(notification_id):
@@ -838,19 +795,41 @@ def clear_failed_logins(key):
 
 # ─────────────────────── Login OTP helpers ───────────────────────
 
+def hash_otp_code(code):
+    """Deterministic SHA-256 of a code; what is actually stored in Firestore."""
+    return hashlib.sha256(str(code).encode('utf-8')).hexdigest()
+
+
+def otp_matches(record, code):
+    """Constant-time check of *code* against an OTP *record*.
+
+    Prefers the hashed ``code_hash`` field; falls back to the legacy
+    plaintext ``code`` field so records created before hashing still verify.
+    """
+    stored_hash = record.get('code_hash')
+    if stored_hash:
+        return secrets.compare_digest(str(stored_hash).lower(), hash_otp_code(code))
+    legacy = record.get('code')
+    if legacy is not None:
+        return secrets.compare_digest(str(legacy), str(code))
+    return False
+
+
 @_outage_safe(default=None)
 def create_otp(user_id, code):
     """Store a login OTP for *user_id*, replacing any previous one.
 
-    Only a single pending OTP is kept per user at a time so an old code
-    cannot be replayed after a resend.  Returns the OTP document id.
+    Only the hash of the code is persisted (never the plaintext), and only a
+    single pending OTP is kept per user at a time so an old code cannot be
+    replayed after a resend.  Returns the OTP document id.
     """
     delete_otp(user_id)
     now = utcnow()
     data = {
         'user_id': str(user_id),
-        'code': str(code),
+        'code_hash': hash_otp_code(code),
         'created_at': now,
+        'last_sent_at': now,
         'expires_at': now + timedelta(minutes=LOGIN_OTP_TTL_MINUTES),
         'attempts': 0,
     }
@@ -871,6 +850,19 @@ def get_pending_otp(user_id):
     return record
 
 
+@_outage_safe(default=0)
+def get_otp_resend_cooldown(user_id):
+    """Seconds until a resend is allowed for *user_id* (0 = allowed now)."""
+    record = get_pending_otp(user_id)
+    if not record:
+        return 0
+    last_sent = record.get('last_sent_at')
+    if not last_sent:
+        return 0
+    elapsed = (utcnow() - last_sent).total_seconds()
+    return max(0, int(round(OTP_RESEND_COOLDOWN_SECONDS - elapsed)))
+
+
 @_outage_safe(default=False)
 def verify_otp(user_id, code):
     """Validate *code* against the pending OTP for *user_id*.
@@ -882,7 +874,7 @@ def verify_otp(user_id, code):
     record = get_pending_otp(user_id)
     if not record:
         return False
-    if str(record.get('code')) == str(code):
+    if otp_matches(record, code):
         delete_doc('otp', record['id'])
         return True
     attempts = int(record.get('attempts', 0)) + 1

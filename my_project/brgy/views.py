@@ -28,6 +28,7 @@ import mammoth
 
 from . import firestore_db, report_exports
 from . import template_tokens
+from .email_errors import friendly_email_error
 from .auth import login_user, logout_user
 from .security import hash_sensitive
 
@@ -72,7 +73,7 @@ def log_activity(user, action, details='', request=None, subject_user_id=None):
     ip = request.META.get('REMOTE_ADDR') if request else None
     firestore_db.create_activity_log({
         'user_id': user.pk if user else None,
-        'barangay_id': user.barangay_id if user else None,
+        'barangay_id': getattr(user, 'barangay_id', None),
         'action': action,
         'details': details,
         'ip_hash': hash_sensitive(ip),
@@ -97,19 +98,21 @@ def notify_admins(title, message, link=''):
             notify(admin['id'], title, message, link)
 
 
-def send_user_email(user, subject, body):
-    """Send an email to a user. Returns True only when delivery succeeded.
+def _email_send_result(user, subject, body):
+    """Deliver *body* to *user*; return ``(sent, reason)``.
 
-    SMTP errors are logged (not silently swallowed) so failures such as a bad
-    app password surface in the server console instead of being hidden.
+    ``reason`` is an empty string on success, otherwise a user-safe
+    description of why delivery failed.  SMTP errors are logged (not silently
+    swallowed) so failures such as a bad app password surface in the server
+    console instead of being hidden.
     """
     if not getattr(settings, 'EMAIL_HOST', None):
         logger.warning('Email send skipped: EMAIL_HOST is not configured.')
-        return False
+        return False, friendly_email_error(None, missing_config=True)
     email = (getattr(user, 'email', '') or '').strip()
     if not email:
         logger.warning('Email send skipped: user has no email address.')
-        return False
+        return False, 'This account does not have an email address on file.'
     try:
         sent = send_mail(
             subject,
@@ -120,11 +123,17 @@ def send_user_email(user, subject, body):
         )
         if not sent:
             logger.error('Email send reported 0 messages delivered to %s.', email)
-            return False
-        return True
-    except Exception:
+            return False, 'Email delivery reported 0 messages sent.'
+        return True, ''
+    except Exception as exc:
         logger.exception('Email delivery failed to %s.', email)
-        return False
+        return False, friendly_email_error(exc)
+
+
+def send_user_email(user, subject, body):
+    """Send an email to a user. Returns True only when delivery succeeded."""
+    sent, _ = _email_send_result(user, subject, body)
+    return sent
 
 
 def _absolute_url(request, path):
@@ -852,7 +861,7 @@ def password_reset(request):
             if user is not None:
                 token = _make_reset_token(user)
                 reset_url = _absolute_url(
-                    None, reverse('password_reset_confirm', args=[token])
+                    request, reverse('password_reset_confirm', args=[token])
                 )
                 subject = 'Reset your Barangay Document System password'
                 body = (
@@ -960,6 +969,9 @@ def login_view(request):
                 log_activity(user, 'User Login', 'Password verified, OTP sent.', request)
                 if not _send_login_otp(request, user):
                     # OTP could not be delivered; do not hand out a session.
+                    reason = request.session.pop('otp_email_error', None)
+                    if reason:
+                        messages.error(request, f'We could not email you a One-Time PIN. {reason}')
                     form.add_error(None, 'We could not send a One-Time PIN. Please try again later.')
                     return render(request, 'brgy/login.html', {'form': form, 'page_title': 'Sign In'})
                 # Complete authentication is deferred until the OTP is verified.
@@ -1012,6 +1024,9 @@ def _send_login_otp(request, user):
     Returns True only when the email was actually delivered; otherwise the
     OTP record is discarded and the login is aborted so a session is never
     handed out without the code reaching the user's inbox.
+
+    When delivery fails, a user-safe reason is stashed in the session as
+    ``otp_email_error`` so downstream views (verify_otp) can surface it.
     """
     otp = _generate_otp()
     firestore_db.create_otp(user.pk, otp)
@@ -1019,37 +1034,22 @@ def _send_login_otp(request, user):
 
     if not email:
         firestore_db.delete_otp(user.pk)
+        request.session['otp_email_error'] = 'This account does not have an email address on file.'
         return False
 
     subject = 'Your Barangay System login code'
     body = (
         f'Hi {user.display_name},\n\n'
         f'Your one-time login code is: {otp}\n\n'
-        'This code expires in 10 minutes. Do not share it with anyone. '
+        'This code expires in 5 minutes. Do not share it with anyone. '
         'If you did not try to sign in, you can safely ignore this email.'
     )
-    sent = send_user_email(user, subject, body)
+    sent, reason = _email_send_result(user, subject, body)
     if sent:
+        request.session.pop('otp_email_error', None)
         return True
 
-    # Fallback: in DEBUG the code is exposed on the server console so local
-    # development isn't blocked by a missing or revoked SMTP credential.
-    # Production stays strict — without a delivered email we never hand out
-    # a session.
-    if getattr(settings, 'DEBUG', False):
-        logger.warning(
-            'SMTP delivery failed; login OTP for %s printed to console instead. '
-            'Recipient: %s', user.username, email,
-        )
-        print('=' * 62)
-        print(f'  [LOGIN OTP] {user.display_name} <{email}>')
-        print(f'  One-time code : {otp}')
-        print('=' * 62)
-        request.session['dev_otp'] = {
-            'code': otp,
-            'expires': (timezone.now() + timedelta(minutes=10)).timestamp(),
-        }
-        return True
+    request.session['otp_email_error'] = reason
 
     firestore_db.delete_otp(user.pk)
     return False
@@ -1063,14 +1063,14 @@ def verify_otp_view(request):
     pending_id = request.session.get('otp_user_id')
     form = OTPVerificationForm()
     if not pending_id:
-        request.session.pop('dev_otp', None)
+        request.session.pop('otp_email_error', None)
         messages.error(request, 'Your sign-in session has expired. Please log in again.')
         return redirect('login')
 
     user = get_user(pending_id)
     if user is None:
         request.session.pop('otp_user_id', None)
-        request.session.pop('dev_otp', None)
+        request.session.pop('otp_email_error', None)
         messages.error(request, 'Your sign-in session has expired. Please log in again.')
         return redirect('login')
 
@@ -1080,7 +1080,7 @@ def verify_otp_view(request):
             code = form.cleaned_data['otp_code']
             if firestore_db.verify_otp(user.pk, code):
                 request.session.pop('otp_user_id', None)
-                request.session.pop('dev_otp', None)
+                request.session.pop('otp_email_error', None)
                 login_user(request, user)
                 log_activity(user, 'User Login', 'OTP verified, user logged in.', request)
                 messages.success(request, f'Welcome back, {user.display_name}!')
@@ -1093,7 +1093,7 @@ def verify_otp_view(request):
             remaining = firestore_db.get_pending_otp(user.pk)
             if remaining is None:
                 request.session.pop('otp_user_id', None)
-                request.session.pop('dev_otp', None)
+                request.session.pop('otp_email_error', None)
                 messages.error(
                     request,
                     'Too many invalid attempts. Please log in again to receive a new code.'
@@ -1104,20 +1104,12 @@ def verify_otp_view(request):
             messages.error(request, 'That code is incorrect. Please try again.')
             form.add_error('otp_code', 'Invalid code. Check your email and try again.')
 
-    dev_otp_code = None
-    if getattr(settings, 'DEBUG', False):
-        entry = request.session.get('dev_otp') or {}
-        if entry.get('code') and entry.get('expires', 0) > timezone.now().timestamp():
-            dev_otp_code = entry['code']
-        else:
-            request.session.pop('dev_otp', None)
-
     return render(request, 'brgy/verify_otp.html', {
         'form': form,
         'page_title': 'Enter Login Code',
         'mailto_email': (getattr(user, 'email', '') or '').strip(),
         'masked_email': _mask_email(getattr(user, 'email', '')),
-        'dev_otp_code': dev_otp_code,
+        'otp_email_error': request.session.pop('otp_email_error', None),
     })
 
 
@@ -1133,14 +1125,22 @@ def resend_otp_view(request):
     user = get_user(pending_id)
     if user is None:
         request.session.pop('otp_user_id', None)
+        request.session.pop('otp_email_error', None)
         messages.error(request, 'Your sign-in session has expired. Please log in again.')
         return redirect('login')
+    cooldown = firestore_db.get_otp_resend_cooldown(pending_id)
+    if cooldown > 0:
+        messages.error(
+            request,
+            f'Please wait {cooldown} second(s) before requesting another code.'
+        )
+        return redirect('verify_otp')
     if _send_login_otp(request, user):
         messages.success(request, 'A new code has been sent to your email.')
     else:
         messages.error(request, 'We could not send a new code. Please log in again.')
         request.session.pop('otp_user_id', None)
-        request.session.pop('dev_otp', None)
+        request.session.pop('otp_email_error', None)
         return redirect('login')
     return redirect('verify_otp')
 
@@ -1424,12 +1424,16 @@ def request_document(request):
             if override is None:
                 continue
             dt._data['fee'] = float(override.fee or 0)
-            dt._data['has_template_effective'] = bool(override.has_template)
+            dt._data['has_template_effective'] = bool(
+                override.has_template and os.path.exists(override.template_file.path)
+            )
         elif dt.barangay_id != user.barangay_id:
             continue
         else:
             dt._data['fee'] = float(dt.fee if dt.fee is not None else 0)
-            dt._data['has_template_effective'] = dt.has_template
+            dt._data['has_template_effective'] = bool(
+                dt.has_template and os.path.exists(dt.template_file.path)
+            )
         doc_types.append(dt)
     doc_types_data = [
         {

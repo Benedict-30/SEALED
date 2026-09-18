@@ -238,7 +238,15 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() in ('1', 'true', 'yes')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '')
+# Avoid hanging a login request on an unresponsive relay.
+EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '15') or 15)
+# Gmail (and most relays) only allow sending as the authenticated account, so
+# fall back to EMAIL_HOST_USER before the placeholder address.
+DEFAULT_FROM_EMAIL = (
+    os.environ.get('DEFAULT_FROM_EMAIL', '')
+    or EMAIL_HOST_USER
+    or 'no-reply@barangay.local'
+)
 SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL) or 'no-reply@barangay.local'
 
 # Public base URL used to build absolute links inside emails.  Override with

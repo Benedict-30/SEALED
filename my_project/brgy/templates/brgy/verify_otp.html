@@ -16,7 +16,7 @@
             <p>Enter the one-time code we emailed you to finish signing in securely.</p>
             <ul class="auth-features">
                 <li><i class="fa-solid fa-envelope"></i> Code sent to your email address</li>
-                <li><i class="fa-solid fa-clock"></i> Code expires after 10 minutes</li>
+                <li><i class="fa-solid fa-clock"></i> Code expires after 5 minutes</li>
                 <li><i class="fa-solid fa-shield-halved"></i> Adds an extra layer of protection</li>
             </ul>
         </div>
@@ -39,13 +39,10 @@
                 {% endif %}
             </p>
 
-            {% if dev_otp_code %}
-            <div style="display:flex;align-items:center;gap:12px;background:#fef3c7;border:1px solid #fde68a;color:#78350f;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
-                <i class="fa-solid fa-flask" style="font-size:16px;"></i>
-                <div>
-                    <strong>Development mode &mdash; email wasn&rsquo;t delivered.</strong>
-                    <div style="margin-top:2px;">Your one-time code: <span style="font-weight:800;letter-spacing:3px;font-size:15px;">{{ dev_otp_code }}</span></div>
-                </div>
+            {% if otp_email_error %}
+            <div style="display:flex;align-items:center;gap:12px;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size:16px;"></i>
+                <div>We could not email your code: {{ otp_email_error }}</div>
             </div>
             {% endif %}
 

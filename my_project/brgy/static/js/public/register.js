@@ -77,10 +77,11 @@ function validateStep(stepNum) {
             allValid = false;
             inp.classList.add('is-invalid');
 
+            var wrapper = inp.closest('.form-group') || inp.parentNode;
             var errDiv = document.createElement('div');
             errDiv.className = 'form-error step-error-msg';
             errDiv.textContent = 'This field is required.';
-            inp.parentNode.insertBefore(errDiv, inp.nextSibling);
+            wrapper.parentNode.insertBefore(errDiv, wrapper.nextSibling);
 
             if (!firstInvalid) firstInvalid = inp;
         }
