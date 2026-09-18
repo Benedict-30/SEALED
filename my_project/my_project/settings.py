@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
 import secrets
+import socket
 from pathlib import Path
 import firebase_admin
 from django.core.exceptions import ImproperlyConfigured
@@ -85,12 +86,41 @@ if not SECRET_KEY:
     SECRET_KEY = secrets.token_urlsafe(64)
 
 # ── ALLOWED HOSTS ────────────────────────────────────────────────────
-# Never accept every Host header in production.  Require an explicit list.
-ALLOWED_HOSTS = os.environ.get(
-    'DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1' if DEBUG else ''
-).split(',')
-ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
-if not ALLOWED_HOSTS:
+# Never accept every Host header in production.  Require an explicit list,
+# but always append this machine's own network addresses automatically so
+# the server keeps answering on any LAN / Wi-Fi / hotspot IP it gets.
+_ALLOWED_HOSTS_ENV = os.environ.get('DJANGO_ALLOWED_HOSTS', None)
+ALLOWED_HOSTS = (
+    [h.strip() for h in _ALLOWED_HOSTS_ENV.split(',') if h.strip()]
+    if _ALLOWED_HOSTS_ENV is not None
+    else (['localhost', '127.0.0.1'] if DEBUG else [])
+)
+
+
+def _append_local_network_hosts():
+    """Allow whatever IP address this machine currently has on its active
+    network, so a changing LAN/hotspot address never breaks the dev server."""
+    candidates = {'localhost', '127.0.0.1', '::1'}
+    try:
+        _, _, addresses = socket.gethostbyname_ex(socket.gethostname())
+        candidates.update(a for a in addresses if ':' not in a)
+    except OSError:
+        pass
+    try:
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.connect(('8.8.8.8', 53))
+        candidates.add(probe.getsockname()[0])
+        probe.close()
+    except OSError:
+        pass
+    for host in sorted(candidates):
+        if host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(host)
+
+
+_append_local_network_hosts()
+
+if not ALLOWED_HOSTS or (_ALLOWED_HOSTS_ENV is None and not DEBUG):
     raise ImproperlyConfigured(
         'DJANGO_ALLOWED_HOSTS must be set to a comma-separated list of '
         'allowed hostnames when DEBUG is disabled.'

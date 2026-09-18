@@ -135,6 +135,65 @@ def _absolute_url(request, path):
     return base + path
 
 
+def announcement_recipients(barangay_id):
+    """Active residents who have an email address and should get the notice.
+
+    A barangay-scoped announcement (``barangay_id`` set) goes only to residents
+    of that barangay; a system-wide announcement (``None``) reaches every
+    active resident with an email on file.
+    """
+    recipients = []
+    for data in firestore_db.list_users():
+        if data.get('role') != 'resident':
+            continue
+        if not data.get('is_active', True):
+            continue
+        if not (data.get('email') or '').strip():
+            continue
+        if barangay_id and data.get('barangay_id') != barangay_id:
+            continue
+        recipients.append(CustomUser(data))
+    return recipients
+
+
+def send_announcement_emails(announcement, request=None):
+    """Email a published announcement to its audience exactly once.
+
+    Returns the number of emails delivered. The announcement is flagged
+    ``email_notified`` so re-publishing or repeated toggles never resend.
+    """
+    if not announcement or not announcement.is_published:
+        return 0
+    if announcement._data.get('email_notified'):
+        return 0
+
+    try:
+        recipients = announcement_recipients(announcement._data.get('barangay_id'))
+        subject = f'Barangay announcement: {announcement.title}'
+        body = (
+            f'{announcement.title}\n\n'
+            f'{announcement.body}\n\n'
+            f'View this announcement in the Barangay Document System: '
+            f'{_absolute_url(request, "/dashboard/")}'
+        )
+
+        sent = 0
+        for user in recipients:
+            if send_user_email(user, subject, body):
+                sent += 1
+
+        firestore_db.update_announcement(announcement.pk, {
+            'email_notified': True,
+            'email_notified_at': firestore_db.utcnow(),
+            'email_sent_count': sent,
+        })
+        return sent
+    except Exception:
+        logger.exception('Announcement email broadcast failed for "%s".',
+                         getattr(announcement, 'title', ''))
+        return 0
+
+
 def _make_verification_code(length=12):
     """Generate a cryptographically secure public verification reference code."""
     alphabet = string.ascii_uppercase + string.digits
@@ -604,6 +663,12 @@ def _apply_status_transition(doc_request, new_status, user, request=None, notes=
             updates['pickup_slot'] = pickup_slot
         if pickup_date is not None:
             updates['pickup_date'] = pickup_date
+    if new_status == 'completed' and not doc_request.is_paid:
+        total_fee = sum(item.total_fee for item in doc_request.items.all())
+        if total_fee > 0:
+            updates['payment_status'] = 'paid'
+            updates['paid_at'] = now
+            updates['payment_method'] = 'cash'
     firestore_db.update_document_request(doc_request.pk, updates)
 
     doc_names = ', '.join(
@@ -1366,9 +1431,19 @@ def request_document(request):
             dt._data['fee'] = float(dt.fee if dt.fee is not None else 0)
             dt._data['has_template_effective'] = dt.has_template
         doc_types.append(dt)
+    doc_types_data = [
+        {
+            'id': dt.pk,
+            'name': dt.name,
+            'fee': float(dt.fee or 0),
+            'requirements': dt.requirements_list,
+        }
+        for dt in doc_types
+    ]
     today = timezone.localdate()
     return render(request, 'brgy/resident/request_document.html', {
         'doc_types': doc_types,
+        'doc_types_data': doc_types_data,
         'today': today.isoformat(),
         'max_pickup': (today + timedelta(days=60)).isoformat(),
         'page_title': 'Request Documents',
@@ -1582,6 +1657,17 @@ def submit_bulk_request(request):
                     return redirect('request_document')
             requirement_files[doc_id] = files
 
+        # Documents that define requirements cannot be submitted without them.
+        for doc_id, item in items.items():
+            required = [r for r in (item['doc_type'].requirements_list or []) if r.strip()]
+            if required and not requirement_files.get(doc_id):
+                messages.error(
+                    request,
+                    f"Please upload the required documents for '{item['doc_type'].name}' "
+                    "before submitting your request.",
+                )
+                return redirect('request_document')
+
         request_data = {
             'resident_id': user.pk,
             'request_number': firestore_db.next_request_number(),
@@ -1791,7 +1877,7 @@ def cancel_request(request, pk):
                     'Request Cancelled',
                     f'{doc_req.resident.display_name} cancelled their document request '
                     f'({doc_req.request_number}).',
-                    link=reverse('staff_requests'),
+                    link=reverse('manage_requests'),
                 )
         new_display = _apply_status_transition(
             doc_req, 'cancelled', request.user, request=request,
@@ -2313,7 +2399,7 @@ def manage_announcements(request):
         if scope == 'barangay':
             barangay_id = form.cleaned_data.get('barangay') or user.barangay_id
         is_published = bool(form.cleaned_data.get('is_published'))
-        firestore_db.create_announcement({
+        announcement_id = firestore_db.create_announcement({
             'title': form.cleaned_data['title'],
             'body': form.cleaned_data['body'],
             'author_id': user.pk,
@@ -2323,6 +2409,8 @@ def manage_announcements(request):
         })
         log_activity(user, 'Announcement Created',
                      f'Announcement "{form.cleaned_data["title"]}" created.', request)
+        if is_published:
+            send_announcement_emails(get_announcement(announcement_id), request)
         messages.success(request, 'Announcement created.')
         return redirect('manage_announcements')
 
@@ -2350,6 +2438,8 @@ def toggle_announcement(request, pk):
         'is_published': new_published,
         'published_at': firestore_db.utcnow() if new_published else None,
     })
+    if new_published:
+        send_announcement_emails(get_announcement(pk), request)
     log_activity(request.user,
                  'Announcement Published' if new_published else 'Announcement Unpublished',
                  f'Announcement "{announcement.title}" {"published" if new_published else "unpublished"}.', request)
@@ -2411,6 +2501,23 @@ def manage_requests(request):
             ]
         except ValueError:
             pass
+    action_meta = {
+        'approved': ('Approve', 'fa-check'),
+        'printed': ('Mark as Printed', 'fa-print'),
+        'ready_for_pickup': ('Mark Ready for Pickup', 'fa-box-open'),
+        'completed': ('Mark as Completed', 'fa-flag-checkered'),
+        'rejected': ('Reject', 'fa-ban'),
+    }
+    for req in doc_requests:
+        actions = []
+        for value, label in _status_choices_for(req.status):
+            display, icon = action_meta.get(value, (label, 'fa-circle'))
+            actions.append({
+                'value': value,
+                'label': display,
+                'icon': icon,
+            })
+        req.action_choices = actions
     paginator = Paginator(doc_requests, 10)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
@@ -2438,8 +2545,6 @@ def update_request_status(request, pk):
     if not doc_request.barangay or doc_request.barangay.pk != request.user.barangay_id:
         raise Http404
     choices = _status_choices_for(doc_request.status)
-    if not doc_request.is_paid:
-        choices = [c for c in choices if c[0] != 'completed']
     if not choices:
         messages.info(
             request,
@@ -2452,12 +2557,6 @@ def update_request_status(request, pk):
             new_status = form.cleaned_data['status']
             notes = form.cleaned_data.get('staff_notes', '')
             rejection_reason = form.cleaned_data.get('rejection_reason', '')
-            if new_status == 'completed' and not doc_request.is_paid:
-                messages.error(
-                    request,
-                    'Payment must be recorded before this request can be completed.'
-                )
-                return redirect('update_request_status', pk=doc_request.pk)
             if new_status not in [c for c, _ in choices]:
                 messages.error(request, 'That status transition is not allowed.')
                 return redirect('update_request_status', pk=doc_request.pk)
@@ -3082,7 +3181,61 @@ def requirement_file(request, req_pk, item_pk, index):
         request,
         subject_user_id=doc_req.resident_id,
     )
-    return FileResponse(open(file_path, 'rb'), as_attachment=True)
+    inline = request.GET.get('inline') in ('1', 'true', 'yes')
+    return FileResponse(open(file_path, 'rb'), as_attachment=not inline)
+
+
+@login_required
+@role_required('staff')
+def requirement_detail(request, req_pk, item_pk):
+    """JSON with an HTML fragment showing an item's required documents and the
+    resident's uploaded files, for the staff requirements popup."""
+    from django.utils.html import escape
+
+    doc_req = _request_or_404(req_pk)
+    if not doc_req.barangay or doc_req.barangay.pk != request.user.barangay_id:
+        raise Http404
+    item = _item_or_404(item_pk)
+    if item.request_id != doc_req.pk:
+        raise Http404
+
+    doc_type = item.document_type
+    requirements = doc_type.requirements_list if doc_type else []
+
+    if requirements:
+        req_items = ''.join(f'<li>{escape(r)}</li>' for r in requirements)
+    else:
+        req_items = '<li class="reqf-none">No specific documents required.</li>'
+
+    files_html = ''
+    for entry in item.requirement_file_entries:
+        is_image = entry['is_image']
+        url = reverse('requirement_file', kwargs={
+            'req_pk': req_pk, 'item_pk': item_pk, 'index': entry['index'],
+        })
+        if is_image:
+            url += '?inline=1'
+        action = 'View' if is_image else 'Download'
+        icon = 'fa-image' if is_image else 'fa-file-pdf'
+        files_html += (
+            f'<a class="reqf-file" href="{url}" target="_blank" rel="noopener" '
+            f'title="{action} {escape(entry["name"])}">'
+            f'<i class="fa-solid {icon}"></i><span>{escape(entry["name"])}</span></a>'
+        )
+    if not files_html:
+        files_html = '<p class="reqf-empty">No files uploaded by the resident.</p>'
+
+    html = (
+        '<div class="reqf-section">'
+        '<h4><i class="fa-solid fa-list-check"></i> Required Documents</h4>'
+        f'<ul class="reqf-reqlist">{req_items}</ul>'
+        '</div>'
+        '<div class="reqf-section">'
+        '<h4><i class="fa-solid fa-paperclip"></i> Resident Uploads</h4>'
+        f'<div class="reqf-files">{files_html}</div>'
+        '</div>'
+    )
+    return JsonResponse({'html': html})
 
 
 # ═══════════════════════════════════════════════════════════════

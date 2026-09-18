@@ -3,10 +3,11 @@
 
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/resident/request_document.css' %}">
+<link rel="stylesheet" href="{% static 'css/resident/request_document.css' %}?v=8">
 {% endblock %}
 
 {% block content %}
+{{ doc_types_data|json_script:"docTypesData" }}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:10px;">
     <div>
         <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">Request Documents</h2>
@@ -147,5 +148,25 @@
     </div>
 </div>
 
-<script src="{% static 'js/resident/request_document.js' %}"></script>
+<!-- CAMERA CAPTURE MODAL (for requirement photos) -->
+<div id="cameraModal" class="camera-modal" style="display:none;">
+    <div class="camera-modal-content">
+        <div class="camera-modal-header">
+            <h3 id="cameraModalTitle">Take a Photo</h3>
+            <button type="button" class="camera-close-btn" onclick="closeCamera()">&times;</button>
+        </div>
+        <div class="camera-body">
+            <video id="cameraFeed" autoplay playsinline></video>
+            <canvas id="cameraCanvas" style="display:none;"></canvas>
+        </div>
+        <div class="camera-modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeCamera()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="capturePhoto()">
+                <i class="fa-solid fa-circle"></i> Capture
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/resident/request_document.js' %}?v=9"></script>
 {% endblock %}

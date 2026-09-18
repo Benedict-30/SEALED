@@ -41,7 +41,7 @@ MAX_OTP_ATTEMPTS = 5
 # for the same key (username+IP), further attempts are blocked for the lockout
 # window.
 MAX_LOGIN_ATTEMPTS = 5
-LOGIN_LOCKOUT_MINUTES = 15
+LOGIN_LOCKOUT_MINUTES = 3
 
 # Low-volatility lookups (document types, barangays) are memoized for a short
 # window to avoid re-fetching the same list on every page load.  Writes clear

@@ -109,6 +109,41 @@
         background: rgba(5, 150, 105, 0.15);
         border-color: #059669;
     }
+    .doc-item-main {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
+    }
+    .doc-item-files {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .req-file-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        max-width: 200px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #059669;
+        background: rgba(5, 150, 105, 0.08);
+        border: 1px solid rgba(5, 150, 105, 0.3);
+        text-decoration: none;
+    }
+    .req-file-link:hover {
+        background: rgba(5, 150, 105, 0.15);
+        border-color: #059669;
+    }
+    .req-file-link .req-file-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
     .doc-item-fee {
         font-weight: 600;
         color: var(--text-muted);

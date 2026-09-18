@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff/manage_requests.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/manage_requests.css' %}?v=13">
 {% endblock %}
 
 {% block content %}
@@ -31,37 +31,17 @@
     </div>
 </div>
 
-<!-- Schedule Pickup Modal -->
-<div class="reject-modal-overlay" id="pickupModal" style="display:none;">
-    <div class="reject-modal">
-        <div class="reject-modal-header">
-            <h3><i class="fa-solid fa-box-open"></i> Schedule Pickup</h3>
-            <button type="button" class="reject-modal-close" onclick="closePickupModal()" aria-label="Close">&times;</button>
+<!-- Requirements Detail Modal -->
+<div class="reqf-overlay" id="reqFilesModal" style="display:none;">
+    <div class="reqf-modal">
+        <div class="reject-modal-header reqf-header">
+            <h3 style="color:var(--primary);"><i class="fa-solid fa-folder-open"></i> <span id="reqFilesTitle">Requirements</span></h3>
+            <button type="button" class="reject-modal-close" onclick="closeReqFiles()" aria-label="Close">&times;</button>
         </div>
-        <form method="post" id="pickupForm">
-            {% csrf_token %}
-            <p class="reject-modal-sub">Mark request <strong id="pickupReqNumber"></strong> as ready for pickup. The resident will be notified with the pickup schedule below.</p>
-            <div class="form-group">
-                <label class="form-label" for="id-pickup-date">Pickup Date</label>
-                <input type="date" name="pickup_date" id="id-pickup-date" class="form-input" required min="">
-                <div class="form-helptext">Defaults to the date requested by the resident, if any.</div>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="id-pickup-slot">Pickup Time Slot</label>
-                <select name="pickup_slot" id="id-pickup-slot" class="form-input">
-                    <option value="morning">Morning (8:00 AM - 12:00 NN)</option>
-                    <option value="afternoon">Afternoon (12:00 NN - 5:00 PM)</option>
-                    <option value="evening">Evening (5:00 PM - 8:00 PM)</option>
-                    <option value="any">Any Time</option>
-                </select>
-            </div>
-            <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
-                <button type="button" class="btn btn-ghost" onclick="closePickupModal()">Cancel</button>
-                <button type="submit" class="btn btn-success">
-                    <i class="fa-solid fa-box-open"></i> Mark Ready for Pickup
-                </button>
-            </div>
-        </form>
+        <div class="reqf-body" id="reqFilesBody"></div>
+        <div class="reqf-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeReqFiles()">Close</button>
+        </div>
     </div>
 </div>
 
@@ -149,12 +129,12 @@
                 <tr>
                     <th>Request #</th>
                     <th>Resident</th>
-                    <th>Document(s) Requested</th>
+                    <th>Document(s)</th>
                     <th>Purpose</th>
                     <th>Status</th>
-                    <th>Payment</th>
+                    <th>Requirements</th>
                     <th>Submitted</th>
-                    <th>Processed By</th>
+                    <th>Processed</th>
                     <th class="text-right">Actions</th>
                 </tr>
             </thead>
@@ -176,18 +156,15 @@
                         <div class="req-doc-list">
                             {% for item in req.items.all %}
                             <div class="req-doc-item">
-                                <span class="req-doc-name">
-                                    <i class="fa-solid fa-file-lines req-doc-file-icon"></i>
-                                    {{ item.document_type.name }}
-                                    {% if item.quantity and item.quantity > 1 %}
-                                    <span class="req-doc-qty">×{{ item.quantity }}</span>
-                                    {% endif %}
-                                    {% if item.requirement_files %}
-                                    <a class="req-files-link" href="{% url 'requirement_file' req_pk=req.pk item_pk=item.pk index=0 %}" title="View attached requirement files">
-                                        <i class="fa-solid fa-paperclip"></i> Files ({{ item.requirement_files|length }})
-                                    </a>
-                                    {% endif %}
-                                </span>
+                                <div class="req-doc-main">
+                                    <span class="req-doc-name">
+                                        <i class="fa-solid fa-file-lines req-doc-file-icon"></i>
+                                        {{ item.document_type.name }}
+                                        {% if item.quantity and item.quantity > 1 %}
+                                        <span class="req-doc-qty">×{{ item.quantity }}</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
                                 {% if item.document_type.has_template %}
                                 <form method="post" action="{% url 'mark_printed' req.pk item.pk %}" style="display:inline;margin:0;">
                                     {% csrf_token %}
@@ -216,45 +193,60 @@
                         {% endif %}
                         {% endif %}
                     </td>
-                    <td>
-                        {% if req.is_paid %}
-                        <span class="mr-status-badge mr-payment-paid">
-                            <i class="fa-solid fa-circle-check"></i> Paid
-                        </span>
+                    <td class="req-files-cell">
+                        {% for item in req.items.all %}
+                        {% if item.document_type.requirements_list %}
+                        <button type="button" class="req-req-chip{% if not item.requirement_files %} req-req-chip-muted{% endif %}"
+                                data-url="{% url 'requirement_detail' req_pk=req.pk item_pk=item.pk %}"
+                                data-doc="{{ item.document_type.name|escapejs }}"
+                                onclick="openReqFiles(this)"
+                                title="Click to view the requirements and the resident's uploaded files">
+                            <i class="fa-solid fa-list-check"></i>
+                            <span class="req-req-chip-name">{{ item.document_type.requirements_list|join:" · "|truncatechars:34 }}</span>
+                            {% if item.requirement_files %}<span class="req-req-chip-badge">{{ item.requirement_files|length }}</span>{% endif %}
+                        </button>
                         {% else %}
-                        <span class="mr-status-badge mr-payment-unpaid">
-                            <i class="fa-solid fa-circle"></i> Unpaid
-                        </span>
+                        <span class="text-sm text-muted">—</span>
                         {% endif %}
+                        {% empty %}
+                        <span class="text-sm text-muted">—</span>
+                        {% endfor %}
                     </td>
-                    <td class="text-sm text-muted">{{ req.created_at|date:"M d, Y g:i A" }}</td>
+                    <td class="text-sm text-muted">
+                        <div class="mr-submitted-date">{{ req.created_at|date:"M d, Y" }}</div>
+                        <div class="mr-submitted-time">{{ req.created_at|date:"g:i A" }}</div>
+                    </td>
                     <td class="text-sm text-muted">{{ req.processed_by.display_name|default:"—" }}</td>
 
                     <td class="text-right">
-                        <div class="req-actions">
-                            {% if req.status != 'completed' and req.status != 'rejected' and req.status != 'cancelled' %}
-                            <a href="{% url 'update_request_status' req.pk %}" class="btn btn-primary btn-xs">
-                                <i class="fa-solid fa-pen"></i> Update
-                            </a>
-
-                            {% if req.status == 'printed' %}
-                            <button type="button" class="btn btn-success btn-xs" title="Schedule Pickup"
-                                    data-req-pk="{{ req.pk }}" data-req-number="{{ req.request_number }}" data-pickup-date="{{ req.pickup_date|date:'Y-m-d' }}" data-pickup-slot="{{ req.pickup_slot }}"
-                                    onclick="openPickupModal(this)">
-                                <i class="fa-solid fa-box-open"></i> Ready
+                        {% if req.action_choices %}
+                        <div class="req-actions-menu-wrap">
+                            <button type="button" class="btn btn-primary btn-xs req-actions-toggle" onclick="toggleReqMenu(this)">
+                                <i class="fa-solid fa-list-check"></i> Actions
+                                <i class="fa-solid fa-chevron-down req-actions-caret"></i>
                             </button>
-                            {% endif %}
-
-                            {% if req.status != 'printed' and req.status != 'ready_for_pickup' %}
-                            <button type="button" class="btn btn-xs btn-danger-ghost" title="Reject Request"
-                                    onclick="openRejectModal('{{ req.request_number }}', '{{ req.pk }}')">
-                                <i class="fa-solid fa-ban"></i> Reject
-                            </button>
-                            {% endif %}
-                            {% else %}
-                            <span class="text-xs text-muted">Done</span>
-                            {% endif %}
+                            <div class="req-actions-menu" role="menu">
+                                {% for action in req.action_choices %}
+                                    {% if action.value == 'rejected' %}
+                                    <button type="button" class="req-action-item req-action-danger"
+                                            onclick="openRejectModal('{{ req.request_number }}', '{{ req.pk }}')">
+                                        <i class="fa-solid {{ action.icon }}"></i> {{ action.label }}
+                                    </button>
+                                    {% else %}
+                                    <form method="post" action="{% url 'update_request_status' req.pk %}" class="req-action-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="status" value="{{ action.value }}">
+                                        <button type="submit" class="req-action-item">
+                                            <i class="fa-solid {{ action.icon }}"></i> {{ action.label }}
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
+                        {% else %}
+                        <span class="text-xs text-muted">Done</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -292,7 +284,42 @@
 
 {% block extra_js %}
 <script>
+    function closeAllReqMenus() {
+        document.querySelectorAll('.req-actions-menu.open').forEach(function (m) {
+            m.classList.remove('open');
+            m.style.top = '';
+            m.style.left = '';
+        });
+        document.querySelectorAll('.req-actions-toggle.open').forEach(function (b) {
+            b.classList.remove('open');
+        });
+    }
+    function toggleReqMenu(btn) {
+        var menu = btn.nextElementSibling;
+        var wasOpen = menu.classList.contains('open');
+        closeAllReqMenus();
+        if (wasOpen) return;
+        menu.classList.add('open');
+        btn.classList.add('open');
+        var rect = btn.getBoundingClientRect();
+        var width = menu.offsetWidth;
+        var left = rect.right - width;
+        if (left < 8) left = 8;
+        var top = rect.bottom + 6;
+        if (top + menu.offsetHeight > window.innerHeight - 8) {
+            top = rect.top - menu.offsetHeight - 6;
+        }
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+    }
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.req-actions-menu-wrap')) closeAllReqMenus();
+    });
+    window.addEventListener('scroll', closeAllReqMenus, true);
+    window.addEventListener('resize', closeAllReqMenus);
+
     function openRejectModal(requestNumber, requestPk) {
+        closeAllReqMenus();
         document.getElementById('rejectReqNumber').textContent = requestNumber;
         document.getElementById('rejectForm').action = "{% url 'reject_request' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', requestPk);
         document.getElementById('rejectModal').style.display = 'flex';
@@ -305,29 +332,34 @@
         if (e.target === this) closeRejectModal();
     });
 
-    function openPickupModal(btn) {
-        var pk = btn.getAttribute('data-req-pk');
-        var number = btn.getAttribute('data-req-number');
-        var date = btn.getAttribute('data-pickup-date');
-        var slot = btn.getAttribute('data-pickup-slot') || 'morning';
-        document.getElementById('pickupReqNumber').textContent = number;
-        document.getElementById('pickupForm').action = "{% url 'mark_ready_for_pickup' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', pk);
-        var dateInput = document.getElementById('id-pickup-date');
-        var min = new Date();
-        min.setDate(min.getDate() + 1);
-        dateInput.min = min.toISOString().split('T')[0];
-        if (!date) {
-            date = min.toISOString().split('T')[0];
+    function openReqFiles(btn) {
+        var url = btn.getAttribute('data-url');
+        var doc = btn.getAttribute('data-doc') || 'Requirements';
+        var modal = document.getElementById('reqFilesModal');
+        var body = document.getElementById('reqFilesBody');
+        document.getElementById('reqFilesTitle').textContent = doc;
+        body.innerHTML = '<div class="reqf-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        fetch(url)
+            .then(function (res) { if (!res.ok) throw new Error('request failed'); return res.json(); })
+            .then(function (data) { body.innerHTML = data.html || '<p class="reqf-empty">No details available.</p>'; })
+            .catch(function () { body.innerHTML = '<p class="reqf-error">Could not load the requirements.</p>'; });
+    }
+    function closeReqFiles() {
+        var modal = document.getElementById('reqFilesModal');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
         }
-        dateInput.value = date;
-        document.getElementById('id-pickup-slot').value = slot;
-        document.getElementById('pickupModal').style.display = 'flex';
+        document.body.style.overflow = '';
     }
-    function closePickupModal() {
-        document.getElementById('pickupModal').style.display = 'none';
-    }
-    document.getElementById('pickupModal').addEventListener('click', function (e) {
-        if (e.target === this) closePickupModal();
+    document.getElementById('reqFilesModal').addEventListener('click', function (e) {
+        if (e.target === this) closeReqFiles();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.getElementById('reqFilesModal').style.display === 'flex') closeReqFiles();
     });
 </script>
 {% endblock %}

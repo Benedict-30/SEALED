@@ -69,6 +69,7 @@ urlpatterns = [
     path('staff/requests/print/<uuid:req_pk>/<uuid:item_pk>/', views.print_document, name='print_document'),
     path('staff/requests/print/<uuid:req_pk>/<uuid:item_pk>/mark-printed/', views.mark_printed, name='mark_printed'),
     path('staff/requests/<uuid:req_pk>/files/<uuid:item_pk>/<int:index>/', views.requirement_file, name='requirement_file'),
+    path('staff/requests/<uuid:req_pk>/requirements/<uuid:item_pk>/', views.requirement_detail, name='requirement_detail'),
 
     # Admin
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),

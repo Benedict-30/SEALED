@@ -438,6 +438,21 @@ class DocumentRequestItem(Base):
     def requirement_files(self):
         return self._data.get('requirement_files') or []
 
+    @property
+    def requirement_file_entries(self):
+        """Metadata for each attached file (index, display name, image flag)."""
+        image_exts = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+        entries = []
+        for index, path in enumerate(self.requirement_files):
+            name = os.path.basename(str(path))
+            ext = os.path.splitext(name)[1].lower()
+            entries.append({
+                'index': index,
+                'name': name,
+                'is_image': ext in image_exts,
+            })
+        return entries
+
 
 class DocumentRequest(Base):
     _collection_key = 'document_request'
@@ -546,6 +561,20 @@ class DocumentRequest(Base):
                 return get_request_items(self.request_obj.pk)
 
         return ItemsManager(self)
+
+    @property
+    def all_requirement_file_entries(self):
+        """All uploaded requirement files across the request's items."""
+        entries = []
+        for item in self.items.all():
+            for entry in item.requirement_file_entries:
+                entries.append({
+                    'item_pk': item.pk,
+                    'index': entry['index'],
+                    'name': entry['name'],
+                    'is_image': entry['is_image'],
+                })
+        return entries
 
     @property
     def status_color(self):

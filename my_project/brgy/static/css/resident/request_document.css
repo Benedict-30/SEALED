@@ -120,15 +120,17 @@
     .modal-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; text-align: center;}
     
     .req-item-list {
-        margin-top: 15px; margin-bottom: 15px; max-height: 180px;
+        margin-top: 15px; margin-bottom: 15px; max-height: 340px;
         overflow-y: auto; padding-right: 5px;
     }
     .req-item-row {
-        display: flex; justify-content: space-between; align-items: center;
+        display: flex; justify-content: space-between; align-items: flex-start;
         background: var(--bg-body); padding: 12px 14px; border-radius: 8px;
         margin-bottom: 8px; font-size: 14px;
     }
+    .req-item-main { flex: 1; min-width: 0; }
     .req-item-row .remove-btn {
+        flex-shrink: 0; margin: 2px 0 0 10px;
         background: #fee2e2; color: #ef4444; border: none; border-radius: 6px;
         width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;
         transition: transform 0.15s ease, background 0.15s ease;
@@ -148,10 +150,16 @@
         border-radius: 6px; font-weight: 700; font-size: 14px; padding: 3px;
         background: #fff; color: var(--text);
     }
-    .req-file-input {
-        width: 100%; font-size: 12px; color: var(--text-muted);
-        border: 1px dashed var(--border-light); border-radius: 6px;
-        padding: 6px; background: #fff; box-sizing: border-box;
+    .req-file-input,
+    .req-image-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        overflow: hidden;
+        pointer-events: none;
+        padding: 0;
+        border: 0;
     }
 
     @media (max-width: 1200px) { .doc-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -285,3 +293,136 @@
         .preview-box { max-width: 100%; }
         .preview-doc-paper { padding: 24px 20px; }
     }
+
+    /* ============================================
+       REQUIREMENT UPLOAD / CAPTURE PER DOCUMENT
+       ============================================ */
+    .req-doc-reqs {
+        margin-top: 8px;
+        padding: 8px 10px;
+        background: var(--primary-50, rgba(5,150,105,0.06));
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+    }
+    .req-doc-req-title {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 11.5px; font-weight: 700; color: var(--primary);
+        text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .req-req-required {
+        font-size: 10px; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.4px; background: var(--danger, #dc2626);
+        color: #fff; border-radius: 4px; padding: 1.5px 6px;
+        vertical-align: 1px;
+    }
+    .req-doc-reqs ul {
+        margin: 6px 0 0; padding-left: 18px;
+        font-size: 12.5px; color: var(--text-secondary, var(--text-muted));
+    }
+    .req-doc-reqs li { margin-bottom: 2px; }
+    .req-item-row.req-missing-req {
+        border-color: rgba(220, 38, 38, 0.55);
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.25);
+    }
+
+    .req-upload-block { margin-top: 8px; }
+    .req-file-hint {
+        color: var(--text-muted); display: block; margin-top: 4px; font-size: 11px;
+    }
+    .req-upload-actions {
+        position: relative;
+        display: inline-flex;
+        margin-top: 8px;
+    }
+    .req-clip-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+        padding: 8px 16px;
+        background: var(--primary, #059669);
+        border: 1px solid var(--primary, #059669);
+        border-radius: var(--radius-sm);
+        color: #fff; font-size: 12.5px; font-weight: 600;
+        cursor: pointer; font-family: inherit;
+        transition: all 0.2s ease;
+    }
+    .req-clip-btn:hover { filter: brightness(0.94); }
+    .req-clip-btn:active { transform: scale(0.97); }
+
+    .req-clip-menu {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        z-index: 1200;
+        min-width: 178px;
+        padding: 6px;
+        background: var(--card, #fff);
+        border: 1px solid var(--border-light, #e2e8f0);
+        border-radius: 12px;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+        text-align: left;
+    }
+    .req-clip-menu.open { display: block; }
+    .req-clip-item {
+        display: flex; align-items: center; gap: 10px;
+        width: 100%; padding: 9px 12px;
+        border: 0; border-radius: 8px;
+        background: transparent;
+        color: var(--text, #0f172a);
+        font-size: 13px; font-weight: 600;
+        font-family: inherit; text-align: left; cursor: pointer;
+        transition: background 0.12s ease;
+    }
+    .req-clip-item i {
+        width: 16px; text-align: center;
+        color: var(--primary, #059669);
+    }
+    .req-clip-item:hover { background: #f1f5f9; }
+
+    .req-file-list {
+        display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    }
+    .req-file-chip {
+        display: inline-flex; align-items: center; gap: 5px;
+        max-width: 100%; padding: 3px 9px;
+        background: var(--card); border: 1px solid var(--border-light);
+        border-radius: 20px; font-size: 11px; color: var(--text-muted);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .req-file-chip i { color: var(--primary); }
+
+    /* Camera modal */
+    .camera-modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.6); z-index: 9999;
+        align-items: center; justify-content: center; padding: 20px;
+    }
+    .camera-modal-content {
+        background: var(--card); width: 100%; max-width: 500px;
+        border-radius: var(--radius); overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: cameraModalSlide 0.25s ease;
+    }
+    @keyframes cameraModalSlide {
+        from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .camera-modal-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .camera-modal-header h3 { margin: 0; font-size: 16px; font-weight: 700; }
+    .camera-close-btn {
+        background: none; border: none; font-size: 24px; cursor: pointer;
+        color: var(--text-muted); padding: 4px; line-height: 1; transition: color 0.2s;
+    }
+    .camera-close-btn:hover { color: var(--text); }
+    .camera-body {
+        background: #000; width: 100%; aspect-ratio: 4/3;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .camera-body video { width: 100%; height: 100%; object-fit: cover; }
+    .camera-modal-footer {
+        display: flex; justify-content: space-between; padding: 16px 20px;
+        border-top: 1px solid var(--border); gap: 10px;
+    }
+    .camera-modal-footer .btn { flex: 1; }

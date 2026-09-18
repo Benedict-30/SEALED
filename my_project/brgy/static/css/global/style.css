@@ -3,10 +3,10 @@
    All styles are organized in separate files.
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('base.css?v=4');
+@import url('base.css?v=5');
 @import url('sidebar.css?v=6');
 @import url('topbar.css?v=2');
-@import url('components.css?v=3');
+@import url('components.css?v=4');
 @import url('dashboard.css?v=11');
 @import url('auth.css?v=4');
 @import url('modal.css?v=2');

@@ -220,11 +220,11 @@
 
 /* Card Icon */
 .doc-card-icon {
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     border-radius: 12px;
-    background: var(--primary-50);
-    color: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -232,15 +232,13 @@
     margin-bottom: 12px;
     position: relative;
     z-index: 1;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px var(--primary-100);
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 10px -3px var(--primary);
 }
 
 .doc-card:hover .doc-card-icon {
-    background: var(--primary);
-    color: #fff;
-    transform: scale(1.08);
-    box-shadow: 0 4px 16px var(--primary-300);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    transform: translateY(-2px);
 }
 
 /* Card Text */
