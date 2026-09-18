@@ -720,6 +720,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     /* Header band: request # (left) + status badge (right) */
     .table-cards.table-recent td:first-child {
         flex: 1 1 auto;
+        width: auto;
         order: -2;
         flex-direction: row;
         align-items: center;
@@ -741,6 +742,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     .table-cards.table-recent .status-cell {
         order: -1;
         flex: 0 0 auto;
+        width: auto;
         display: flex;
         align-items: center;
         justify-content: flex-end;
@@ -768,6 +770,12 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 
     .table-cards.table-recent td:last-child {
         flex: 1 1 100%;
+    }
+
+    /* Mobile: show only the 2 most recent requests. `recent_requests` is
+       sorted newest-first, so rows 3+ get hidden to keep the card compact. */
+    .table-cards.table-recent tr:nth-of-type(n + 3) {
+        display: none;
     }
 }
 

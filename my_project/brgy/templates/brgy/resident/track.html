@@ -1,0 +1,99 @@
+{% extends 'brgy/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/resident/track.css' %}?v=1">
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-route"></i> Track Request</h3>
+        <a href="{% url 'request_document' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-plus"></i> New Request
+        </a>
+    </div>
+    <div class="card-body">
+        <p class="track-intro text-muted">
+            Select a request to view its live status, timeline, and payment info.
+        </p>
+
+        <form method="get" class="filter-bar mb-4">
+            <div class="filter-bar-form">
+                <div class="search-input-wrapper">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input
+                        type="text"
+                        name="q"
+                        class="form-input"
+                        placeholder="Search by request number (e.g. BRG-20260101-0001)..."
+                        value="{{ search }}">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fa-solid fa-magnifying-glass"></i> Search
+                </button>
+                {% if search %}
+                <a href="{% url 'track' %}" class="btn btn-ghost btn-sm">
+                    <i class="fa-solid fa-xmark"></i> Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+
+        {% if page_obj %}
+        <div class="track-list">
+            {% for req in page_obj %}
+            <a href="{% url 'track_detail' req.pk %}" class="track-list-item">
+                <span class="track-list-icon">
+                    <i class="fa-solid fa-file-lines"></i>
+                </span>
+                <span class="track-list-main">
+                    <span class="track-list-number">{{ req.request_number }}</span>
+                    <span class="track-list-meta">
+                        {% for item in req.items.all %}{{ item.document_type.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        &middot; Submitted {{ req.created_at|date:"M d, Y" }}
+                    </span>
+                </span>
+                <span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span>
+                <i class="fa-solid fa-chevron-right track-list-arrow"></i>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if search %}&q={{ search|urlencode }}{% endif %}">&laquo;</a>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <span class="active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% if search %}&q={{ search|urlencode }}{% endif %}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search %}&q={{ search|urlencode }}{% endif %}">&raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-route"></i>
+            <h4>{% if search %}No Matching Requests{% else %}No Requests to Track{% endif %}</h4>
+            <p>
+                {% if search %}
+                No requests matched "<strong>{{ search }}</strong>". Try the full request number or clear the search.
+                {% else %}
+                You haven't made any document requests yet. Once you do, you can track their progress here.
+                {% endif %}
+            </p>
+            <a href="{% url 'request_document' %}" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-file-circle-plus"></i> Request a Document
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

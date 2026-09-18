@@ -3,14 +3,29 @@
 
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/resident/track_request.css' %}">
+<link rel="stylesheet" href="{% static 'css/resident/track.css' %}?v=1">
 {% endblock %}
 
 {% block content %}
-<div style="max-width: 900px; margin: 0 auto;">
-    <a href="{% url 'request_history' %}" class="btn btn-ghost btn-sm mb-4" style="display:inline-flex;">
-        <i class="fa-solid fa-arrow-left"></i> Back to History
-    </a>
+<div style="max-width: 900px; margin: 0 auto;"
+     {% if display_status != 'completed' and display_status != 'rejected' and display_status != 'cancelled' %}
+     data-track-status-url="{% url 'track_status' req.pk %}"
+     {% endif %}>
+
+    {# ─── Toolbar ─────────────────────────────────────────────── #}
+    <div class="track-toolbar">
+        <a href="{% url 'track' %}" class="btn btn-ghost btn-sm" style="display:inline-flex;">
+            <i class="fa-solid fa-arrow-left"></i> All Tracked Requests
+        </a>
+        <div class="track-toolbar-actions">
+            <button type="button" class="btn btn-ghost btn-sm track-print-btn" title="Print a copy of this summary">
+                <i class="fa-solid fa-print"></i> Print Summary
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm track-copy-btn" data-copy-text="{{ req.request_number }}" title="Copy request number">
+                <i class="fa-regular fa-copy"></i> Copy Number
+            </button>
+        </div>
+    </div>
 
     {# ─── Hero Card ──────────────────────────────────────────────── #}
     <div class="track-hero {% if display_status == 'rejected' or display_status == 'cancelled' %}track-hero-rejected{% endif %}">
@@ -24,6 +39,9 @@
                     <i class="fa-regular fa-hashtag"></i> {{ req.request_number }}
                 </div>
                 <p>Submitted on {{ req.created_at|date:"M d, Y g:i A" }}</p>
+                {% if req.updated_at %}
+                <p class="track-last-updated">Last updated {{ req.updated_at|date:"M d, Y g:i A" }}</p>
+                {% endif %}
             </div>
         </div>
 
@@ -33,7 +51,7 @@
                 <svg class="progress-ring" width="120" height="120" viewBox="0 0 120 120">
                     <circle class="progress-ring__bg" stroke="var(--bg-alt, #f1f5f9)" stroke-width="10"
                             fill="transparent" r="52" cx="60" cy="60"/>
-                    <circle class="progress-ring__circle {% if display_status in 'pending,approved,printed,ready_for_pickup' %}active{% endif %}"
+                    <circle class="progress-ring__circle {% if display_status == 'pending' or display_status == 'approved' or display_status == 'printed' or display_status == 'ready_for_pickup' %}active{% endif %}"
                             stroke="{% if display_status == 'rejected' %}var(--danger){% elif display_status == 'cancelled' %}var(--text-muted){% else %}var(--primary){% endif %}"
                             stroke-width="10" fill="transparent" r="52" cx="60" cy="60"
                             stroke-dasharray="326.73"
@@ -49,8 +67,12 @@
     </div>
 
     {% if display_status != 'rejected' and display_status != 'cancelled' %}
-    {# ─── Horizontal Stepper ─────────────────────────────────────── #}
+    {# ─── Status Timeline ────────────────────────────────────────── #}
     <div class="track-steps card">
+        <div class="track-steps-header">
+            <h4><i class="fa-solid fa-list-check"></i> Request Timeline</h4>
+            <span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span>
+        </div>
         <div class="card-body">
             {% for step in steps %}
             <div class="track-step {{ step.state }}">
@@ -67,7 +89,12 @@
                 <div class="track-step-label">
                     <span class="track-step-name">{{ step.label }}</span>
                     {% if step.date %}
-                    <span class="track-step-date">{{ step.date|date:"M d, Y" }}</span>
+                    <span class="track-step-date">{{ step.date|date:"M d, Y g:i A" }}</span>
+                    {% endif %}
+                    {% if step.key == 'ready_for_pickup' and step.state != 'todo' and not req.is_paid %}
+                    <span class="track-step-hint">
+                        <i class="fa-solid fa-circle-info"></i> Bring payment &amp; OR # before pickup
+                    </span>
                     {% endif %}
                 </div>
             </div>
@@ -89,32 +116,73 @@
         {% if req.updated_at %}
         <span class="text-xs text-muted">Decision made on {{ req.updated_at|date:"M d, Y g:i A" }}</span>
         {% endif %}
+        {% if req.barangay and req.barangay.contact_number %}
+        <div class="track-contact">
+            <span><i class="fa-solid fa-location-dot"></i> {{ req.barangay.name|default:"Barangay Hall" }}{% if req.barangay.address %} · {{ req.barangay.address }}{% endif %}</span>
+            <span><i class="fa-solid fa-phone"></i> {{ req.barangay.contact_number }}</span>
+            {% if req.barangay.email %}<span><i class="fa-solid fa-envelope"></i> {{ req.barangay.email }}</span>{% endif %}
+        </div>
+        {% endif %}
+        <div class="track-rejected-actions">
+            <a href="{% url 'request_document' %}" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-plus"></i> Make a New Request
+            </a>
+        </div>
     </div>
     {% endif %}
 
+    {% if req.staff_notes and display_status != 'rejected' %}
+    {# ─── Staff Update ───────────────────────────────────────────── #}
+    <div class="track-note">
+        <div class="track-note-icon"><i class="fa-solid fa-bullhorn"></i></div>
+        <div class="track-note-body">
+            <span class="track-note-label">Update from Barangay</span>
+            <span class="track-note-text">{{ req.staff_notes }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ─── Payment Callout (rendered always; JS toggles visibility) ── #}
+    <div class="track-payment" {% if not payment_required %}hidden{% endif %}>
+        <div class="track-payment-icon"><i class="fa-solid fa-wallet"></i></div>
+        <div class="track-payment-body">
+            <h4>Payment Required</h4>
+            <p>
+                Pay <strong data-fee>&#8369; {{ total_fee|floatformat:2 }}</strong> at the Barangay Hall
+                {% if req.pickup_date %}before your pickup on <strong data-pickup>{{ req.pickup_date|date:"M d, Y" }}</strong>{% endif %}.
+            </p>
+            <p class="track-payment-hint">
+                <i class="fa-solid fa-circle-info"></i> Keep your official receipt (OR #) as proof of payment. Requests are completed once payment is recorded.
+            </p>
+        </div>
+    </div>
+
     {% if item_statuses %}
-    {# ─── Per-Document Tracking ──────────────────────────────────── #}
+    {# ─── Documents in this Request ──────────────────────────────── #}
     <div class="card mb-4">
         <div class="card-header">
             <h3>Documents in this Request</h3>
-            <span class="text-sm text-muted">Select a document to track individually</span>
+            <span class="text-sm text-muted">Status shown per document</span>
         </div>
         <div class="card-body">
-            <div class="track-doc-select">
-                <label class="sr-only" for="trackDocSelect">Select document</label>
-                <select id="trackDocSelect" class="form-input" onchange="if(this.value) window.location.href=this.value;">
-                    <option value="{% url 'track_request' req.pk %}" {% if not selected_item %}selected{% endif %}>
-                        View whole request
-                    </option>
-                    {% for es in item_statuses %}
-                    {% with item=es.item istatus=es.status icolor=es.color %}
-                    <option value="{% url 'track_request_item' req.pk item.pk %}"
-                            {% if selected_item and selected_item.pk == item.pk %}selected{% endif %}>
-                        {{ item.document_type.name }}{% if item.quantity and item.quantity > 1 %} &times; {{ item.quantity }}{% endif %} &mdash; {{ istatus|capfirst }}
-                    </option>
-                    {% endwith %}
-                    {% endfor %}
-                </select>
+            <div class="track-doc-list">
+                {% for es in item_statuses %}
+                {% with item=es.item istatus=es.status icolor=es.color %}
+                <div class="track-doc-link">
+                    <span class="track-doc-icon"><i class="fa-solid fa-file-lines"></i></span>
+                    <span class="track-doc-main">
+                        <span class="track-doc-name">{{ item.document_type.name }}{% if item.quantity and item.quantity > 1 %} &times; {{ item.quantity }}{% endif %}</span>
+                        <span class="track-doc-meta">
+                            &#8369; {{ item.total_fee|floatformat:2 }}
+                            {% if item.requirement_files %}
+                            &middot; <i class="fa-solid fa-paperclip"></i> {{ item.requirement_files|length }} file{% if item.requirement_files|length != 1 %}s{% endif %} submitted
+                            {% endif %}
+                        </span>
+                    </span>
+                    <span class="badge badge-{{ icolor }}">{{ istatus|capfirst }}</span>
+                </div>
+                {% endwith %}
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -167,14 +235,22 @@
                     <span class="detail-value text-danger">{{ req.rejection_reason }}</span>
                 </div>
                 {% endif %}
-                {% if req.staff_notes %}
-                <div class="detail-item detail-item-full">
-                    <span class="detail-label">Staff Notes</span>
-                    <span class="detail-value">{{ req.staff_notes }}</span>
-                </div>
-                {% endif %}
             </div>
+            {% if req.status == 'pending' %}
+            <div class="track-details-actions">
+                <form method="post" action="{% url 'cancel_request' req.pk %}" onsubmit="return confirm('Are you sure you want to cancel this request? This cannot be undone.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost-danger btn-sm">
+                        <i class="fa-solid fa-ban"></i> Cancel Request
+                    </button>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/resident/track.js' %}?v=1"></script>
 {% endblock %}

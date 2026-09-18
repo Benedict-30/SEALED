@@ -66,57 +66,200 @@
     }
 }
 
-@media (max-width: 768px) {
-    .table-cards.table-history tbody {
-        gap: 12px;
-        padding: 12px;
+/* ─── Collapsible history cards ──────────────────────────────────── */
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.history-item {
+    background: var(--card, #ffffff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.history-item:hover {
+    border-color: var(--primary-light, #059669);
+}
+
+.history-item.open {
+    border-color: var(--primary-light, #059669);
+    box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.12);
+}
+
+.history-item-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+}
+
+.history-item-toggle:focus-visible {
+    outline: 2px solid var(--primary, #047857);
+    outline-offset: -2px;
+    border-radius: 14px;
+}
+
+.history-id {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--primary, #047857);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.history-item-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.history-chevron {
+    font-size: 13px;
+    color: var(--text-muted, #94a3b8);
+    transition: transform 0.2s ease;
+}
+
+.history-item.open .history-chevron {
+    transform: rotate(180deg);
+}
+
+.history-item-body {
+    padding: 4px 16px 16px;
+}
+
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px 24px;
+    border-top: 1px solid var(--border, #e2e8f0);
+    padding-top: 14px;
+}
+
+.history-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.history-field--full {
+    grid-column: 1 / -1;
+}
+
+.history-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted, #94a3b8);
+}
+
+.history-value {
+    font-size: 14px;
+    color: var(--text, #1e293b);
+    word-break: break-word;
+}
+
+.history-docs {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.history-doc-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--primary, #047857);
+    text-decoration: none;
+}
+
+.history-doc-link i {
+    color: var(--text-muted, #94a3b8);
+}
+
+.history-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border, #e2e8f0);
+}
+
+/* ─── Desktop table view (>=769px) ─────────────────────────────── */
+.history-table-desktop { display: none; }
+
+.history-table-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.history-table-actions form { margin: 0; }
+
+@media (min-width: 769px) {
+    .history-table-desktop {
+        display: block;
     }
 
-    .table-cards.table-history tr {
-        display: flex;
+    /* Mobile collapsible cards are hidden on desktop */
+    .history-list {
+        display: none;
+    }
+
+    .history-table-desktop .table-doc-list {
         flex-wrap: wrap;
-        align-items: stretch;
-        border-radius: 14px;
     }
 
-    /* ─── Header band: request # (left) + status badge (right) ── */
-    .table-cards.table-history td:first-child {
-        flex: 1 1 auto;
-        order: -2;
-        flex-direction: row;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 10px;
-        padding: 14px 14px 12px;
-        border-bottom: 1px solid var(--border);
+    .history-table-desktop .td-truncate span {
+        max-width: 180px;
+    }
+}
+
+@media (max-width: 768px) {
+    .history-grid {
+        grid-template-columns: 1fr;
     }
 
-    .table-cards.table-history td:first-child a {
-        font-size: 15px;
-        letter-spacing: -0.2px;
+    .history-item-toggle {
+        min-height: 56px;
+        padding: 12px 16px;
+    }
+
+    .history-id {
+        min-width: 0;
+        font-size: 14px;
+    }
+
+    .history-item-right {
+        gap: 8px;
+    }
+
+    .history-item-body {
+        padding: 4px 14px 14px;
+    }
+
+    .history-doc-link,
+    .history-actions .btn {
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-    }
-
-    .table-cards.table-history .status-cell {
-        order: -1;
-        flex: 0 0 auto;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 14px 14px 12px 0;
-        margin-left: auto;
-        border-bottom: 1px solid var(--border);
-        background: var(--bg-alt);
-    }
-
-    .table-cards.table-history .status-cell::before { display: none; }
-
-    /* ─── Body cells below the header strip ──────────────────── */
-    .table-cards.table-history .td-truncate span,
-    .table-cards.table-history .td-truncate a {
-        -webkit-line-clamp: 3;
     }
 }

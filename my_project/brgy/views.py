@@ -1283,6 +1283,32 @@ def request_history(request):
 
 
 @login_required
+@role_required('resident')
+def track_list(request):
+    user = request.user
+    if not user.is_verified_resident:
+        return redirect('resident_dashboard')
+    reqs = firestore_db.list_document_requests(
+        filters=[('resident_id', '==', user.pk)],
+        order_by='created_at',
+        descending=True,
+    )
+    reqs = [DocumentRequest(r) for r in reqs]
+    search = request.GET.get('q', '').strip()
+    if search:
+        needle = search.lower()
+        reqs = [r for r in reqs if needle in (r.request_number or '').lower()]
+    paginator = Paginator(reqs, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'brgy/resident/track.html', {
+        'page_obj': page_obj,
+        'search': search,
+        'page_title': 'Track Request',
+    })
+
+
+@login_required
 @role_required('resident', 'admin')
 def notifications_view(request):
     notifications = firestore_db.list_notifications(
@@ -1389,11 +1415,68 @@ def cancel_request(request, pk):
 
 @login_required
 @role_required('resident')
-def track_request(request, pk, item_pk=None):
+def track_detail(request, pk):
     doc_req = _request_or_404(pk)
     if doc_req.resident_id != request.user.pk:
         raise Http404
+    ctx = _build_track_context(doc_req)
+    return render(request, 'brgy/resident/track_detail.html', {
+        'req': doc_req,
+        'page_title': 'Track Request',
+        **ctx,
+    })
 
+
+@login_required
+@role_required('resident')
+def track_status(request, pk):
+    """Lightweight JSON status feed for the resident track page.
+
+    Lets the page sync in place (badge, ring, timeline, last-updated) so the
+    viewport never reloads — important on mobile where a full reload resets
+    scroll position and browser zoom.
+    """
+    doc_req = _request_or_404(pk)
+    if doc_req.resident_id != request.user.pk:
+        raise Http404
+    ctx = _build_track_context(doc_req)
+
+    from django.template.defaultfilters import date as fmt_date
+    total_fee = ctx['total_fee']
+    display_status = ctx['display_status']
+    updated_at = getattr(doc_req, 'updated_at', None)
+
+    steps = [
+        {
+            'key': s['key'],
+            'state': s['state'],
+            'date': fmt_date(s['date'], 'M d, Y g:i A') if s.get('date') else '',
+        }
+        for s in ctx['steps']
+    ]
+
+    ring_color = 'danger' if display_status == 'rejected' else 'muted' if display_status == 'cancelled' else 'primary'
+    terminal = display_status in ('completed', 'rejected', 'cancelled')
+
+    return JsonResponse({
+        'signature': f'{(updated_at.isoformat() if updated_at else "")}|{display_status}|{doc_req.status}|{doc_req.is_paid}',
+        'display_status': display_status,
+        'status_display': doc_req.get_status_display(),
+        'status_color': doc_req.status_color,
+        'ring_color': ring_color,
+        'percent': ctx['progress']['percent'],
+        'offset': ctx['progress']['offset'],
+        'updated_at': fmt_date(updated_at, 'M d, Y g:i A') if updated_at else '',
+        'steps': steps,
+        'payment_required': ctx['payment_required'],
+        'total_fee': f'{total_fee:.2f}',
+        'pickup_date': doc_req.pickup_date.strftime('%b %d, %Y') if doc_req.pickup_date else '',
+        'paid': doc_req.is_paid,
+        'terminal': terminal,
+    })
+
+
+def _build_track_context(doc_req, item_pk=None):
     items = list(doc_req.items.all())
     status_colors = {
         'rejected': 'danger',
@@ -1438,10 +1521,10 @@ def track_request(request, pk, item_pk=None):
     progress_map = {
         'rejected': (100, 'danger'),
         'cancelled': (100, 'muted'),
-        'pending': (25, 'warning'),
-        'approved': (50, 'info'),
+        'pending': (20, 'warning'),
+        'approved': (40, 'info'),
         'printed': (60, 'info'),
-        'ready_for_pickup': (75, 'success'),
+        'ready_for_pickup': (80, 'success'),
         'completed': (100, 'primary'),
     }
     progress_percent, progress_color = progress_map.get(display_status, (0, 'muted'))
@@ -1479,8 +1562,12 @@ def track_request(request, pk, item_pk=None):
 
     total_fee = sum(item.total_fee for item in items)
 
-    return render(request, 'brgy/resident/track_request.html', {
-        'req': doc_req,
+    payment_required = (
+        display_status in ('approved', 'printed', 'ready_for_pickup')
+        and not doc_req.is_paid
+    )
+
+    return {
         'item_statuses': item_statuses,
         'selected_item': selected_item,
         'printed_at': printed_at,
@@ -1488,8 +1575,8 @@ def track_request(request, pk, item_pk=None):
         'progress': progress,
         'steps': steps,
         'total_fee': total_fee,
-        'page_title': f'Track Request - {doc_req.request_number}',
-    })
+        'payment_required': payment_required,
+    }
 
 
 def _item_status(item, doc_req):

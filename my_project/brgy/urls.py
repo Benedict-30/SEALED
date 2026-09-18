@@ -38,8 +38,9 @@ urlpatterns = [
     path('resident/notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
     path('notifications/count/', views.unread_notification_count, name='unread_notification_count'),
     path('resident/history/cancel/<uuid:pk>/', views.cancel_request, name='cancel_request'),
-    path('resident/history/track/<uuid:pk>/', views.track_request, name='track_request'),
-    path('resident/history/track/<uuid:pk>/<uuid:item_pk>/', views.track_request, name='track_request_item'),
+    path('resident/track/', views.track_list, name='track'),
+    path('resident/track/<uuid:pk>/', views.track_detail, name='track_detail'),
+    path('resident/track/<uuid:pk>/status/', views.track_status, name='track_status'),
 
     # Staff
     path('staff/', views.staff_dashboard, name='staff_dashboard'),

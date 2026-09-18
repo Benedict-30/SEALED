@@ -57,3 +57,26 @@ class FirestoreAuthMiddleware:
     def __call__(self, request):
         request.user = SimpleLazyObject(lambda: _get_user(request))
         return self.get_response(request)
+
+
+class DisableCachingMiddleware:
+    """Prevent phones/browsers from reusing stale HTML pages.
+
+    Session state changes between loads (request status, user edits), so HTML
+    responses must always revalidate. Combined with the ?v= cache-busters on
+    CSS/JS links, this stops devices that aggressively cache (e.g. phones on a
+    LAN testing setup) from showing old pages or stale asset URLs.
+    """
+
+    NO_STORE = 'no-store, no-cache, must-revalidate, max-age=0'
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if response.get('Content-Type', '').startswith('text/html'):
+            response['Cache-Control'] = self.NO_STORE
+            response['Pragma'] = 'no-cache'
+            response['Expires'] = '0'
+        return response

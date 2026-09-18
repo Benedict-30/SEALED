@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/resident/request_history.css' %}">
+<link rel="stylesheet" href="{% static 'css/resident/request_history.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -39,80 +39,153 @@
         </div>
 
         {% if page_obj %}
-        <div class="table-wrapper">
-            <table class="table table-cards table-history">
+
+        {# ─── Desktop: table view ──────────────────────────────────── #}
+        <div class="table-wrapper history-table-desktop">
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Request #</th>
-                        <th>Document(s) Requested</th>
-                        <th>Purpose</th>
+                        <th>Document(s)</th>
                         <th>Status</th>
                         <th>Fee</th>
                         <th>Submitted</th>
                         <th>Notes</th>
-                        <th>Actions</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for req in page_obj %}
                     <tr>
-                        <td class="fw-600" data-label="Request #">
-                            <a href="{% url 'track_request' req.pk %}" style="color: var(--primary); text-decoration: none;">
-                                {{ req.request_number }} <i class="fa-solid fa-arrow-right fa-xs"></i>
-                            </a>
+                        <td class="fw-600">
+                            <a href="{% url 'track_detail' req.pk %}" class="table-link">{{ req.request_number }}</a>
                         </td>
-                        <!-- FIXED: Now loops through the items to show all documents requested -->
-                        <td class="docs-cell" data-label="Documents">
-                            <div class="td-doc-list">
+                        <td>
+                            <div class="table-doc-list">
                                 {% for item in req.items.all %}
-                                    <a href="{% url 'track_request_item' req.pk item.pk %}" style="color: var(--primary); text-decoration: none;" title="Track this document">
-                                        <span class="text-sm">{{ item.document_type.name }}</span> <i class="fa-solid fa-arrow-right fa-xs"></i>
-                                    </a>
-                                    {% if item.is_printed %}
-                                    <span class="badge badge-info text-xs">Printed</span>
-                                    {% endif %}
-                                    {% if not forloop.last %}<br>{% endif %}
+                                <span class="table-doc-name">
+                                    <i class="fa-solid fa-file-lines"></i>
+                                    {{ item.document_type.name }}
+                                    {% if item.quantity and item.quantity > 1 %} &times; {{ item.quantity }}{% endif %}
+                                    {% if item.is_printed %}<i class="fa-solid fa-print" title="Printed"></i>{% endif %}
+                                </span>
                                 {% endfor %}
                             </div>
                         </td>
-                        <td class="td-truncate" data-label="Purpose"><span class="text-sm">{{ req.purpose|truncatechars:50 }}</span></td>
-                        <td class="status-cell" data-label="Status"><span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span></td>
-                        <td data-label="Fee">
+                        <td>
+                            <span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span>
+                        </td>
+                        <td>
                             {% if req.is_paid %}
                             <span class="badge badge-success text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Paid</span>
                             {% elif req.status == 'rejected' or req.status == 'pending' or req.status == 'cancelled' %}
-                            <span class="text-xs text-muted">&#8369; {{ req.total_fee|floatformat:2 }}</span>
+                            <span class="text-muted">&#8369; {{ req.total_fee|floatformat:2 }}</span>
                             {% else %}
                             <span class="badge badge-muted text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Unpaid</span>
                             {% endif %}
                         </td>
-                        <td data-label="Submitted"><span class="text-sm text-muted">{{ req.created_at|date:"M d, Y" }}</span></td>
-                        <td class="td-truncate" data-label="Notes">
+                        <td class="table-date">{{ req.created_at|date:"M d, Y" }}</td>
+                        <td class="td-truncate">
                             {% if req.staff_notes %}
-                            <span class="text-xs text-muted" title="{{ req.staff_notes }}">{{ req.staff_notes|truncatechars:40 }}</span>
+                            <span title="{{ req.staff_notes }}">{{ req.staff_notes }}</span>
                             {% elif req.rejection_reason %}
-                            <span class="text-xs text-danger" title="{{ req.rejection_reason }}">{{ req.rejection_reason|truncatechars:40 }}</span>
+                            <span class="text-danger" title="{{ req.rejection_reason }}">{{ req.rejection_reason }}</span>
                             {% else %}
-                            <span class="text-xs text-muted">-</span>
+                            <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <!-- NEW: Actions Column with Cancel Button -->
-                        <td data-label="Actions">
-                            {% if req.status == 'pending' %}
+                        <td>
+                            <div class="history-table-actions">
+                                <a href="{% url 'track_detail' req.pk %}" class="btn btn-xs btn-ghost" title="Track Request">
+                                    <i class="fa-solid fa-route"></i> Track
+                                </a>
+                                {% if req.status == 'pending' %}
                                 <form method="post" action="{% url 'cancel_request' req.pk %}" onsubmit="return confirm('Are you sure you want to cancel this request?');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-xs btn-ghost-danger" title="Cancel Request">
                                         <i class="fa-solid fa-times"></i> Cancel
                                     </button>
                                 </form>
-                            {% else %}
-                                <span class="text-xs text-muted">-</span>
-                            {% endif %}
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        {# ─── Mobile: collapsible cards (unchanged layout) ─────────── #}
+        <div class="history-list">
+            {% for req in page_obj %}
+            <div class="history-item">
+                <button type="button" class="history-item-toggle" aria-expanded="false">
+                    <span class="history-id">{{ req.request_number }}</span>
+                    <span class="history-item-right">
+                        <span class="badge badge-{{ req.status_color }}">{{ req.get_status_display }}</span>
+                        <i class="fa-solid fa-chevron-down history-chevron"></i>
+                    </span>
+                </button>
+                <div class="history-item-body" hidden>
+                    <div class="history-grid">
+                        <div class="history-field history-field--full">
+                            <span class="history-label">Document(s) Requested</span>
+                            <div class="history-docs">
+{% for item in req.items.all %}
+                                <span class="history-doc-link">
+                                    <i class="fa-solid fa-file-lines"></i>
+                                    {{ item.document_type.name }}
+                                    {% if item.quantity and item.quantity > 1 %} &times; {{ item.quantity }}{% endif %}
+                                    {% if item.is_printed %}<span class="badge badge-info text-xs">Printed</span>{% endif %}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="history-field history-field--full">
+                            <span class="history-label">Purpose</span>
+                            <span class="history-value">{{ req.purpose|truncatechars:120 }}</span>
+                        </div>
+                        <div class="history-field">
+                            <span class="history-label">Fee</span>
+                            {% if req.is_paid %}
+                            <span class="history-value"><span class="badge badge-success text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Paid</span></span>
+                            {% elif req.status == 'rejected' or req.status == 'pending' or req.status == 'cancelled' %}
+                            <span class="history-value text-muted">&#8369; {{ req.total_fee|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="history-value"><span class="badge badge-muted text-xs">&#8369; {{ req.total_fee|floatformat:2 }} · Unpaid</span></span>
+                            {% endif %}
+                        </div>
+                        <div class="history-field">
+                            <span class="history-label">Submitted</span>
+                            <span class="history-value">{{ req.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="history-field history-field--full">
+                            <span class="history-label">Notes</span>
+                            {% if req.staff_notes %}
+                            <span class="history-value" title="{{ req.staff_notes }}">{{ req.staff_notes|truncatechars:120 }}</span>
+                            {% elif req.rejection_reason %}
+                            <span class="history-value text-danger" title="{{ req.rejection_reason }}">{{ req.rejection_reason|truncatechars:120 }}</span>
+                            {% else %}
+                            <span class="history-value text-muted">-</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="history-actions">
+                        {% if req.status == 'pending' %}
+                        <form method="post" action="{% url 'cancel_request' req.pk %}" onsubmit="return confirm('Are you sure you want to cancel this request?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-xs btn-ghost-danger" title="Cancel Request">
+                                <i class="fa-solid fa-times"></i> Cancel Request
+                            </button>
+                        </form>
+                        {% endif %}
+                        <a href="{% url 'track_detail' req.pk %}" class="btn btn-xs btn-ghost">
+                            <i class="fa-solid fa-route"></i> Track Request
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         </div>
 
         {% if page_obj.has_other_pages %}
@@ -142,4 +215,8 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/resident/request_history.js' %}?v=2"></script>
 {% endblock %}

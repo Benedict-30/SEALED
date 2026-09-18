@@ -82,32 +82,33 @@
 
         {% if recent_requests %}
         {% with latest_req=recent_requests|first %}
-        <a href="{% url 'track_request' latest_req.pk %}" class="track-card">
+        <a href="{% url 'track_detail' latest_req.pk %}" class="track-card">
             <div class="progress-ring-wrapper">
                 <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
                     <circle
-                        class="progress-ring__circle"
-                        stroke="var(--border, #e2e8f0)"
+                        class="progress-ring__bg"
+                        stroke="var(--bg-alt, #f1f5f9)"
                         stroke-width="12"
                         fill="transparent"
                         r="60" cx="70" cy="70"
                     />
                     <circle
-                        class="progress-ring__circle {% if latest_req.status in 'pending,approved,printed,ready_for_pickup' %}active{% endif %}"
+                        class="progress-ring__circle {% if latest_req.status == 'pending' or latest_req.status == 'approved' or latest_req.status == 'printed' or latest_req.status == 'ready_for_pickup' %}active{% endif %}"
                         stroke="var(--primary)"
                         stroke-width="12"
                         fill="transparent"
                         r="60" cx="70" cy="70"
                         stroke-dasharray="376.99"
-                        stroke-dashoffset="{% if latest_req.status == 'completed' %}0{% elif latest_req.status == 'ready_for_pickup' %}94.25{% elif latest_req.status in 'approved,printed' %}188.5{% elif latest_req.status == 'pending' %}282.74{% else %}376.99{% endif %}"
+                        stroke-dashoffset="{% if latest_req.status == 'completed' %}0{% elif latest_req.status == 'ready_for_pickup' %}75.40{% elif latest_req.status == 'printed' %}150.80{% elif latest_req.status == 'approved' %}226.19{% elif latest_req.status == 'pending' %}301.60{% else %}376.99{% endif %}"
                     />
                 </svg>
                 <div class="progress-text">
                     <div class="percentage">
                         {% if latest_req.status == 'completed' %}100%
-                        {% elif latest_req.status == 'ready_for_pickup' %}75%
-                        {% elif latest_req.status in 'approved,printed' %}50%
-                        {% elif latest_req.status == 'pending' %}25%
+                        {% elif latest_req.status == 'ready_for_pickup' %}80%
+                        {% elif latest_req.status == 'printed' %}60%
+                        {% elif latest_req.status == 'approved' %}40%
+                        {% elif latest_req.status == 'pending' %}20%
                         {% else %}0%{% endif %}
                     </div>
                     <div class="label">Progress</div>
@@ -152,7 +153,7 @@
                             {% for req in recent_requests %}
                             <tr>
                                 <td class="fw-600" data-label="Request #">
-                                    <a href="{% url 'track_request' req.pk %}" class="table-link">
+                                    <a href="{% url 'track_detail' req.pk %}" class="table-link">
                                         {{ req.request_number }}
                                     </a>
                                 </td>

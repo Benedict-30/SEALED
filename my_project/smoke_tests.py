@@ -175,7 +175,8 @@ class AppHealthTests(unittest.TestCase):
         from brgy import views
         for name in (
             'verify_document_view', 'unread_notification_count',
-            'mark_all_notifications_read', 'track_request', 'notify_admins',
+            'mark_all_notifications_read', 'track_list', 'track_detail',
+            'track_status', 'notify_admins',
             'requests_for_barangay', 'notifications_url_name', 'staff_of_barangay',
         ):
             self.assertTrue(hasattr(views, name), f'views.{name} missing')
@@ -209,8 +210,9 @@ class AppHealthTests(unittest.TestCase):
             ('document_preview', {'pk': uid}),
             ('mark_notification_read', {'pk': uid}),
             ('cancel_request', {'pk': uid}),
-            ('track_request', {'pk': uid}),
-            ('track_request_item', {'pk': uid, 'item_pk': uid}),
+            ('track', None),
+            ('track_detail', {'pk': uid}),
+            ('track_status', {'pk': uid}),
             ('approve_resident', {'pk': uid}),
             ('reject_resident', {'pk': uid}),
             ('toggle_resident_active', {'pk': uid}),

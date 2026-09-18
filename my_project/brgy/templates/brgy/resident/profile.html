@@ -496,7 +496,7 @@
                         <div class="card-content card-content-flush">
                             <div class="activity-timeline">
                                 {% for req in recent_requests %}
-                                <a href="{% url 'track_request' req.pk %}" class="timeline-item">
+                                <a href="{% url 'track_detail' req.pk %}" class="timeline-item">
                                     <div class="timeline-marker marker-{{ req.status_color }}">
                                         <i class="fa-solid {% if req.status == 'pending' %}fa-hourglass-half{% elif req.status == 'approved' %}fa-circle-check{% elif req.status == 'printed' %}fa-print{% elif req.status == 'ready_for_pickup' %}fa-hand-holding{% elif req.status == 'completed' %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
                                     </div>

@@ -1,0 +1,304 @@
+Watching for file changes with StatReloader
+[18/Sep/2026 11:44:36] "GET /login/ HTTP/1.1" 200 7180
+[18/Sep/2026 11:44:51] "GET /notifications/count/ HTTP/1.1" 200 12
+[18/Sep/2026 11:44:55,708] - Broken pipe from ('192.168.72.131', 57286)
+[18/Sep/2026 12:59:55] "GET /verify/ HTTP/1.1" 200 4665
+[18/Sep/2026 12:59:55] "GET /about/ HTTP/1.1" 200 8168
+[2026-09-18 13:00:01,024] ERROR brgy.firestore_db: Firestore outage: call exceeded 6s deadline. Failing fast for next 60s.
+[18/Sep/2026 13:00:01] "GET /services/ HTTP/1.1" 200 5337
+[18/Sep/2026 13:00:01] "GET /services/ HTTP/1.1" 200 5337
+----------------------------------------
+Exception occurred during processing of request from ('192.168.77.99', 64810)
+Traceback (most recent call last):
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\servers\basehttp.py", line 223, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\servers\basehttp.py", line 233, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+                           ~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\socket.py", line 719, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+TimeoutError: [WinError 10060] A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('192.168.77.99', 57393)
+Traceback (most recent call last):
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\servers\basehttp.py", line 223, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\servers\basehttp.py", line 233, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+                           ~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\socket.py", line 719, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+TimeoutError: [WinError 10060] A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond
+----------------------------------------
+[18/Sep/2026 13:02:10,422] - Broken pipe from ('192.168.77.99', 63016)
+[18/Sep/2026 13:02:11,002] - Broken pipe from ('192.168.77.99', 65190)
+[18/Sep/2026 13:04:58] "GET /resident/ HTTP/1.1" 200 30887
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 13:04:58] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 22633
+[18/Sep/2026 13:04:58] "GET /static/css/global/style.css?v=7 HTTP/1.1" 200 786
+[18/Sep/2026 13:04:58] "GET /static/js/global/theme.js?v=2 HTTP/1.1" 200 1893
+[18/Sep/2026 13:04:58] "GET /static/js/global/script.js HTTP/1.1" 200 15143
+[18/Sep/2026 13:04:58] "GET /static/css/global/base.css?v=2 HTTP/1.1" 200 5129
+[18/Sep/2026 13:04:58] "GET /static/css/global/topbar.css?v=3 HTTP/1.1" 200 17884
+[18/Sep/2026 13:04:58] "GET /static/css/global/sidebar.css?v=7 HTTP/1.1" 200 8586
+[18/Sep/2026 13:04:58] "GET /static/css/global/auth.css?v=4 HTTP/1.1" 200 10468
+[18/Sep/2026 13:04:58] "GET /static/css/global/modal.css?v=2 HTTP/1.1" 200 2225
+[18/Sep/2026 13:04:58] "GET /static/css/global/toast.css?v=2 HTTP/1.1" 200 1970
+[18/Sep/2026 13:04:58] "GET /static/css/global/components.css?v=4 HTTP/1.1" 200 22766
+[18/Sep/2026 13:04:58] "GET /static/css/global/dashboard.css?v=9 HTTP/1.1" 200 49758
+[18/Sep/2026 13:04:59] "GET /static/css/global/motion.css?v=2 HTTP/1.1" 200 2459
+[18/Sep/2026 13:05:03] "GET /static/img/sealed-logo.png HTTP/1.1" 200 1030929
+[18/Sep/2026 13:05:05] "GET /resident/history/track/9a0b6a13-157d-48dd-8b94-079e882537e6/ HTTP/1.1" 200 21291
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 13:05:05] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 22633
+[18/Sep/2026 13:05:05] "GET /static/css/resident/track_request.css?v=8 HTTP/1.1" 200 21191
+[18/Sep/2026 13:05:05] "GET /static/js/resident/track_request.js?v=3 HTTP/1.1" 200 7694
+[18/Sep/2026 13:05:05,475] - Broken pipe from ('192.168.72.131', 56586)
+[18/Sep/2026 13:05:14] "GET /resident/ HTTP/1.1" 200 30887
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 13:05:15] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 22633
+[18/Sep/2026 13:05:21] "GET /resident/history/track/ HTTP/1.1" 200 33093
+[18/Sep/2026 13:05:21] "GET /static/css/resident/request_history.css?v=2 HTTP/1.1" 200 5619
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 13:05:21] "GET /static/js/resident/request_history.js?v=2 HTTP/1.1" 200 461
+[18/Sep/2026 13:05:21] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 22633
+[18/Sep/2026 13:05:21,842] - Broken pipe from ('192.168.72.131', 56552)
+[18/Sep/2026 13:06:22] "GET /notifications/count/ HTTP/1.1" 200 12
+[18/Sep/2026 13:07:22] "GET /notifications/count/ HTTP/1.1" 200 12
+[18/Sep/2026 13:08:22] "GET /notifications/count/ HTTP/1.1" 200 12
+[18/Sep/2026 13:08:47,792] - Broken pipe from ('192.168.72.131', 56576)
+[18/Sep/2026 13:08:47,800] - Broken pipe from ('192.168.72.131', 56560)
+[18/Sep/2026 13:08:47,801] - Broken pipe from ('192.168.72.131', 56570)
+[18/Sep/2026 13:08:47,801] - Broken pipe from ('192.168.72.131', 56572)
+C:\Users\Acer\Desktop\SEALED\my_project\brgy\views.py changed, reloading.
+Watching for file changes with StatReloader
+Exception in thread django-main-thread:
+Traceback (most recent call last):
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1041, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 992, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\utils\autoreload.py", line 64, in wrapper
+    fn(*args, **kwargs)
+    ~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\management\commands\runserver.py", line 134, in inner_run
+    self.check(**check_kwargs)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\management\base.py", line 496, in check
+    all_issues = checks.run_checks(
+        app_configs=app_configs,
+    ...<2 lines>...
+        databases=databases,
+    )
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\checks\registry.py", line 89, in run_checks
+    new_errors = check(app_configs=app_configs, databases=databases)
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\checks\urls.py", line 136, in check_custom_error_handlers
+    handler = resolver.resolve_error_handler(status_code)
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\urls\resolvers.py", line 743, in resolve_error_handler
+    callback = getattr(self.urlconf_module, "handler%s" % view_type, None)
+                       ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\urls\resolvers.py", line 722, in urlconf_module
+    return import_module(self.urlconf_name)
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\Acer\Desktop\SEALED\my_project\my_project\urls.py", line 22, in <module>
+    path('', include('brgy.urls')),
+             ~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\urls\conf.py", line 39, in include
+    urlconf_module = import_module(urlconf_module)
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\Acer\Desktop\SEALED\my_project\brgy\urls.py", line 41, in <module>
+    path('resident/history/track/', views.track_request_list, name='track_request_list'),
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'brgy.views' has no attribute 'track_request_list'. Did you mean: 'track_request'?
+C:\Users\Acer\Desktop\SEALED\my_project\brgy\views.py changed, reloading.
+Watching for file changes with StatReloader
+Exception in thread django-main-thread:
+Traceback (most recent call last):
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1041, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 992, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\utils\autoreload.py", line 64, in wrapper
+    fn(*args, **kwargs)
+    ~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\management\commands\runserver.py", line 134, in inner_run
+    self.check(**check_kwargs)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\management\base.py", line 496, in check
+    all_issues = checks.run_checks(
+        app_configs=app_configs,
+    ...<2 lines>...
+        databases=databases,
+    )
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\checks\registry.py", line 89, in run_checks
+    new_errors = check(app_configs=app_configs, databases=databases)
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\core\checks\urls.py", line 136, in check_custom_error_handlers
+    handler = resolver.resolve_error_handler(status_code)
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\urls\resolvers.py", line 743, in resolve_error_handler
+    callback = getattr(self.urlconf_module, "handler%s" % view_type, None)
+                       ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\urls\resolvers.py", line 722, in urlconf_module
+    return import_module(self.urlconf_name)
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\Acer\Desktop\SEALED\my_project\my_project\urls.py", line 22, in <module>
+    path('', include('brgy.urls')),
+             ~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Acer\Desktop\SEALED\venv\Lib\site-packages\django\urls\conf.py", line 39, in include
+    urlconf_module = import_module(urlconf_module)
+  File "C:\Users\Acer\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "C:\Users\Acer\Desktop\SEALED\my_project\brgy\urls.py", line 41, in <module>
+    path('resident/history/track/', views.track_request_list, name='track_request_list'),
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'brgy.views' has no attribute 'track_request_list'
+C:\Users\Acer\Desktop\SEALED\my_project\brgy\urls.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Acer\Desktop\SEALED\my_project\brgy\views.py changed, reloading.
+Watching for file changes with StatReloader
+[18/Sep/2026 14:27:07] "GET /resident/track/ HTTP/1.1" 200 20843
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:27:07] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:27:07] "GET /static/css/resident/track.css?v=1 HTTP/1.1" 304 0
+[18/Sep/2026 14:27:07] "GET /static/css/global/base.css?v=2 HTTP/1.1" 304 0
+[18/Sep/2026 14:27:07] "GET /static/css/global/topbar.css?v=3 HTTP/1.1" 304 0
+[18/Sep/2026 14:27:16] "GET /resident/track/ HTTP/1.1" 200 20843
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:27:16] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:27:20] "GET /resident/track/ HTTP/1.1" 200 20843
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:27:20] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:27:20] "GET /static/css/resident/track.css?v=1 HTTP/1.1" 200 21594
+[18/Sep/2026 14:27:20] "GET /static/css/global/style.css?v=7 HTTP/1.1" 200 786
+[18/Sep/2026 14:27:20] "GET /static/css/global/base.css?v=2 HTTP/1.1" 200 5182
+[18/Sep/2026 14:27:20] "GET /static/css/global/sidebar.css?v=7 HTTP/1.1" 200 8586
+[18/Sep/2026 14:27:20] "GET /static/css/global/topbar.css?v=3 HTTP/1.1" 200 17903
+[18/Sep/2026 14:27:20] "GET /static/css/global/auth.css?v=4 HTTP/1.1" 200 10468
+[18/Sep/2026 14:27:20] "GET /static/js/global/theme.js?v=2 HTTP/1.1" 200 1893
+[18/Sep/2026 14:27:20] "GET /static/css/global/modal.css?v=2 HTTP/1.1" 200 2225
+[18/Sep/2026 14:27:20] "GET /static/css/global/components.css?v=4 HTTP/1.1" 200 22766
+[18/Sep/2026 14:27:20] "GET /static/css/global/dashboard.css?v=9 HTTP/1.1" 200 49758
+[18/Sep/2026 14:27:20] "GET /static/css/global/toast.css?v=2 HTTP/1.1" 200 1970
+[18/Sep/2026 14:27:20] "GET /static/css/global/motion.css?v=2 HTTP/1.1" 200 2459
+[18/Sep/2026 14:27:20] "GET /static/js/global/script.js HTTP/1.1" 200 15143
+[18/Sep/2026 14:27:21] "GET /static/img/sealed-logo.png HTTP/1.1" 200 1030929
+[18/Sep/2026 14:27:48] "GET /resident/track/ HTTP/1.1" 200 20843
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:27:48] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:27:52] "GET /resident/track/ HTTP/1.1" 200 20843
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:27:52] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:28:00] "GET /resident/history/ HTTP/1.1" 200 53592
+[18/Sep/2026 14:28:00] "GET /static/css/resident/request_history.css?v=3 HTTP/1.1" 304 0
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:28:00] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:28:08] "GET /resident/track/ HTTP/1.1" 200 20843
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:28:08] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:28:16] "GET /resident/history/ HTTP/1.1" 200 53592
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:28:16] "GET /static/css/global/base.css?v=2 HTTP/1.1" 304 0
+[18/Sep/2026 14:28:16] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:28:16] "GET /static/css/global/topbar.css?v=3 HTTP/1.1" 304 0
+[18/Sep/2026 14:28:28] "GET /resident/history/ HTTP/1.1" 200 53592
+[18/Sep/2026 14:28:28] "GET /static/css/resident/request_history.css?v=3 HTTP/1.1" 304 0
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:28:28] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:28:36] "GET /resident/history/ HTTP/1.1" 200 53592
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:28:36] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:29:37] "GET /notifications/count/ HTTP/1.1" 200 12
+[18/Sep/2026 14:29:46] "GET /resident/track/9a0b6a13-157d-48dd-8b94-079e882537e6/ HTTP/1.1" 200 20331
+[18/Sep/2026 14:29:47] "GET /static/css/resident/track.css?v=1 HTTP/1.1" 304 0
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:29:47] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:29:47] "GET /static/css/global/base.css?v=2 HTTP/1.1" 304 0
+[18/Sep/2026 14:29:47] "GET /static/css/global/topbar.css?v=3 HTTP/1.1" 304 0
+[18/Sep/2026 14:30:38] "GET /resident/track/ HTTP/1.1" 200 20843
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:30:38] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21929
+[18/Sep/2026 14:38:37] "GET /notifications/count/ HTTP/1.1" 200 12
+[18/Sep/2026 14:38:39] "GET /resident/ HTTP/1.1" 200 28877
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:38:39] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21933
+[18/Sep/2026 14:38:53] "GET /resident/track/9a0b6a13-157d-48dd-8b94-079e882537e6/ HTTP/1.1" 200 20331
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:38:53] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21933
+[18/Sep/2026 14:38:53] "GET /static/css/resident/track.css?v=1 HTTP/1.1" 304 0
+[18/Sep/2026 14:38:53] "GET /static/js/resident/track.js?v=1 HTTP/1.1" 304 0
+[18/Sep/2026 14:39:06] "GET /resident/track/ HTTP/1.1" 200 20843
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:39:07] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21933
+[18/Sep/2026 14:39:23] "GET /resident/request/ HTTP/1.1" 200 20824
+Not Found: /media/barangay_logos/logo-calicanto.png
+[18/Sep/2026 14:39:23] "GET /static/css/resident/request_document.css HTTP/1.1" 200 16157
+[18/Sep/2026 14:39:23] "GET /media/barangay_logos/logo-calicanto.png HTTP/1.1" 404 21933
+[18/Sep/2026 14:39:23] "GET /static/js/resident/request_document.js HTTP/1.1" 200 10816
+[18/Sep/2026 14:39:39,513] - Broken pipe from ('192.168.72.131', 47012)
+[18/Sep/2026 14:39:39,514] - Broken pipe from ('192.168.72.131', 47000)
+[18/Sep/2026 14:39:39,514] - Broken pipe from ('192.168.72.131', 49764)
+[18/Sep/2026 14:40:05] "GET /notifications/count/ HTTP/1.1" 200 12
+[18/Sep/2026 14:44:40] "GET /notifications/count/ HTTP/1.1" 200 12
